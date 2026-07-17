@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { RoundInput } from "./components/RoundInput";
 import {
@@ -9,15 +9,50 @@ import {
   createEmptyRound,
   type ShootingRound,
 } from "./domain/shooting";
+import {
+  clearAppState,
+  loadAppState,
+  saveAppState,
+} from "./services/storage";
+
+interface InitialState {
+  session: SessionDraft | null;
+  round: ShootingRound;
+}
+
+function createInitialState(): InitialState {
+  const storedState = loadAppState();
+
+  return {
+    session: storedState?.session ?? null,
+    round: storedState?.round ?? createEmptyRound(1),
+  };
+}
 
 function App() {
-  const [session, setSession] = useState<SessionDraft | null>(null);
-  const [round, setRound] = useState<ShootingRound>(
-    () => createEmptyRound(1),
+  const [initialState] = useState(createInitialState);
+  const [session, setSession] = useState<SessionDraft | null>(
+    initialState.session,
   );
+  const [round, setRound] = useState<ShootingRound>(
+    initialState.round,
+  );
+
+  useEffect(() => {
+    saveAppState({
+      session,
+      round,
+    });
+  }, [session, round]);
 
   function startSession(sessionDraft: SessionDraft): void {
     setSession(sessionDraft);
+    setRound(createEmptyRound(1));
+  }
+
+  function closeSession(): void {
+    clearAppState();
+    setSession(null);
     setRound(createEmptyRound(1));
   }
 
@@ -48,10 +83,10 @@ function App() {
             </div>
 
             <button
-              onClick={() => setSession(null)}
+              onClick={closeSession}
               type="button"
             >
-              セッションを戻る
+              セッション終了
             </button>
           </section>
 
