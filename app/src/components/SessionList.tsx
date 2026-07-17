@@ -4,15 +4,21 @@ import "./SessionList.css";
 
 interface Props { sessions: StoredSession[]; onCreate: () => void; onOpen: (id: string) => void; onDelete: (id: string) => void; }
 export function SessionList({ sessions, onCreate, onOpen, onDelete }: Props) {
+  const drafts = sessions.filter((item) => item.status === "draft");
+  const orderedSessions = [...sessions].sort((a, b) => {
+    if (a.status !== b.status) return a.status === "draft" ? -1 : 1;
+    return b.updatedAt.localeCompare(a.updatedAt);
+  });
   return <section className="session-list">
     <header className="session-list-header"><div><p className="eyebrow">SESSIONS</p><h2>射撃履歴</h2></div><button className="primary-button" onClick={onCreate}>＋ 新しいセッション</button></header>
+    {drafts.length > 0 && <button className="unfinished-alert" onClick={() => onOpen(drafts[0].id)}><strong>未完了セッション {drafts.length}件</strong><span>入力を続ける →</span></button>}
     {sessions.length === 0 ? <div className="empty-session"><p>まだ射撃記録がありません。</p><button onClick={onCreate}>最初のセッションを作成</button></div> :
-      <div className="session-card-list">{sessions.map((item) => {
+      <div className="session-card-list">{orderedSessions.map((item) => {
         const stats = calculateSessionStats({ id: item.id, date: item.session.date, rangeName: item.session.rangeName, ammunitionName: item.session.ammunitionName, weather: item.session.weather, rounds: item.rounds, sessionMemo: item.session.memo });
-        return <article className="session-card" key={item.id}>
+        return <article className={`session-card${item.status === "draft" ? " unfinished" : ""}`} key={item.id}>
           <button className="session-card-main" onClick={() => onOpen(item.id)}>
             <div className="session-card-info"><strong>{item.session.date}</strong><span>{item.session.rangeName}</span><small>{item.session.discipline.toUpperCase()} ・ {item.session.ammunitionName}</small></div>
-            <div className="session-card-score"><strong>{stats.score}</strong><span>/ {stats.targets}</span><small>{item.rounds.length}R ・ 実包{stats.cartridgesUsed}発 ・ {item.status === "draft" ? "続きを入力" : "完了"}</small></div>
+            <div className="session-card-score"><strong>{stats.score}</strong><span>/ {stats.targets}</span><small>{item.rounds.length}R ・ 実包{stats.cartridgesUsed}発</small>{item.status === "draft" && <b>未完了・入力を続ける</b>}{item.status === "completed" && <small>完了</small>}</div>
           </button>
           <button className="session-delete-button" aria-label={`${item.session.date}の記録を削除`} onClick={() => onDelete(item.id)}>削除</button>
         </article>;

@@ -9,7 +9,7 @@ import { createEmptyRound, type ShootingRound } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import { loadSessions, saveSessions, type StoredSession } from "./services/storage";
 
-type Screen = "list" | "form" | "round" | "analysis";
+type Screen = "list" | "form" | "round" | "analysis" | "edit-session";
 const MAX_ROUNDS = 4;
 
 function App() {
@@ -65,6 +65,12 @@ function App() {
     setActiveRoundId(activeSession.rounds[0]?.id ?? null);
     setScreen("round");
   }
+  function editSessionDetails(details: SessionDraft) {
+    if (!activeSessionId || !activeSession) return;
+    const returnScreen: Screen = activeSession.status === "completed" ? "analysis" : "round";
+    setSessions((current) => current.map((item) => item.id === activeSessionId ? { ...item, session: details, updatedAt: new Date().toISOString() } : item));
+    setScreen(returnScreen);
+  }
   function deleteSession(id: string) {
     const item = sessions.find((session) => session.id === id);
     if (item && window.confirm(`${item.session.date}の記録を削除しますか？`)) setSessions((current) => current.filter((session) => session.id !== id));
@@ -72,15 +78,16 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.3.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.3.2</p></header>
     {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} onCreate={() => setScreen("form")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "form" && <><button className="back-button" onClick={() => setScreen("list")}>← 履歴へ戻る</button><SessionForm onStart={startSession} /></>}
+    {screen === "edit-session" && activeSession && <><button className="back-button" onClick={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")}>← キャンセル</button><SessionForm initialValue={activeSession.session} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onStart={editSessionDetails} /></>}
     {screen === "round" && activeSession && activeRound && <>
-      <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length}ラウンド</span><strong>{activeStats?.score} / {activeStats?.targets}　実包 {activeStats?.cartridgesUsed}発</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={returnToList}>履歴へ戻る</button><button className="complete-button" onClick={completeSession}>セッション完了</button></div></section>
+      <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length}ラウンド</span><strong>{activeStats?.score} / {activeStats?.targets}　実包 {activeStats?.cartridgesUsed}発</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>基本情報を編集</button><button onClick={returnToList}>履歴へ戻る</button><button className="complete-button" onClick={completeSession}>セッション完了</button></div></section>
       <nav className="round-tabs" aria-label="ラウンド選択">{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}</nav>
       <RoundInput round={activeRound} onChange={updateRound} />
     </>}
-    {screen === "analysis" && activeSession && <SessionAnalysis session={activeSession} onBack={returnToList} onResume={resumeSession} />}
+    {screen === "analysis" && activeSession && <SessionAnalysis session={activeSession} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} />}
   </main>;
 }
 export default App;
