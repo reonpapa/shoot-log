@@ -1,103 +1,85 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { RoundInput } from "./components/RoundInput";
-import {
-  SessionForm,
-  type SessionDraft,
-} from "./components/SessionForm";
-import {
-  createEmptyRound,
-  type ShootingRound,
-} from "./domain/shooting";
-import {
-  clearAppState,
-  loadAppState,
-  saveAppState,
-} from "./services/storage";
+import { SessionForm, type SessionDraft } from "./components/SessionForm";
+import { SessionList } from "./components/SessionList";
+import { SessionAnalysis } from "./components/SessionAnalysis";
+import { createEmptyRound, type ShootingRound } from "./domain/shooting";
+import { calculateSessionStats } from "./domain/shootingStats";
+import { loadSessions, saveSessions, type StoredSession } from "./services/storage";
 
-interface InitialState {
-  session: SessionDraft | null;
-  round: ShootingRound;
-}
-
-function createInitialState(): InitialState {
-  const storedState = loadAppState();
-
-  return {
-    session: storedState?.session ?? null,
-    round: storedState?.round ?? createEmptyRound(1),
-  };
-}
+type Screen = "list" | "form" | "round" | "analysis";
+const MAX_ROUNDS = 4;
 
 function App() {
-  const [initialState] = useState(createInitialState);
-  const [session, setSession] = useState<SessionDraft | null>(
-    initialState.session,
-  );
-  const [round, setRound] = useState<ShootingRound>(
-    initialState.round,
-  );
+  const [sessions, setSessions] = useState<StoredSession[]>(loadSessions);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activeRoundId, setActiveRoundId] = useState<string | null>(null);
+  const [screen, setScreen] = useState<Screen>("list");
+  const activeSession = useMemo(() => sessions.find((item) => item.id === activeSessionId) ?? null, [sessions, activeSessionId]);
+  const activeRound = activeSession?.rounds.find((round) => round.id === activeRoundId) ?? activeSession?.rounds[0] ?? null;
+  const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
 
-  useEffect(() => {
-    saveAppState({
-      session,
-      round,
-    });
-  }, [session, round]);
-
-  function startSession(sessionDraft: SessionDraft): void {
-    setSession(sessionDraft);
-    setRound(createEmptyRound(1));
+  useEffect(() => saveSessions(sessions), [sessions]);
+  function startSession(details: SessionDraft) {
+    const now = new Date().toISOString();
+    const firstRound = createEmptyRound(1);
+    const next: StoredSession = { id: crypto.randomUUID(), session: details, rounds: [firstRound], status: "draft", createdAt: now, updatedAt: now };
+    setSessions((current) => [next, ...current]); setActiveSessionId(next.id); setActiveRoundId(firstRound.id); setScreen("round");
   }
-
-  function closeSession(): void {
-    clearAppState();
-    setSession(null);
-    setRound(createEmptyRound(1));
+  function openSession(id: string) {
+    const found = sessions.find((item) => item.id === id); if (!found) return;
+    setActiveSessionId(id); setActiveRoundId(found.rounds[0]?.id ?? null); setScreen(found.status === "completed" ? "analysis" : "round");
   }
+  function updateActive(changes: (session: StoredSession) => StoredSession) {
+    if (!activeSessionId) return;
+    setSessions((current) => current.map((item) => item.id === activeSessionId ? { ...changes(item), status: "draft", updatedAt: new Date().toISOString() } : item));
+  }
+  function updateRound(round: ShootingRound) { updateActive((session) => ({ ...session, rounds: session.rounds.map((item) => item.id === round.id ? round : item) })); }
+  function addRound() {
+    if (!activeSession || activeSession.rounds.length >= MAX_ROUNDS) return;
+    const round = createEmptyRound(activeSession.rounds.length + 1);
+    updateActive((session) => ({ ...session, rounds: [...session.rounds, round] })); setActiveRoundId(round.id);
+  }
+  function completeSession() {
+    if (!activeSessionId || !activeSession) return;
+    const enteredRounds = activeSession.rounds.filter((round) => round.shots.some((shot) => shot.finalResult !== "skip"));
+    if (enteredRounds.length === 0) {
+      window.alert("完了できるラウンドがありません。");
+      return;
+    }
+    const incompleteRound = enteredRounds.find((round) => round.shots.some((shot) => shot.finalResult === "skip"));
+    if (incompleteRound) {
+      window.alert(`Round ${incompleteRound.roundNo} に未入力があります。`);
+      setActiveRoundId(incompleteRound.id);
+      return;
+    }
+    const completedRounds = enteredRounds.map((round, index) => ({ ...round, roundNo: index + 1 }));
+    setSessions((current) => current.map((item) => item.id === activeSessionId ? { ...item, rounds: completedRounds, status: "completed", updatedAt: new Date().toISOString() } : item));
+    setScreen("analysis");
+  }
+  function resumeSession() {
+    if (!activeSessionId || !activeSession) return;
+    setSessions((current) => current.map((item) => item.id === activeSessionId ? { ...item, status: "draft", updatedAt: new Date().toISOString() } : item));
+    setActiveRoundId(activeSession.rounds[0]?.id ?? null);
+    setScreen("round");
+  }
+  function deleteSession(id: string) {
+    const item = sessions.find((session) => session.id === id);
+    if (item && window.confirm(`${item.session.date}の記録を削除しますか？`)) setSessions((current) => current.filter((session) => session.id !== id));
+  }
+  function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
-  return (
-    <main className="app-shell">
-      <header className="app-header">
-        <div>
-          <p className="app-kicker">CLAY SHOOTING ANALYSIS</p>
-          <h1>Shoot Log</h1>
-        </div>
-
-        <p className="version">Version 0.1.0</p>
-      </header>
-
-      {session === null ? (
-        <SessionForm onStart={startSession} />
-      ) : (
-        <>
-          <section className="session-summary">
-            <div>
-              <strong>{session.date}</strong>
-              <span>{session.rangeName}</span>
-            </div>
-
-            <div>
-              <span>{session.discipline.toUpperCase()}</span>
-              <span>{session.ammunitionName}</span>
-            </div>
-
-            <button
-              onClick={closeSession}
-              type="button"
-            >
-              セッション終了
-            </button>
-          </section>
-
-          <RoundInput
-            onChange={setRound}
-            round={round}
-          />
-        </>
-      )}
-    </main>
-  );
+  return <main className="app-shell">
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.2.0</p></header>
+    {screen === "list" && <SessionList sessions={sessions} onCreate={() => setScreen("form")} onOpen={openSession} onDelete={deleteSession} />}
+    {screen === "form" && <><button className="back-button" onClick={() => setScreen("list")}>← 履歴へ戻る</button><SessionForm onStart={startSession} /></>}
+    {screen === "round" && activeSession && activeRound && <>
+      <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length}ラウンド</span><strong>{activeStats?.score} / {activeStats?.targets}　実包 {activeStats?.cartridgesUsed}発</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={returnToList}>履歴へ戻る</button><button className="complete-button" onClick={completeSession}>セッション完了</button></div></section>
+      <nav className="round-tabs" aria-label="ラウンド選択">{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}</nav>
+      <RoundInput round={activeRound} onChange={updateRound} />
+    </>}
+    {screen === "analysis" && activeSession && <SessionAnalysis session={activeSession} onBack={returnToList} onResume={resumeSession} />}
+  </main>;
 }
-
 export default App;

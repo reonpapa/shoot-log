@@ -1,19 +1,18 @@
 export type StandNo = 1 | 2 | 3 | 4 | 5;
-
+export type Discipline = "trap" | "skeet" | "sporting";
+export type FireMode = "single" | "double";
 export type ShotResult = "hit" | "miss" | "not-fired";
+export type FinalResult = "hit-on-first" | "hit-on-second" | "miss" | "skip";
+export type MissDirection = "left" | "center" | "right" | "unknown";
 
-export type FinalResult =
-  | "hit-on-first"
-  | "hit-on-second"
-  | "miss"
-  | "no-bird"
-  | "skip";
-
-export type MissDirection =
-  | "left"
-  | "center"
-  | "right"
-  | "unknown";
+export interface SessionDetails {
+  date: string;
+  rangeName: string;
+  discipline: Discipline;
+  ammunitionName: string;
+  weather: string;
+  memo: string;
+}
 
 export interface Shot {
   id: string;
@@ -30,6 +29,8 @@ export interface ShootingRound {
   id: string;
   roundNo: number;
   startStandNo: StandNo;
+  fireMode: FireMode;
+  actualCartridgesUsed?: number;
   shots: Shot[];
   memo?: string;
 }
@@ -42,59 +43,30 @@ export interface ShootingSession {
   weather?: string;
   rounds: ShootingRound[];
   sessionMemo?: string;
-  findings?: string;
-  problems?: string;
-  nextChallenge?: string;
 }
 
-export function calculateStandNo(
-  startStandNo: StandNo,
-  shotIndex: number,
-): StandNo {
+export function calculateStandNo(startStandNo: StandNo, shotIndex: number): StandNo {
   return (((startStandNo - 1 + shotIndex) % 5) + 1) as StandNo;
 }
 
-export function createEmptyShot(
-  targetNo: number,
-  standNo: StandNo,
-): Shot {
-  return {
-    id: crypto.randomUUID(),
-    targetNo,
-    standNo,
-    firstShotResult: "not-fired",
-    secondShotResult: "not-fired",
-    finalResult: "skip",
-  };
-}
-
-export function createEmptyRound(
-  roundNo: number,
-  startStandNo: StandNo = 1,
-): ShootingRound {
-  const shots = Array.from({ length: 25 }, (_, index) => {
-    const targetNo = index + 1;
-    const standNo = calculateStandNo(startStandNo, index);
-
-    return createEmptyShot(targetNo, standNo);
-  });
-
+export function createEmptyRound(roundNo: number, startStandNo: StandNo = 1): ShootingRound {
   return {
     id: crypto.randomUUID(),
     roundNo,
     startStandNo,
-    shots,
+    fireMode: "single",
+    shots: Array.from({ length: 25 }, (_, index) => ({
+      id: crypto.randomUUID(),
+      targetNo: index + 1,
+      standNo: calculateStandNo(startStandNo, index),
+      firstShotResult: "not-fired" as const,
+      secondShotResult: "not-fired" as const,
+      finalResult: "skip" as const,
+    })),
   };
 }
 
-/**
- * 開始射台を変更し、25枚分の射台番号だけを再計算する。
- * 命中・失中などの入力済み結果は維持する。
- */
-export function changeRoundStartStand(
-  round: ShootingRound,
-  startStandNo: StandNo,
-): ShootingRound {
+export function changeRoundStartStand(round: ShootingRound, startStandNo: StandNo): ShootingRound {
   return {
     ...round,
     startStandNo,
@@ -105,23 +77,9 @@ export function changeRoundStartStand(
   };
 }
 
-/**
- * 1枚だけ実際の射台番号へ修正する。
- */
-export function changeShotStand(
-  round: ShootingRound,
-  shotId: string,
-  standNo: StandNo,
-): ShootingRound {
+export function changeShotStand(round: ShootingRound, shotId: string, standNo: StandNo): ShootingRound {
   return {
     ...round,
-    shots: round.shots.map((shot) =>
-      shot.id === shotId
-        ? {
-            ...shot,
-            standNo,
-          }
-        : shot,
-    ),
+    shots: round.shots.map((shot) => shot.id === shotId ? { ...shot, standNo } : shot),
   };
 }

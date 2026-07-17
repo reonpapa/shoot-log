@@ -1,0 +1,5 @@
+.session-form { padding: 28px; border: 1px solid #8885; border-radius: 18px; background: #8881; }
+.session-form header { margin-bottom: 22px; }.session-form h2 { margin: 3px 0 0; }
+.session-form form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }.session-form label { display: grid; gap: 6px; }.session-form label span { font-size: .82rem; font-weight: 800; }
+.session-form input, .session-form select, .session-form textarea { width: 100%; padding: 11px 12px; border: 1px solid #8886; border-radius: 9px; background: #8881; }.session-form textarea { resize: vertical; }.session-form .wide { grid-column: 1 / -1; }
+@media (max-width: 700px) { .session-form { padding: 20px 16px; }.session-form form { grid-template-columns: 1fr; }.session-form .wide { grid-column: auto; } }
