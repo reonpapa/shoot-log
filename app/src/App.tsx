@@ -86,7 +86,7 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.3.3</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.3.4</p></header>
     {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} onCreate={() => setScreen("form")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "form" && <><button className="back-button" onClick={() => setScreen("list")}>← 履歴へ戻る</button><SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} onStart={startSession} /></>}
     {screen === "edit-session" && activeSession && <><button className="back-button" onClick={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")}>← キャンセル</button><SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onStart={editSessionDetails} /></>}
