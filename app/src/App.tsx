@@ -71,7 +71,7 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.2.0</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.3.0</p></header>
     {screen === "list" && <SessionList sessions={sessions} onCreate={() => setScreen("form")} onOpen={openSession} onDelete={deleteSession} />}
     {screen === "form" && <><button className="back-button" onClick={() => setScreen("list")}>← 履歴へ戻る</button><SessionForm onStart={startSession} /></>}
     {screen === "round" && activeSession && activeRound && <>

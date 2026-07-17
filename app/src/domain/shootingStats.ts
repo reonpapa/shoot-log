@@ -5,6 +5,15 @@ export interface RoundStats {
   misses: number; expectedCartridgesUsed: number; cartridgesUsed: number; missDirections: Record<MissDirection, number>;
 }
 export interface SessionStats extends RoundStats { roundScores: number[]; }
+export interface StandStats {
+  standNo: number;
+  targets: number;
+  score: number;
+  firstShotHits: number;
+  secondShotHits: number;
+  misses: number;
+  missDirections: Record<MissDirection, number>;
+}
 const directions = (): Record<MissDirection, number> => ({ left: 0, center: 0, right: 0, unknown: 0 });
 
 export function calculateShotCartridges(shot: Shot, round: ShootingRound): number {
@@ -35,6 +44,33 @@ export function calculateSessionStats(session: ShootingSession): SessionStats {
     result.secondShotHits += stats.secondShotHits; result.misses += stats.misses; result.expectedCartridgesUsed += stats.expectedCartridgesUsed; result.cartridgesUsed += stats.cartridgesUsed;
     result.roundScores.push(stats.score);
     for (const direction of Object.keys(result.missDirections) as MissDirection[]) result.missDirections[direction] += stats.missDirections[direction];
+  }
+  return result;
+}
+
+export function calculateStandStats(session: ShootingSession): StandStats[] {
+  const result = [1, 2, 3, 4, 5].map((standNo) => ({
+    standNo,
+    targets: 0,
+    score: 0,
+    firstShotHits: 0,
+    secondShotHits: 0,
+    misses: 0,
+    missDirections: directions(),
+  }));
+
+  for (const round of session.rounds) {
+    for (const shot of round.shots) {
+      if (shot.finalResult === "skip") continue;
+      const stats = result[shot.standNo - 1];
+      stats.targets += 1;
+      if (shot.finalResult === "hit-on-first") { stats.score += 1; stats.firstShotHits += 1; }
+      if (shot.finalResult === "hit-on-second") { stats.score += 1; stats.secondShotHits += 1; }
+      if (shot.finalResult === "miss") {
+        stats.misses += 1;
+        stats.missDirections[shot.missDirection ?? "unknown"] += 1;
+      }
+    }
   }
   return result;
 }

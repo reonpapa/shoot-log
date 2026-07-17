@@ -21,6 +21,7 @@ export interface Shot {
   firstShotResult: ShotResult;
   secondShotResult: ShotResult;
   finalResult: FinalResult;
+  /** 失中したクレーの飛翔方向。散弾が外れた方向ではない。 */
   missDirection?: MissDirection;
   memo?: string;
 }
