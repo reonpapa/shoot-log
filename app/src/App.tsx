@@ -8,12 +8,14 @@ import { HistoryAnalysis } from "./components/HistoryAnalysis";
 import { createEmptyRound, type ShootingRound } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import { loadSessions, saveSessions, type StoredSession } from "./services/storage";
+import { addSessionToMasterData, loadMasterData, saveMasterData, type MasterData } from "./services/masterData";
 
 type Screen = "list" | "form" | "round" | "analysis" | "edit-session";
 const MAX_ROUNDS = 4;
 
 function App() {
   const [sessions, setSessions] = useState<StoredSession[]>(loadSessions);
+  const [masterData, setMasterData] = useState<MasterData>(loadMasterData);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [activeRoundId, setActiveRoundId] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("list");
@@ -22,11 +24,16 @@ function App() {
   const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
 
   useEffect(() => saveSessions(sessions), [sessions]);
+  useEffect(() => saveMasterData(masterData), [masterData]);
+  useEffect(() => {
+    setMasterData((current) => sessions.reduce((result, item) => addSessionToMasterData(result, item.session), current));
+  }, [sessions]);
   function startSession(details: SessionDraft) {
     const now = new Date().toISOString();
     const firstRound = createEmptyRound(1);
     const next: StoredSession = { id: crypto.randomUUID(), session: details, rounds: [firstRound], status: "draft", createdAt: now, updatedAt: now };
     setSessions((current) => [next, ...current]); setActiveSessionId(next.id); setActiveRoundId(firstRound.id); setScreen("round");
+    setMasterData((current) => addSessionToMasterData(current, details));
   }
   function openSession(id: string) {
     const found = sessions.find((item) => item.id === id); if (!found) return;
@@ -69,6 +76,7 @@ function App() {
     if (!activeSessionId || !activeSession) return;
     const returnScreen: Screen = activeSession.status === "completed" ? "analysis" : "round";
     setSessions((current) => current.map((item) => item.id === activeSessionId ? { ...item, session: details, updatedAt: new Date().toISOString() } : item));
+    setMasterData((current) => addSessionToMasterData(current, details));
     setScreen(returnScreen);
   }
   function deleteSession(id: string) {
@@ -78,10 +86,10 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.3.2</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.3.3</p></header>
     {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} onCreate={() => setScreen("form")} onOpen={openSession} onDelete={deleteSession} /></>}
-    {screen === "form" && <><button className="back-button" onClick={() => setScreen("list")}>← 履歴へ戻る</button><SessionForm onStart={startSession} /></>}
-    {screen === "edit-session" && activeSession && <><button className="back-button" onClick={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")}>← キャンセル</button><SessionForm initialValue={activeSession.session} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onStart={editSessionDetails} /></>}
+    {screen === "form" && <><button className="back-button" onClick={() => setScreen("list")}>← 履歴へ戻る</button><SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} onStart={startSession} /></>}
+    {screen === "edit-session" && activeSession && <><button className="back-button" onClick={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")}>← キャンセル</button><SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onStart={editSessionDetails} /></>}
     {screen === "round" && activeSession && activeRound && <>
       <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length}ラウンド</span><strong>{activeStats?.score} / {activeStats?.targets}　実包 {activeStats?.cartridgesUsed}発</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>基本情報を編集</button><button onClick={returnToList}>履歴へ戻る</button><button className="complete-button" onClick={completeSession}>セッション完了</button></div></section>
       <nav className="round-tabs" aria-label="ラウンド選択">{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}</nav>
