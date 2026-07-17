@@ -11,12 +11,14 @@ interface Props {
   submitLabel?: string;
   rangeNames?: string[];
   ammunitionNames?: string[];
+  onCancel: () => void;
+  cancelLabel?: string;
 }
 const today = () => new Date().toLocaleDateString("sv-SE");
 
 const weatherOptions = ["晴れ", "薄曇り", "曇り", "小雨", "雨", "雪", "霧"];
 
-export function SessionForm({ onStart, initialValue, title = "新しい射撃", kicker = "NEW SESSION", submitLabel = "セッション開始", rangeNames = [], ammunitionNames = [] }: Props) {
+export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル", initialValue, title = "新しい射撃", kicker = "NEW SESSION", submitLabel = "セッション開始", rangeNames = [], ammunitionNames = [] }: Props) {
   const [form, setForm] = useState<SessionDraft>(initialValue ?? { date: today(), rangeName: "", discipline: "trap", ammunitionName: "", weather: "", memo: "" });
   const [newRange, setNewRange] = useState(rangeNames.length === 0);
   const [newAmmunition, setNewAmmunition] = useState(ammunitionNames.length === 0);
@@ -35,7 +37,7 @@ export function SessionForm({ onStart, initialValue, title = "新しい射撃", 
       <label><span>実包</span>{newAmmunition ? <div className="master-new"><input required placeholder="例：Fiocchi TT TWO" value={form.ammunitionName} onChange={(e) => update("ammunitionName", e.target.value)} />{ammunitionNames.length > 0 && <button type="button" onClick={() => { setNewAmmunition(false); update("ammunitionName", ammunitionNames[0] ?? ""); }}>選択に戻る</button>}</div> : <select required value={form.ammunitionName} onChange={(e) => { if (e.target.value === "__new__") { setNewAmmunition(true); update("ammunitionName", ""); } else update("ammunitionName", e.target.value); }}><option value="" disabled>選択してください</option>{ammunitionNames.map((name) => <option key={name}>{name}</option>)}<option value="__new__">＋ 新しい実包を登録</option></select>}</label>
       <label><span>天候</span><select value={form.weather} onChange={(e) => update("weather", e.target.value)}><option value="">未選択</option>{weatherOptions.map((weather) => <option key={weather}>{weather}</option>)}{form.weather && !weatherOptions.includes(form.weather) && <option>{form.weather}</option>}</select></label>
       <label className="wide"><span>メモ</span><textarea rows={3} placeholder="任意" value={form.memo} onChange={(e) => update("memo", e.target.value)} /></label>
-      <button className="primary-button wide" type="submit">{submitLabel}</button>
+      <div className="form-actions wide"><button className="form-cancel-button" type="button" onClick={onCancel}>{cancelLabel}</button><button className="primary-button" type="submit">{submitLabel}</button></div>
     </form>
   </section>;
 }
