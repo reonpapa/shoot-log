@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FireMode, ShootingRound, StandNo } from "../domain/shooting";
 import { changeRoundStartStand, changeShotStand } from "../domain/shooting";
 import { applyShotInput, getShotInput, type ShotInput } from "../domain/shootingInput";
@@ -21,17 +21,19 @@ const scoreLabels: Record<ShotInput, string> = {
 
 export function RoundInput({ round, onChange }: Props) {
   const stats = calculateRoundStats(round);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() => {
+    const firstEmpty = round.shots.findIndex((shot) => shot.finalResult === "skip");
+    return firstEmpty >= 0 ? firstEmpty : 0;
+  });
   const activeCellRef = useRef<HTMLButtonElement>(null);
   const activeShot = round.shots[activeIndex] ?? round.shots[0];
   const visibleInputs = round.fireMode === "single" ? inputs.filter((item) => item.value !== "hit-on-second") : inputs;
 
-  useEffect(() => {
-    const firstEmpty = round.shots.findIndex((shot) => shot.finalResult === "skip");
-    setActiveIndex(firstEmpty >= 0 ? firstEmpty : 0);
-  }, [round.id]);
-
   useEffect(() => { activeCellRef.current?.scrollIntoView({ block: "nearest", inline: "center" }); }, [activeIndex]);
+
+  const updateShot = useCallback((input: ShotInput) => {
+    onChange({ ...round, shots: round.shots.map((shot, index) => index === activeIndex ? applyShotInput(shot, input) : shot) });
+  }, [activeIndex, onChange, round]);
 
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
@@ -52,11 +54,7 @@ export function RoundInput({ round, onChange }: Props) {
     }
     window.addEventListener("keydown", keydown);
     return () => window.removeEventListener("keydown", keydown);
-  }, [activeIndex, round]);
-
-  function updateShot(input: ShotInput) {
-    onChange({ ...round, shots: round.shots.map((shot, index) => index === activeIndex ? applyShotInput(shot, input) : shot) });
-  }
+  }, [activeIndex, round, updateShot]);
 
   function changeFireMode(fireMode: FireMode) {
     if (fireMode === round.fireMode) return;

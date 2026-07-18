@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { calculateRoundStats, calculateSessionStats, calculateStandStats } from "../domain/shootingStats";
 import type { FireMode } from "../domain/shooting";
 import type { StoredSession } from "../services/storage";
@@ -17,14 +17,14 @@ export function HistoryAnalysis({ sessions }: Props) {
   const rangeOptions = [...new Set(completed.map((item) => item.session.rangeName))].sort((a, b) => a.localeCompare(b, "ja"));
   const ammunitionOptions = [...new Set(completed.map((item) => item.session.ammunitionName))].sort((a, b) => a.localeCompare(b, "ja"));
 
-  const filtered = useMemo(() => {
+  const filtered = (() => {
     const bySession = completed
       .filter((item) => rangeName === "all" || item.session.rangeName === rangeName)
       .filter((item) => ammunitionName === "all" || item.session.ammunitionName === ammunitionName)
       .sort((a, b) => b.session.date.localeCompare(a.session.date));
     const limited = period === "all" ? bySession : bySession.slice(0, Number(period));
     return limited.map((item) => ({ ...item, rounds: fireMode === "all" ? item.rounds : item.rounds.filter((round) => round.fireMode === fireMode) })).filter((item) => item.rounds.length > 0).reverse();
-  }, [completed, rangeName, ammunitionName, fireMode, period]);
+  })();
 
   if (completed.length < 2) return null;
   const rounds = filtered.flatMap((item) => item.rounds);

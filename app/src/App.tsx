@@ -113,7 +113,7 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.6.2</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.7.0</p></header>
     {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} onBack={() => setScreen("list")} onImport={importBackup} />}
@@ -122,7 +122,7 @@ function App() {
     {screen === "round" && activeSession && activeRound && <>
       <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length}ラウンド</span><strong>{activeStats?.score} / {activeStats?.targets}　実包 {activeStats?.cartridgesUsed}発</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>基本情報を編集</button><button onClick={returnToList}>履歴へ戻る</button><button className="complete-button" onClick={completeSession}>セッション完了</button></div></section>
       <nav className="round-tabs" aria-label="ラウンド選択">{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}</nav>
-      <RoundInput round={activeRound} onChange={updateRound} />
+      <RoundInput key={activeRound.id} round={activeRound} onChange={updateRound} />
     </>}
     {screen === "analysis" && activeSession && <SessionAnalysis session={activeSession} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} onSaveReview={saveReview} />}
   </main>;
