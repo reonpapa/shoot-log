@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import "./components/AppShell.css";
 import { RoundInput } from "./components/RoundInput";
@@ -9,7 +9,6 @@ import { HistoryAnalysis } from "./components/HistoryAnalysis";
 import { MasterDataManager, type MasterKind } from "./components/MasterDataManager";
 import { DataManagement } from "./components/DataManagement";
 import { AccountSettings } from "./components/AccountSettings";
-import { AmmunitionLedger } from "./components/AmmunitionLedger";
 import { PermitCountdown } from "./components/PermitCountdown";
 import { PermitManager } from "./components/PermitManager";
 import { PwaStatus } from "./components/PwaStatus";
@@ -24,8 +23,10 @@ import type { AmmunitionLedgerData } from "./domain/ammunition";
 import { useCloudSync } from "./hooks/useCloudSync";
 import type { LocalDataSet } from "./services/cloudSync";
 
-type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "ammunition" | "permit";
+type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "privacy" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
+const PrivacyPolicy = lazy(() => import("./components/PrivacyPolicy"));
+const AmmunitionLedger = lazy(() => import("./components/AmmunitionLedger").then((module) => ({ default: module.AmmunitionLedger })));
 
 function App() {
   const [sessions, setSessions] = useState<StoredSession[]>(loadSessions);
@@ -44,7 +45,7 @@ function App() {
   const activeRound = activeSession?.rounds.find((round) => round.id === activeRoundId) ?? activeSession?.rounds[0] ?? null;
   const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
   const signedIn = cloudSync.view.phase !== "signed-out" && !!cloudSync.view.email;
-  const displayedScreen: Screen = cloudSync.passwordRecovery || !signedIn ? "account" : screen;
+  const displayedScreen: Screen = cloudSync.passwordRecovery || (!signedIn && screen !== "privacy") ? "account" : screen;
 
   useEffect(() => saveSessions(sessions), [sessions]);
   useEffect(() => saveMasterData(masterData), [masterData]);
@@ -160,13 +161,14 @@ function App() {
   }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.3.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.4.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {displayedScreen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
-    {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} passwordRecovery={cloudSync.passwordRecovery} onBack={() => setScreen("list")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onDeleteAccount={cloudSync.deleteAccount} />}
-    {displayedScreen === "ammunition" && <AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
+    {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} passwordRecovery={cloudSync.passwordRecovery} onBack={() => setScreen("list")} onPrivacy={() => setScreen("privacy")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onDeleteAccount={cloudSync.deleteAccount} />}
+    {displayedScreen === "privacy" && <Suspense fallback={<p>プライバシーポリシーを読み込んでいます…</p>}><PrivacyPolicy onBack={() => setScreen("account")} /></Suspense>}
+    {displayedScreen === "ammunition" && <Suspense fallback={<p>実包管理を読み込んでいます…</p>}><AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} /></Suspense>}
     {displayedScreen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {displayedScreen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}
     {displayedScreen === "edit-session" && activeSession && <SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onCancel={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")} onStart={editSessionDetails} />}

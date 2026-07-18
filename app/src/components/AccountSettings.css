@@ -5,4 +5,6 @@
 .account-settings > header button { min-height: 41px; padding: 0 13px; border: 1px solid #8885; border-radius: 9px; background: transparent; white-space: nowrap; }
 .account-settings > aside { padding: 15px 18px; border: 1px solid #8884; border-radius: 11px; }
 .account-settings > aside p { margin: 4px 0 0; font-size: .74rem; opacity: .62; }
+.account-legal-links { display: flex; justify-content: center; gap: 12px; padding: 5px 0; }
+.account-legal-links button { padding: 0; border: 0; background: transparent; color: #6d3bd1; font-size: .72rem; text-decoration: underline; }
 @media (max-width: 700px) { .account-settings, .account-settings > * { width: 100%; min-width: 0; }.account-settings > header { flex-direction: column; padding: 18px 16px; } }
