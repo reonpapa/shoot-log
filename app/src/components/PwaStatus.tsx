@@ -43,10 +43,13 @@ export function PwaStatus() {
     if (import.meta.env.PROD && "serviceWorker" in navigator) {
       navigator.serviceWorker.addEventListener("controllerchange", reloadAfterUpdate);
       const baseUrl = import.meta.env.BASE_URL;
-      navigator.serviceWorker.register(`${baseUrl}sw.js`, { scope: baseUrl }).then((registration) => {
+      navigator.serviceWorker.register(`${baseUrl}sw.js`, { scope: baseUrl, updateViaCache: "none" }).then((registration) => {
         if (disposed) return;
         registrationRef.current = registration;
-        if (registration.waiting && navigator.serviceWorker.controller) setNotice("update");
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          reloadAfterUpdateRef.current = true;
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
         if (registration.installing) watchWorker(registration.installing);
         registration.addEventListener("updatefound", () => {
           if (registration.installing) watchWorker(registration.installing);

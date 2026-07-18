@@ -22,18 +22,20 @@ function offlineServiceWorker(baseUrl: string): Plugin {
       ];
       const precache = [...new Set(files)];
       const source = `
-const CACHE_NAME = "shoot-log-v2.7.3";
+const CACHE_NAME = "shoot-log-v2.7.4";
 const BASE_URL = ${JSON.stringify(baseUrl)};
 const PRECACHE = ${JSON.stringify(precache)};
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)));
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => Promise.allSettled(PRECACHE.map((url) => cache.add(url)))),
+  );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((names) => Promise.all(names.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))))
+      .then((names) => Promise.all(names.filter((name) => name.startsWith("shoot-log-") && name !== CACHE_NAME).map((name) => caches.delete(name))))
       .then(() => self.clients.claim()),
   );
 });
@@ -56,7 +58,9 @@ self.addEventListener("fetch", (event) => {
           void caches.open(CACHE_NAME).then((cache) => cache.put(BASE_URL + "index.html", copy));
         }
         return response;
-      }).catch(() => caches.open(CACHE_NAME).then((cache) => cache.match(BASE_URL + "index.html"))),
+      }).catch(() => caches.open(CACHE_NAME).then(async (cache) =>
+        (await cache.match(BASE_URL + "index.html")) || (await cache.match(BASE_URL)) || Response.error()
+      )),
     );
     return;
   }
