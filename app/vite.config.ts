@@ -1,25 +1,29 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
-function offlineServiceWorker(): Plugin {
+const base = process.env.VITE_BASE_PATH ?? "/";
+
+function offlineServiceWorker(baseUrl: string): Plugin {
+  const withBase = (path: string) => `${baseUrl}${path}`;
   return {
     name: "shoot-log-offline-service-worker",
     apply: "build",
     generateBundle(_options, bundle) {
       const files = [
-        "/",
-        "/index.html",
-        "/manifest.webmanifest",
-        "/favicon.svg",
-        "/apple-touch-icon.png",
-        "/pwa-192x192.png",
-        "/pwa-512x512.png",
-        "/pwa-maskable-512x512.png",
-        ...Object.keys(bundle).map((fileName) => `/${fileName}`),
+        baseUrl,
+        withBase("index.html"),
+        withBase("manifest.webmanifest"),
+        withBase("favicon.svg"),
+        withBase("apple-touch-icon.png"),
+        withBase("pwa-192x192.png"),
+        withBase("pwa-512x512.png"),
+        withBase("pwa-maskable-512x512.png"),
+        ...Object.keys(bundle).map(withBase),
       ];
       const precache = [...new Set(files)];
       const source = `
-const CACHE_NAME = "shoot-log-v1.3.0";
+const CACHE_NAME = "shoot-log-v1.3.1";
+const BASE_URL = ${JSON.stringify(baseUrl)};
 const PRECACHE = ${JSON.stringify(precache)};
 
 self.addEventListener("install", (event) => {
@@ -45,7 +49,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(caches.match("/index.html").then((cached) => cached || fetch(request)));
+    event.respondWith(caches.match(BASE_URL + "index.html").then((cached) => cached || fetch(request)));
     return;
   }
 
@@ -66,5 +70,6 @@ self.addEventListener("fetch", (event) => {
 }
 
 export default defineConfig({
-  plugins: [react(), offlineServiceWorker()],
+  base,
+  plugins: [react(), offlineServiceWorker(base)],
 });
