@@ -113,7 +113,7 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.7.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.7.2</p></header>
     {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} onBack={() => setScreen("list")} onImport={importBackup} />}
