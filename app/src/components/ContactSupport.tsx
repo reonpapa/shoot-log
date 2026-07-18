@@ -4,7 +4,7 @@ interface Props {
   onBack: () => void;
 }
 
-const APP_VERSION = "2.6.0";
+const APP_VERSION = "2.6.1";
 
 function createInquiryHref(): string {
   const subject = "[Shoot Log] お問い合わせ";
@@ -44,7 +44,6 @@ export default function ContactSupport({ onBack }: Props) {
       <section className="contact-primary">
         <div><h3>メールで問い合わせる</h3><p>下のボタンを押すと、確認に必要な項目を入力したメール作成画面が開きます。</p></div>
         <a className="contact-mail-button" href={createInquiryHref()}>問い合わせメールを作成</a>
-        <p>送信先：<a href="mailto:reonpapa@gmail.com">reonpapa@gmail.com</a></p>
       </section>
 
       <section><h3>お問い合わせ前にお試しください</h3><ul>
