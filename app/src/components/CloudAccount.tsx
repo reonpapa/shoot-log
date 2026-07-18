@@ -171,7 +171,7 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
 
   return <article className="cloud-account">
     <div className="cloud-account-heading">
-      <div><span>CLOUD SYNC</span><h3>Mac・iPhoneのデータ同期</h3><p>端末内へ保存したあと、Supabaseへ自動同期します。圏外でも入力は継続できます。</p></div>
+      <div><span>CLOUD SYNC</span><h3>複数端末のデータ同期</h3><p>同じアカウントでログインしたパソコンやスマートフォン間で、記録を自動同期します。圏外でも入力でき、通信復帰後にクラウドへ同期します。</p></div>
       <i className={`cloud-state ${view.phase}`}>{view.phase === "synced" ? "同期済み" : view.phase === "syncing" ? "同期中" : view.phase === "offline" ? "オフライン" : view.phase === "error" ? "要確認" : signedIn ? "接続中" : "未接続"}</i>
     </div>
 
@@ -216,7 +216,7 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
         <label>パスワード<input required name="password" minLength={8} type="password" autoComplete={authMode === "sign-in" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
         {authMode === "sign-up" && <label>パスワード（確認）<input required name="password-confirmation" minLength={8} type="password" autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} /></label>}
         {authMode === "sign-up" && <div className="auth-legal-consent"><label><input required type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} /><span>内容を確認し、同意します。</span></label><nav aria-label="登録条件"><button type="button" onClick={onTerms}>利用規約・免責事項を読む</button><button type="button" onClick={onPrivacy}>プライバシーポリシーを読む</button></nav></div>}
-        <div className="cloud-auth-submit"><button disabled={busy || (authMode === "sign-up" && !acceptedTerms)} className="primary-button" type="submit">{authMode === "sign-in" ? "ログイン" : "アカウントを作成"}</button><small>パスワードはMac・iPhoneのパスワード管理に保存できます。</small></div>
+        <div className="cloud-auth-submit"><button disabled={busy || (authMode === "sign-up" && !acceptedTerms)} className="primary-button" type="submit">{authMode === "sign-in" ? "ログイン" : "アカウントを作成"}</button><small>パスワードは端末やブラウザーのパスワード管理に保存できます。</small></div>
       </form>
       {authMode === "sign-in" && <button type="button" className="forgot-password-link" onClick={() => changeAuthMode("forgot-password")}>パスワードを忘れた場合</button>}
     </>}
