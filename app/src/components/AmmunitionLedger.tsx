@@ -13,6 +13,7 @@ interface Props {
 }
 
 const today = () => new Date().toLocaleDateString("sv-SE");
+const currentYear = () => String(new Date().getFullYear());
 
 function categoryTitle(family: AmmunitionFamily): string { return family === "rifle" ? "ライフル実包" : "散弾実包"; }
 
@@ -24,7 +25,17 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   const [quantity, setQuantity] = useState("");
   const [firearmId, setFirearmId] = useState("");
   const [application, setApplication] = useState("");
+  const [printMode, setPrintMode] = useState<"year" | "custom" | "all">("year");
+  const [printYear, setPrintYear] = useState(currentYear());
+  const [printFrom, setPrintFrom] = useState(`${currentYear()}-01-01`);
+  const [printTo, setPrintTo] = useState(`${currentYear()}-12-31`);
   const rows = useMemo(() => buildLedgerRows(data, sessions), [data, sessions]);
+  const yearOptions = [...new Set([currentYear(), ...rows.map((row) => row.date.slice(0, 4))])].sort((a, b) => b.localeCompare(a));
+  const printStart = printMode === "year" ? `${printYear}-01-01` : printMode === "custom" ? printFrom : "";
+  const printEnd = printMode === "year" ? `${printYear}-12-31` : printMode === "custom" ? printTo : "";
+  const printableRows = rows.filter((row) => (!printStart || row.date >= printStart) && (!printEnd || row.date <= printEnd));
+  const carriedRow = printStart ? rows.filter((row) => row.date < printStart).at(-1) : undefined;
+  const printPeriod = printMode === "all" ? "全期間" : printMode === "year" ? `${printYear}年` : `${printFrom} ～ ${printTo}`;
   const latest = rows.at(-1);
   const trackedSessions = sessions.filter((item) => item.status === "completed" && (!data.trackingStartDate || item.session.date >= data.trackingStartDate));
   const unmapped = [...new Set(trackedSessions.filter((item) => !data.productLinks.some((link) => link.ammunitionName === item.session.ammunitionName)).map((item) => item.session.ammunitionName))];
@@ -44,6 +55,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   return <section className="ammo-ledger">
     <header className="ammo-ledger-header"><div><p className="eyebrow">AMMUNITION LEDGER</p><h2>実包管理帳簿</h2><p>神奈川県様式に合わせて、受・払・残を記録します。</p></div><div><button onClick={onBack}>履歴へ戻る</button><button className="primary-button" onClick={() => window.print()}>帳簿を印刷 / PDF保存</button></div></header>
     <div className="ammo-summary"><article><span>残弾合計</span><strong className={(latest?.totalAfter ?? 0) < 0 ? "negative" : ""}>{latest?.totalAfter ?? 0}<small> 発</small></strong></article>{data.categories.map((category) => <article key={category.id}><span>{category.name}</span><strong className={(latest?.balanceAfter[category.id] ?? 0) < 0 ? "negative" : ""}>{latest?.balanceAfter[category.id] ?? 0}<small> 発</small></strong></article>)}</div>
+    <section className="print-range"><strong>PDF出力範囲</strong><label><input checked={printMode === "year"} name="print-mode" type="radio" onChange={() => setPrintMode("year")} />年指定</label><select disabled={printMode !== "year"} value={printYear} onChange={(event) => setPrintYear(event.target.value)}>{yearOptions.map((year) => <option key={year}>{year}</option>)}</select><label><input checked={printMode === "custom"} name="print-mode" type="radio" onChange={() => setPrintMode("custom")} />期間指定</label><input disabled={printMode !== "custom"} type="date" value={printFrom} onChange={(event) => setPrintFrom(event.target.value)} /><span>～</span><input disabled={printMode !== "custom"} type="date" value={printTo} onChange={(event) => setPrintTo(event.target.value)} /><label><input checked={printMode === "all"} name="print-mode" type="radio" onChange={() => setPrintMode("all")} />全期間</label><small>{printableRows.length}件を出力</small></section>
     {(unmapped.length > 0 || noFirearm > 0) && <aside className="ammo-warning"><strong>台帳へ反映するための設定があります</strong>{unmapped.length > 0 && <span>未分類の実包：{unmapped.join("、")}</span>}{noFirearm > 0 && <span>使用銃未設定の完了セッション：{noFirearm}件</span>}<button onClick={() => setTab("settings")}>基本設定を開く</button></aside>}
     <nav className="ammo-tabs"><button className={tab === "ledger" ? "selected" : ""} onClick={() => setTab("ledger")}>入出庫・台帳</button><button className={tab === "settings" ? "selected" : ""} onClick={() => setTab("settings")}>銃・実包区分の設定</button></nav>
     {tab === "ledger" ? <>
@@ -58,7 +70,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
       </form>
       <LedgerTable data={data} rows={rows} onDelete={deleteEntry} />
     </> : <LedgerSettings data={data} ammunitionNames={ammunitionNames} onChange={onChange} />}
-    <PrintLedger data={data} rows={rows} />
+    <PrintLedger carryDate={printStart} carryBalances={carriedRow?.balanceAfter} data={data} period={printPeriod} rows={printableRows} />
   </section>;
 }
 
@@ -87,8 +99,22 @@ function LedgerTable({ data, rows, onDelete }: { data: AmmunitionLedgerData; row
   return <div className="ledger-table-wrap"><table className="ledger-table"><thead><tr><th>年月日</th><th>使用銃</th><th>適用</th><th>実包区分</th><th>受</th><th>払</th><th>残</th><th>合計</th><th /></tr></thead><tbody>{rows.length === 0 ? <tr><td colSpan={9}>台帳記録がありません。</td></tr> : [...rows].reverse().map((row) => { const firearm = row.firearmId ? firearms.get(row.firearmId) : undefined; return <tr key={row.id}><td>{row.date}</td><td>{firearm ? <>{firearm.name}<small>{firearm.identifier}</small></> : "—"}</td><td>{row.application}{row.source === "session" && <small>射撃履歴から自動反映</small>}</td><td>{categories.get(row.categoryId)?.name ?? "不明"}</td><td>{row.signedQuantity > 0 ? row.quantity : ""}</td><td>{row.signedQuantity < 0 ? row.quantity : ""}</td><td>{row.balanceAfter[row.categoryId]}</td><td>{row.totalAfter}</td><td>{row.source === "manual" && <button onClick={() => onDelete(row.id)}>削除</button>}</td></tr>; })}</tbody></table></div>;
 }
 
-function PrintLedger({ data, rows }: { data: AmmunitionLedgerData; rows: Rows }) {
-  const chunks = Array.from({ length: Math.ceil(data.categories.length / 3) }, (_, index) => data.categories.slice(index * 3, index * 3 + 3));
+type PrintItem = { kind: "carry"; date: string; balances: Record<string, number> } | { kind: "entry"; row: Rows[number] };
+
+function PrintLedger({ data, rows, carryDate, carryBalances, period }: { data: AmmunitionLedgerData; rows: Rows; carryDate: string; carryBalances?: Record<string, number>; period: string }) {
+  const categoryChunks = Array.from({ length: Math.ceil(data.categories.length / 3) }, (_, index) => data.categories.slice(index * 3, index * 3 + 3));
   const firearms = new Map(data.firearms.map((item) => [item.id, item]));
-  return <div className="print-ledger">{chunks.map((categories, page) => <section className="print-page" key={page}><h1>実包管理帳簿</h1><table><thead><tr><th rowSpan={3}>年</th><th rowSpan={3}>月</th><th rowSpan={3}>日</th><th rowSpan={3}>使用銃<br />（銃番号等）</th><th rowSpan={3}>適用</th>{categories.map((item) => <th colSpan={3} key={item.id}>{categoryTitle(item.family)}<br />適合実包（{item.name}）</th>)}<th rowSpan={3}>残弾合計<br />（個）</th></tr><tr>{categories.map((item) => <th colSpan={3} key={item.id}>受　　払　　残</th>)}</tr><tr>{categories.flatMap((item) => [<th key={`${item.id}-in`}>受</th>, <th key={`${item.id}-out`}>払</th>, <th key={`${item.id}-balance`}>残</th>])}</tr></thead><tbody>{rows.map((row) => { const [year, month, day] = row.date.split("-"); const firearm = row.firearmId ? firearms.get(row.firearmId) : undefined; return <tr key={row.id}><td>{Number(year)}</td><td>{Number(month)}</td><td>{Number(day)}</td><td>{firearm ? `${firearm.name} ${firearm.identifier}` : ""}</td><td>{row.application}</td>{categories.flatMap((item) => item.id === row.categoryId ? [<td key={`${item.id}-in`}>{row.signedQuantity > 0 ? row.quantity : ""}</td>, <td key={`${item.id}-out`}>{row.signedQuantity < 0 ? row.quantity : ""}</td>, <td key={`${item.id}-balance`}>{row.balanceAfter[item.id]}</td>] : [<td key={`${item.id}-in`} />, <td key={`${item.id}-out`} />, <td key={`${item.id}-balance`}>{row.balanceAfter[item.id] || ""}</td>])}<td>{row.totalAfter}</td></tr>; })}</tbody></table><footer>散弾実包は散弾・単弾の別を記載。サボット弾、スラッグ弾は単弾で記載。</footer></section>)}</div>;
+  const items: PrintItem[] = [...(carryDate && carryBalances ? [{ kind: "carry" as const, date: carryDate, balances: carryBalances }] : []), ...rows.map((row) => ({ kind: "entry" as const, row }))];
+  const rowPages = Array.from({ length: Math.max(1, Math.ceil(items.length / 12)) }, (_, index) => items.slice(index * 12, index * 12 + 12));
+  return <div className="print-ledger">{categoryChunks.flatMap((categories, categoryPage) => rowPages.map((pageItems, rowPage) => <section className="print-page" key={`${categoryPage}-${rowPage}`}><div className="print-title"><h1>実包管理帳簿</h1><span>{period}</span></div><table><thead><tr><th rowSpan={3}>年</th><th rowSpan={3}>月</th><th rowSpan={3}>日</th><th rowSpan={3}>使用銃<br />（銃番号等）</th><th rowSpan={3}>適用</th>{categories.map((item) => <th colSpan={3} key={item.id}>{categoryTitle(item.family)}<br />適合実包（{item.name}）</th>)}<th rowSpan={3}>残弾合計<br />（個）</th></tr><tr>{categories.map((item) => <th colSpan={3} key={item.id}>受　　払　　残</th>)}</tr><tr>{categories.flatMap((item) => [<th key={`${item.id}-in`}>受</th>, <th key={`${item.id}-out`}>払</th>, <th key={`${item.id}-balance`}>残</th>])}</tr></thead><tbody>{pageItems.map((item) => {
+    if (item.kind === "carry") {
+      const [year, month, day] = item.date.split("-");
+      const total = Object.values(item.balances).reduce((sum, value) => sum + value, 0);
+      return <tr key="carry"><td>{Number(year)}</td><td>{Number(month)}</td><td>{Number(day)}</td><td /><td>繰越残弾</td>{categories.flatMap((category) => [<td key={`${category.id}-in`} />, <td key={`${category.id}-out`} />, <td key={`${category.id}-balance`}>{item.balances[category.id] || ""}</td>])}<td>{total}</td></tr>;
+    }
+    const row = item.row;
+    const [year, month, day] = row.date.split("-");
+    const firearm = row.firearmId ? firearms.get(row.firearmId) : undefined;
+    return <tr key={row.id}><td>{Number(year)}</td><td>{Number(month)}</td><td>{Number(day)}</td><td>{firearm ? `${firearm.name} ${firearm.identifier}` : ""}</td><td>{row.application}</td>{categories.flatMap((category) => category.id === row.categoryId ? [<td key={`${category.id}-in`}>{row.signedQuantity > 0 ? row.quantity : ""}</td>, <td key={`${category.id}-out`}>{row.signedQuantity < 0 ? row.quantity : ""}</td>, <td key={`${category.id}-balance`}>{row.balanceAfter[category.id]}</td>] : [<td key={`${category.id}-in`} />, <td key={`${category.id}-out`} />, <td key={`${category.id}-balance`}>{row.balanceAfter[category.id] || ""}</td>])}<td>{row.totalAfter}</td></tr>;
+  })}</tbody></table><footer>散弾実包は散弾・単弾の別を記載。サボット弾、スラッグ弾は単弾で記載。</footer></section>))}</div>;
 }
