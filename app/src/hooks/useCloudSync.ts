@@ -66,8 +66,22 @@ function errorMessage(error: unknown): string {
   return "クラウド同期に失敗しました。";
 }
 
+function appRedirectUrl(passwordRecovery = false): string {
+  const url = new URL(import.meta.env.BASE_URL, window.location.origin);
+  if (passwordRecovery) url.searchParams.set("password-recovery", "1");
+  return url.toString();
+}
+
+function clearPasswordRecoveryUrl(): void {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("password-recovery");
+  url.hash = "";
+  window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+}
+
 export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCloudData }: Options) {
   const [view, setView] = useState<CloudSyncView>({ phase: "signed-out", email: "", message: "クラウド同期を利用するにはログインしてください。", lastSyncedAt: "" });
+  const [passwordRecovery, setPasswordRecovery] = useState(() => new URLSearchParams(window.location.search).get("password-recovery") === "1");
   const dataRef = useRef<LocalDataSet>({ sessions, masterData, ammunitionLedger });
   const userRef = useRef<User | null>(null);
   const revisionRef = useRef(0);
@@ -246,8 +260,9 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
       if (!active || !data.session?.user) return;
       void initializeForUser(data.session.user);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
+      if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
       if (session?.user) {
         void initializeForUser(session.user);
       } else {
@@ -292,7 +307,7 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const emailRedirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
+    const emailRedirectTo = appRedirectUrl();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -307,7 +322,30 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     await pushCurrent();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    setPasswordRecovery(false);
   }, [pushCurrent]);
+
+  const sendPasswordReset = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: appRedirectUrl(true),
+    });
+    if (error) throw error;
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+      current_password: currentPassword,
+    });
+    if (error) throw error;
+  }, []);
+
+  const completePasswordRecovery = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    setPasswordRecovery(false);
+    clearPasswordRecoveryUrl();
+  }, []);
 
   const syncNow = useCallback(async () => {
     await pullLatest();
@@ -328,5 +366,5 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     if (user && meta?.userId === user.id) writeMeta({ ...meta, deletedSessions });
   }, []);
 
-  return { view, signIn, signUp, signOut, syncNow, deleteAccount, recordSessionDeletion };
+  return { view, passwordRecovery, signIn, signUp, signOut, sendPasswordReset, changePassword, completePasswordRecovery, syncNow, deleteAccount, recordSessionDeletion };
 }

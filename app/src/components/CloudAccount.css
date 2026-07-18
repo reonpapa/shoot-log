@@ -26,6 +26,20 @@
 .cloud-signed-in { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
 .cloud-signed-in > div:first-child { display: grid; gap: 4px; }
 .cloud-signed-in small { font-size: .68rem; opacity: .58; }
+.cloud-security-settings { padding-top: 12px; border-top: 1px solid #8883; }
+.settings-link, .forgot-password-link { justify-self: start; padding: 0; border: 0; background: transparent; color: #6d3bd1; font-size: .72rem; text-decoration: underline; }
+.password-panel { display: grid; gap: 12px; padding: 16px; border: 1px solid #6d3bd155; border-radius: 10px; background: #6d3bd10b; }
+.cloud-security-settings .password-panel { margin-top: 12px; }
+.password-panel > div:first-child { display: grid; gap: 4px; }
+.password-panel > div:first-child p { margin: 0; font-size: .74rem; opacity: .68; }
+.cloud-account .password-panel form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cloud-account .password-recovery-panel form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cloud-account .forgot-password-panel form { grid-template-columns: minmax(0, 1fr); }
+.password-panel-actions { display: flex; grid-column: 1 / -1; gap: 8px; align-items: center; }
+.password-panel-actions button { min-height: 41px; padding: 0 13px; border: 1px solid #8885; border-radius: 9px; background: transparent; }
+.password-panel-actions .primary-button { border: 0; background: #6d3bd1; color: #fff; }
+.password-panel-actions button:disabled { cursor: wait; opacity: .52; }
+.forgot-password-link { margin-top: -6px; }
 .cloud-notice, .cloud-error { margin: 0; padding: 10px 12px; border-radius: 8px; font-size: .76rem; font-weight: 700; }
 .cloud-notice { background: #4a9b641c; color: #3f8a58; }
 .cloud-error { background: #c64f4f1c; color: #b44444; }
@@ -38,4 +52,4 @@
 .delete-confirmation .danger-button { justify-self: start; min-height: 41px; padding: 0 13px; border: 0; border-radius: 9px; background: #b44444; color: #fff; }
 .delete-confirmation .danger-button:disabled { cursor: not-allowed; opacity: .42; }
 @media (prefers-color-scheme: dark) { .cloud-account input { background: #17161a; } }
-@media (max-width: 700px) { .cloud-account { padding: 19px; }.cloud-account-heading, .cloud-signed-in { align-items: stretch; flex-direction: column; }.cloud-account form { grid-template-columns: 1fr; }.cloud-account form .email-field, .cloud-account form .cloud-actions, .cloud-auth-submit { grid-column: 1; }.cloud-auth-submit { align-items: stretch; flex-direction: column; }.cloud-auth-submit button { width: 100%; }.cloud-actions { display: grid; grid-template-columns: 1fr 1fr; }.cloud-actions button { width: 100%; } }
+@media (max-width: 700px) { .cloud-account { padding: 19px; }.cloud-account-heading, .cloud-signed-in { align-items: stretch; flex-direction: column; }.cloud-account form, .cloud-account .password-panel form, .cloud-account .password-recovery-panel form { grid-template-columns: 1fr; }.cloud-account form .email-field, .cloud-account form .cloud-actions, .cloud-auth-submit, .password-panel-actions { grid-column: 1; }.cloud-auth-submit { align-items: stretch; flex-direction: column; }.cloud-auth-submit button { width: 100%; }.cloud-actions { display: grid; grid-template-columns: 1fr 1fr; }.cloud-actions button { width: 100%; }.password-panel-actions { display: grid; grid-template-columns: 1fr; }.password-panel-actions button { width: 100%; } }
