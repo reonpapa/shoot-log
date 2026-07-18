@@ -1,6 +1,6 @@
 # Cloud Sync
 
-Version 2.2.0 uses Supabase while retaining LocalStorage as the immediate, offline-capable store. Account settings include password-manager integration, authenticated password changes, and email password recovery. PWA updates use only the active version cache.
+Version 2.2.1 uses Supabase while retaining LocalStorage as the immediate, offline-capable store. Account settings include password-manager integration, authenticated password changes, and email password recovery. PWA updates use only the active version cache.
 
 ## Flow
 
