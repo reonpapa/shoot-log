@@ -9,6 +9,7 @@ interface Props {
   onBack: () => void;
   onPrivacy: () => void;
   onTerms: () => void;
+  onContact: () => void;
   onSignIn: (email: string, password: string) => Promise<void>;
   onSignUp: (email: string, password: string) => Promise<string>;
   onSignOut: () => Promise<void>;
@@ -19,7 +20,7 @@ interface Props {
   onDeleteAccount: () => Promise<void>;
 }
 
-export function AccountSettings({ cloud, passwordRecovery, onBack, onPrivacy, onTerms, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onDeleteAccount }: Props) {
+export function AccountSettings({ cloud, passwordRecovery, onBack, onPrivacy, onTerms, onContact, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onDeleteAccount }: Props) {
   const signedIn = cloud.phase !== "signed-out" && !!cloud.email;
   return <section className="account-settings">
     <header>
@@ -29,6 +30,6 @@ export function AccountSettings({ cloud, passwordRecovery, onBack, onPrivacy, on
     <InstallGuide initiallyOpen={!signedIn} />
     <CloudAccount view={cloud} passwordRecovery={passwordRecovery} onPrivacy={onPrivacy} onTerms={onTerms} onSignIn={onSignIn} onSignUp={onSignUp} onSignOut={onSignOut} onSendPasswordReset={onSendPasswordReset} onChangePassword={onChangePassword} onCompletePasswordRecovery={onCompletePasswordRecovery} onSync={onSync} onDeleteAccount={onDeleteAccount} />
     <aside><strong>端末内データについて</strong><p>射撃記録は端末内へ即時保存され、ログイン中はクラウドへ自動同期されます。JSONファイルの保存・復元は「バックアップ」画面で行います。</p></aside>
-    <nav className="account-legal-links" aria-label="運営情報"><button onClick={onTerms}>利用規約・免責事項</button><button onClick={onPrivacy}>プライバシーポリシー</button></nav>
+    <nav className="account-legal-links" aria-label="運営情報"><button onClick={onContact}>お問い合わせ</button><button onClick={onTerms}>利用規約・免責事項</button><button onClick={onPrivacy}>プライバシーポリシー</button></nav>
   </section>;
 }

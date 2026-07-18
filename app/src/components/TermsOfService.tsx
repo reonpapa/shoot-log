@@ -61,7 +61,7 @@ export default function TermsOfService({ onBack }: Props) {
 
       <section><h3>13. 準拠法・協議</h3><p>本規約は日本法に準拠します。本サービスに関して問題が生じた場合、利用者と運営者は誠実に協議して解決を図ります。本規約の一部が法令により無効となった場合でも、その他の条項は引き続き有効とします。</p></section>
 
-      <section className="terms-contact"><h3>14. 運営者・問い合わせ先</h3><dl><div><dt>運営者</dt><dd><a href="https://downhill62.hatenablog.com/" target="_blank" rel="noreferrer">ブログ「downhill62」管理人</a></dd></div><div><dt>メール</dt><dd><a href="mailto:reonpapa@gmail.com">reonpapa@gmail.com</a></dd></div></dl></section>
+      <section className="terms-contact"><h3>14. 運営者・問い合わせ先</h3><dl><div><dt>運営者</dt><dd><a href="https://downhill62.hatenablog.com/" target="_blank" rel="noreferrer">ブログ「downhill62」管理人</a></dd></div><div><dt>窓口</dt><dd>本アプリの「お問い合わせ」画面</dd></div></dl></section>
     </div>
   </article>;
 }

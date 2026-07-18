@@ -62,7 +62,7 @@ export default function PrivacyPolicy({ onBack }: Props) {
 
       <section><h3>10. 本ポリシーの変更</h3><p>サービス内容や法令等の変更に応じて、本ポリシーを改定することがあります。重要な変更は、本サービス内その他適切な方法でお知らせします。</p></section>
 
-      <section className="privacy-contact"><h3>11. 運営者・問い合わせ先</h3><dl><div><dt>運営者</dt><dd><a href="https://downhill62.hatenablog.com/" target="_blank" rel="noreferrer">ブログ「downhill62」管理人</a></dd></div><div><dt>メール</dt><dd><a href="mailto:reonpapa@gmail.com">reonpapa@gmail.com</a></dd></div></dl></section>
+      <section className="privacy-contact"><h3>11. 運営者・問い合わせ先</h3><dl><div><dt>運営者</dt><dd><a href="https://downhill62.hatenablog.com/" target="_blank" rel="noreferrer">ブログ「downhill62」管理人</a></dd></div><div><dt>窓口</dt><dd>本アプリの「お問い合わせ」画面</dd></div></dl></section>
     </div>
   </article>;
 }
