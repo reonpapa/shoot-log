@@ -3,8 +3,8 @@ import { calculateSessionStats } from "../domain/shootingStats";
 import { useState } from "react";
 import "./SessionList.css";
 
-interface Props { sessions: StoredSession[]; onCreate: () => void; onManage: () => void; onData: () => void; onOpen: (id: string) => void; onDelete: (id: string) => void; }
-export function SessionList({ sessions, onCreate, onManage, onData, onOpen, onDelete }: Props) {
+interface Props { sessions: StoredSession[]; onCreate: () => void; onManage: () => void; onData: () => void; onAmmunition: () => void; onOpen: (id: string) => void; onDelete: (id: string) => void; }
+export function SessionList({ sessions, onCreate, onManage, onData, onAmmunition, onOpen, onDelete }: Props) {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const drafts = sessions.filter((item) => item.status === "draft");
@@ -15,7 +15,7 @@ export function SessionList({ sessions, onCreate, onManage, onData, onOpen, onDe
   const currentPage = Math.min(page, totalPages);
   const visibleSessions = orderedSessions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   return <section className="session-list">
-    <header className="session-list-header"><div><p className="eyebrow">SESSIONS</p><h2>射撃履歴</h2></div><div className="session-list-actions"><button onClick={onData}>バックアップ</button><button onClick={onManage}>登録内容を管理</button><button className="primary-button" onClick={onCreate}>＋ 新しいセッション</button></div></header>
+    <header className="session-list-header"><div><p className="eyebrow">SESSIONS</p><h2>射撃履歴</h2></div><div className="session-list-actions"><button onClick={onData}>バックアップ</button><button onClick={onManage}>登録内容を管理</button><button className="ammo-ledger-button" onClick={onAmmunition}>実包管理</button><button className="primary-button" onClick={onCreate}>＋ 新しいセッション</button></div></header>
     {drafts.length > 0 && <button className="unfinished-alert" onClick={() => onOpen(drafts[0].id)}><strong>未完了セッション {drafts.length}件</strong><span>入力を続ける →</span></button>}
     {sessions.length === 0 ? <div className="empty-session"><p>まだ射撃記録がありません。</p><button onClick={onCreate}>最初のセッションを作成</button></div> :
       <div className="session-card-list">{visibleSessions.map((item) => {

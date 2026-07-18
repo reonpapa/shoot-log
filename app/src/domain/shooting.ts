@@ -10,6 +10,7 @@ export interface SessionDetails {
   rangeName: string;
   discipline: Discipline;
   ammunitionName: string;
+  firearmId?: string;
   weather: string;
   memo: string;
 }
