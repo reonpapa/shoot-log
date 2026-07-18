@@ -10,6 +10,7 @@ import { DataManagement } from "./components/DataManagement";
 import { AmmunitionLedger } from "./components/AmmunitionLedger";
 import { PermitCountdown } from "./components/PermitCountdown";
 import { PermitManager } from "./components/PermitManager";
+import { PwaStatus } from "./components/PwaStatus";
 import { createEmptyRound, type ShootingRound } from "./domain/shooting";
 import type { SessionReview } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
@@ -122,7 +123,8 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 1.2.0</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 1.3.0</p></header>
+    <PwaStatus />
     {screen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}

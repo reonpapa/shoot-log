@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Shoot Log - クレー射撃分析",
+  "short_name": "Shoot Log",
+  "description": "上達のためのクレー射撃分析・実包管理アプリ",
+  "lang": "ja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#17161a",
+  "theme_color": "#6d3bd1",
+  "categories": ["sports", "utilities"],
+  "icons": [
+    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/pwa-maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
