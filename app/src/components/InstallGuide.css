@@ -5,7 +5,7 @@
 .install-guide summary span { font-size: .62rem; font-weight: 900; letter-spacing: .14em; opacity: .55; }
 .install-guide summary strong { font-size: 1rem; }
 .install-guide summary small { font-size: .72rem; opacity: .62; }
-.install-guide summary i { flex: none; padding: 6px 10px; border-radius: 999px; background: #6d3bd118; color: #6d3bd1; font-size: .68rem; font-style: normal; font-weight: 800; }
+.install-guide summary i { flex: none; padding: 6px 10px; border-radius: 999px; background: #6d3bd118; color: var(--accent-text); font-size: .68rem; font-style: normal; font-weight: 800; }
 .install-guide summary i.installed { background: #4a9b6422; color: #3f8a58; }
 .install-guide[open] summary { border-bottom: 1px solid #8883; }
 .install-guide-content { display: grid; gap: 14px; padding: 18px 22px 22px; }
@@ -15,7 +15,7 @@
 .install-browser-grid article.current { border-color: #6d3bd188; box-shadow: inset 0 0 0 1px #6d3bd122; }
 .install-browser-grid article > header { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
 .install-browser-grid article > header strong { font-size: .9rem; }
-.install-browser-grid article > header span { padding: 4px 7px; border-radius: 999px; background: #6d3bd11f; color: #6d3bd1; font-size: .58rem; font-weight: 800; }
+.install-browser-grid article > header span { padding: 4px 7px; border-radius: 999px; background: #6d3bd11f; color: var(--accent-text); font-size: .58rem; font-weight: 800; }
 .install-browser-grid article > div { display: grid; gap: 5px; }
 .install-browser-grid b { font-size: .68rem; }
 .install-browser-grid ol { display: grid; gap: 3px; margin: 0; padding-left: 19px; font-size: .68rem; line-height: 1.45; opacity: .75; }

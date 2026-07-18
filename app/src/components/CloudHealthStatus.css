@@ -5,7 +5,7 @@
 .cloud-health-heading p { margin: 0; font-size: .76rem; opacity: .65; }
 .cloud-health-heading i { flex: none; padding: 6px 10px; border-radius: 999px; background: #8882; font-size: .68rem; font-style: normal; font-weight: 800; }
 .cloud-health-heading i.healthy { background: #4a9b6422; color: #3f8a58; }
-.cloud-health-heading i.checking { background: #6d3bd122; color: #6d3bd1; }
+.cloud-health-heading i.checking { background: #6d3bd122; color: var(--accent-text); }
 .cloud-health-heading i.offline { background: #ad7a2622; color: #9a6b20; }
 .cloud-health-heading i.error { background: #c64f4f22; color: #b44444; }
 .cloud-health-details { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 10px 20px; padding-top: 13px; border-top: 1px solid #8883; }

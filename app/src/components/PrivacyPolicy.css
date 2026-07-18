@@ -9,7 +9,7 @@
 .privacy-policy-body h3 { margin: 0 0 10px; font-size: 1rem; }
 .privacy-policy-body section > p { margin: 8px 0; font-size: .78rem; line-height: 1.8; opacity: .78; }
 .privacy-policy-body ul { display: grid; gap: 6px; margin: 8px 0; padding-left: 21px; font-size: .78rem; line-height: 1.7; opacity: .78; }
-.privacy-policy-body a { color: #6d3bd1; overflow-wrap: anywhere; }
+.privacy-policy-body a { color: var(--accent-text); overflow-wrap: anywhere; }
 .privacy-contact { background: #6d3bd10a; }
 .privacy-contact dl { display: grid; gap: 7px; margin: 0; }
 .privacy-contact dl > div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; font-size: .78rem; }

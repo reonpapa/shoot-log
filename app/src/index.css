@@ -1,8 +1,8 @@
-:root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #242128; background: #f5f4f2; font-synthesis: none; text-rendering: optimizeLegibility; }
+:root { --accent-text: #6d3bd1; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #242128; background: #f5f4f2; font-synthesis: none; text-rendering: optimizeLegibility; }
 * { box-sizing: border-box; }
 html, body { max-width: 100%; overflow-x: hidden; }
 body { margin: 0; min-width: 320px; min-height: 100vh; }
 button, input, select, textarea { min-width: 0; max-width: 100%; font: inherit; color: inherit; }
 button { cursor: pointer; }
 h1, h2, p { margin-top: 0; }
-@media (prefers-color-scheme: dark) { :root { color: #eeeaf2; background: #17161a; } }
+@media (prefers-color-scheme: dark) { :root { --accent-text: #bda4ff; color: #eeeaf2; background: #17161a; } }

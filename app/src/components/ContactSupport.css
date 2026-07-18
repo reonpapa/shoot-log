@@ -9,7 +9,7 @@
 .contact-support-body h3 { margin: 0 0 10px; font-size: 1rem; }
 .contact-support-body p { margin: 8px 0; font-size: .78rem; line-height: 1.8; opacity: .78; }
 .contact-support-body ul { display: grid; gap: 6px; margin: 8px 0; padding-left: 21px; font-size: .78rem; line-height: 1.7; opacity: .78; }
-.contact-support-body a { color: #6d3bd1; overflow-wrap: anywhere; }
+.contact-support-body a { color: var(--accent-text); overflow-wrap: anywhere; }
 .contact-primary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 20px; background: #6d3bd10a; }
 .contact-mail-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border-radius: 9px; background: #6d3bd1; color: #fff !important; font-size: .76rem; font-weight: 800; text-decoration: none; }
 .contact-warning { background: #c64f4f0a; }
