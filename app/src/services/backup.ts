@@ -33,7 +33,10 @@ export function parseBackup(text: string): ShootLogBackup {
   for (const session of backup.sessions) {
     if (!session || typeof session.id !== "string" || !session.session || !Array.isArray(session.rounds) || typeof session.updatedAt !== "string") throw new Error("セッションデータが破損しています。");
   }
-  return backup as ShootLogBackup;
+  return {
+    ...(backup as ShootLogBackup),
+    sessions: backup.sessions.map((session) => ({ ...session, review: session.review ?? { findings: "", problems: "", nextChallenge: "" } })),
+  };
 }
 
 export function mergeSessions(current: StoredSession[], imported: StoredSession[]): StoredSession[] {

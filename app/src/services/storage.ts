@@ -1,4 +1,4 @@
-import type { SessionDetails, ShootingRound } from "../domain/shooting";
+import type { SessionDetails, SessionReview, ShootingRound } from "../domain/shooting";
 
 const STORAGE_KEY = "shoot-log.sessions.v1";
 
@@ -6,6 +6,7 @@ export interface StoredSession {
   id: string;
   session: SessionDetails;
   rounds: ShootingRound[];
+  review: SessionReview;
   status: "draft" | "completed";
   createdAt: string;
   updatedAt: string;
@@ -29,6 +30,7 @@ export function loadSessions(): StoredSession[] {
       .filter(isStoredSession)
       .map((item) => ({
         ...item,
+        review: item.review ?? { findings: "", problems: "", nextChallenge: "" },
         rounds: item.rounds.map((round) => ({
           ...round,
           fireMode: round.fireMode === "single" ? "single" as const : "double" as const,

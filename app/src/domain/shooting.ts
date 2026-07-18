@@ -14,6 +14,12 @@ export interface SessionDetails {
   memo: string;
 }
 
+export interface SessionReview {
+  findings: string;
+  problems: string;
+  nextChallenge: string;
+}
+
 export interface Shot {
   id: string;
   targetNo: number;

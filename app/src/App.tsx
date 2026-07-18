@@ -8,6 +8,7 @@ import { HistoryAnalysis } from "./components/HistoryAnalysis";
 import { MasterDataManager, type MasterKind } from "./components/MasterDataManager";
 import { DataManagement } from "./components/DataManagement";
 import { createEmptyRound, type ShootingRound } from "./domain/shooting";
+import type { SessionReview } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import { loadSessions, saveSessions, type StoredSession } from "./services/storage";
 import { addSessionToMasterData, loadMasterData, saveMasterData, type MasterData } from "./services/masterData";
@@ -31,7 +32,7 @@ function App() {
   function startSession(details: SessionDraft) {
     const now = new Date().toISOString();
     const firstRound = createEmptyRound(1);
-    const next: StoredSession = { id: crypto.randomUUID(), session: details, rounds: [firstRound], status: "draft", createdAt: now, updatedAt: now };
+    const next: StoredSession = { id: crypto.randomUUID(), session: details, rounds: [firstRound], review: { findings: "", problems: "", nextChallenge: "" }, status: "draft", createdAt: now, updatedAt: now };
     setSessions((current) => [next, ...current]); setActiveSessionId(next.id); setActiveRoundId(firstRound.id); setScreen("round");
     setMasterData((current) => addSessionToMasterData(current, details));
   }
@@ -101,6 +102,10 @@ function App() {
     setSessions((current) => mergeSessions(current, backup.sessions));
     setMasterData((current) => mergeMasterData(current, backup.masterData));
   }
+  function saveReview(review: SessionReview) {
+    if (!activeSessionId) return;
+    setSessions((current) => current.map((item) => item.id === activeSessionId ? { ...item, review, updatedAt: new Date().toISOString() } : item));
+  }
   function deleteSession(id: string) {
     const item = sessions.find((session) => session.id === id);
     if (item && window.confirm(`${item.session.date}の記録を削除しますか？`)) setSessions((current) => current.filter((session) => session.id !== id));
@@ -108,7 +113,7 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.4.0</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.5.1</p></header>
     {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} onBack={() => setScreen("list")} onImport={importBackup} />}
@@ -119,7 +124,7 @@ function App() {
       <nav className="round-tabs" aria-label="ラウンド選択">{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}</nav>
       <RoundInput round={activeRound} onChange={updateRound} />
     </>}
-    {screen === "analysis" && activeSession && <SessionAnalysis session={activeSession} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} />}
+    {screen === "analysis" && activeSession && <SessionAnalysis session={activeSession} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} onSaveReview={saveReview} />}
   </main>;
 }
 export default App;
