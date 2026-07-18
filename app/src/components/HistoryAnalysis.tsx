@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { calculateRoundStats, calculateSessionStats, calculateStandStats } from "../domain/shootingStats";
 import type { FireMode } from "../domain/shooting";
 import type { StoredSession } from "../services/storage";
+import { StandRadialChart } from "./StandRadialChart";
 import "./HistoryAnalysis.css";
 
 interface Props { sessions: StoredSession[]; }
@@ -32,6 +33,7 @@ export function HistoryAnalysis({ sessions }: Props) {
   const best = rounds.reduce((highest, round) => Math.max(highest, calculateRoundStats(round).score), 0);
   const totalCartridges = filtered.reduce((sum, item) => sum + calculateSessionStats({ id: item.id, date: item.session.date, rangeName: item.session.rangeName, ammunitionName: item.session.ammunitionName, weather: item.session.weather, rounds: item.rounds, sessionMemo: item.session.memo }).cartridgesUsed, 0);
   const stands = calculateStandStats({ id: "history", date: "", rangeName: "", ammunitionName: "", rounds });
+  const directionScaleMax = Math.max(1, ...stands.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
 
   return <section className="history-analysis">
     <header><div><p className="eyebrow">PERFORMANCE</p><h2>成長分析</h2></div><small>対象セッション {filtered.length}件</small></header>
@@ -43,10 +45,7 @@ export function HistoryAnalysis({ sessions }: Props) {
         const sessionAverage = score / item.rounds.length;
         return <article key={item.id}><div className="trend-value">{sessionAverage.toFixed(1)}</div><div className="trend-track"><div style={{ height: `${sessionAverage / 25 * 100}%` }} /></div><strong>{item.session.date.slice(5)}</strong><small>{item.rounds.length}R</small></article>;
       })}</div></div></section>
-      <section className="history-stands"><h3>射台別成績</h3><div>{stands.map((stand) => {
-        const rate = stand.targets ? Math.round(stand.score / stand.targets * 100) : 0;
-        return <article key={stand.standNo}><header><span>射台 {stand.standNo}</span><strong>{rate}%</strong></header><div className="stand-rate"><i style={{ width: `${rate}%` }} /></div><p>{stand.score}/{stand.targets}　失中 {stand.misses}</p><small>失中クレー　←{stand.missDirections.left}　↑{stand.missDirections.center}　→{stand.missDirections.right}</small></article>;
-      })}</div></section>
+      <section className="history-stands"><header><h3>射台別成績</h3><div className="radial-legend"><span><i className="legend-hit" />総合命中率</span><span><i className="legend-first" />初矢命中率</span><span><i className="legend-left" />←失中</span><span><i className="legend-center" />↑失中</span><span><i className="legend-right" />→失中</span></div></header><div>{stands.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
     </>}
   </section>;
 }

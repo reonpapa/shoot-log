@@ -2,6 +2,7 @@ import { calculateSessionStats, calculateRoundStats, calculateStandStats } from 
 import type { StoredSession } from "../services/storage";
 import type { SessionReview } from "../domain/shooting";
 import { SessionReviewForm } from "./SessionReviewForm";
+import { StandRadialChart } from "./StandRadialChart";
 import "./SessionAnalysis.css";
 
 interface Props { session: StoredSession; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
@@ -18,6 +19,7 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
   });
   const shootingSession = { id: session.id, date: session.session.date, rangeName: session.session.rangeName, ammunitionName: session.session.ammunitionName, weather: session.session.weather, rounds: session.rounds, sessionMemo: session.session.memo };
   const standStats = calculateStandStats(shootingSession);
+  const directionScaleMax = Math.max(1, ...standStats.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
 
   return <section className="session-analysis">
     <header className="analysis-header">
@@ -34,7 +36,7 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
 
     <div className="analysis-details"><article><span>命中内訳</span><strong>初矢 {stats.firstShotHits}</strong><strong>二の矢 {stats.secondShotHits}</strong></article><article><span>失中方向</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>
 
-    <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>射台別分析</h3></div><small>矢印は失中したクレーの飛翔方向</small></header><div className="stand-analysis-grid">{standStats.map((stand) => <article key={stand.standNo}><div className="stand-title"><span>射台</span><strong>{stand.standNo}</strong><b>{stand.targets ? Math.round(stand.score / stand.targets * 100) : 0}%</b></div><p className="stand-score">{stand.score} <small>/ {stand.targets}</small></p><div className="stand-breakdown"><span>初矢 <b>{stand.firstShotHits}</b></span><span>二の矢 <b>{stand.secondShotHits}</b></span><span>失中 <b>{stand.misses}</b></span></div><div className="stand-misses"><small>失中クレー方向</small><span>← {stand.missDirections.left}</span><span>↑ {stand.missDirections.center}</span><span>→ {stand.missDirections.right}</span></div></article>)}</div></section>
+    <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>射台別分析</h3></div><div className="radial-legend"><span><i className="legend-hit" />総合命中率</span><span><i className="legend-first" />初矢命中率</span><span><i className="legend-left" />←失中</span><span><i className="legend-center" />↑失中</span><span><i className="legend-right" />→失中</span></div></header><div className="stand-analysis-grid">{standStats.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
     <SessionReviewForm review={session.review} onSave={onSaveReview} />
   </section>;
 }
