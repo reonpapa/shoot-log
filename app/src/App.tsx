@@ -6,12 +6,14 @@ import { SessionList } from "./components/SessionList";
 import { SessionAnalysis } from "./components/SessionAnalysis";
 import { HistoryAnalysis } from "./components/HistoryAnalysis";
 import { MasterDataManager, type MasterKind } from "./components/MasterDataManager";
+import { DataManagement } from "./components/DataManagement";
 import { createEmptyRound, type ShootingRound } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import { loadSessions, saveSessions, type StoredSession } from "./services/storage";
 import { addSessionToMasterData, loadMasterData, saveMasterData, type MasterData } from "./services/masterData";
+import { mergeMasterData, mergeSessions, type ShootLogBackup } from "./services/backup";
 
-type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master";
+type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data";
 const MAX_ROUNDS = 4;
 
 function App() {
@@ -95,6 +97,10 @@ function App() {
       ? { ...current, rangeNames: current.rangeNames.filter((item) => item !== value) }
       : { ...current, ammunitionNames: current.ammunitionNames.filter((item) => item !== value) });
   }
+  function importBackup(backup: ShootLogBackup) {
+    setSessions((current) => mergeSessions(current, backup.sessions));
+    setMasterData((current) => mergeMasterData(current, backup.masterData));
+  }
   function deleteSession(id: string) {
     const item = sessions.find((session) => session.id === id);
     if (item && window.confirm(`${item.session.date}の記録を削除しますか？`)) setSessions((current) => current.filter((session) => session.id !== id));
@@ -102,9 +108,10 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.3.6</p></header>
-    {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onOpen={openSession} onDelete={deleteSession} /></>}
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 0.4.0</p></header>
+    {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
+    {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} onBack={() => setScreen("list")} onImport={importBackup} />}
     {screen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}
     {screen === "edit-session" && activeSession && <SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onCancel={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")} onStart={editSessionDetails} />}
     {screen === "round" && activeSession && activeRound && <>
