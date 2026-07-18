@@ -1,6 +1,6 @@
 # Cloud Sync
 
-Version 2.0.2 uses Supabase while retaining LocalStorage as the immediate, offline-capable store.
+Version 2.1.0 uses Supabase while retaining LocalStorage as the immediate, offline-capable store. Account and cloud-sync controls are separated from JSON backup management.
 
 ## Flow
 

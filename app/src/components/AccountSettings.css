@@ -1,0 +1,8 @@
+.account-settings { display: grid; gap: 15px; }
+.account-settings > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px; border: 1px solid #8885; border-radius: 15px; background: #8881; }
+.account-settings > header h2 { margin: 3px 0 6px; }
+.account-settings > header p:last-child { margin: 0; font-size: .78rem; opacity: .62; }
+.account-settings > header button { min-height: 41px; padding: 0 13px; border: 1px solid #8885; border-radius: 9px; background: transparent; white-space: nowrap; }
+.account-settings > aside { padding: 15px 18px; border: 1px solid #8884; border-radius: 11px; }
+.account-settings > aside p { margin: 4px 0 0; font-size: .74rem; opacity: .62; }
+@media (max-width: 700px) { .account-settings > header { flex-direction: column; } }

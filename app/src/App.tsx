@@ -8,6 +8,7 @@ import { SessionAnalysis } from "./components/SessionAnalysis";
 import { HistoryAnalysis } from "./components/HistoryAnalysis";
 import { MasterDataManager, type MasterKind } from "./components/MasterDataManager";
 import { DataManagement } from "./components/DataManagement";
+import { AccountSettings } from "./components/AccountSettings";
 import { AmmunitionLedger } from "./components/AmmunitionLedger";
 import { PermitCountdown } from "./components/PermitCountdown";
 import { PermitManager } from "./components/PermitManager";
@@ -23,7 +24,7 @@ import type { AmmunitionLedgerData } from "./domain/ammunition";
 import { useCloudSync } from "./hooks/useCloudSync";
 import type { LocalDataSet } from "./services/cloudSync";
 
-type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "ammunition" | "permit";
+type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
 
 function App() {
@@ -149,11 +150,12 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.0.2</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.1.0</p></header>
     <PwaStatus />
-    {screen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
+    {screen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
-    {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} cloud={cloudSync.view} onBack={() => setScreen("list")} onImport={importBackup} onCloudSignIn={cloudSync.signIn} onCloudSignUp={cloudSync.signUp} onCloudSignOut={cloudSync.signOut} onCloudSync={cloudSync.syncNow} onCloudDeleteAccount={cloudSync.deleteAccount} />}
+    {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
+    {screen === "account" && <AccountSettings cloud={cloudSync.view} onBack={() => setScreen("list")} onSignIn={cloudSync.signIn} onSignUp={cloudSync.signUp} onSignOut={cloudSync.signOut} onSync={cloudSync.syncNow} onDeleteAccount={cloudSync.deleteAccount} />}
     {screen === "ammunition" && <AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {screen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {screen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}
