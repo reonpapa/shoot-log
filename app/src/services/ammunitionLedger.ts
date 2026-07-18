@@ -17,7 +17,9 @@ export function normalizeAmmunitionLedger(value: unknown): AmmunitionLedgerData 
   const categoryIds = new Set(categories.map((item) => item.id));
   const firearms = Array.isArray(value.firearms) ? value.firearms.flatMap((item): Firearm[] => {
     if (!isRecord(item) || !isString(item.id) || !isString(item.name) || !isString(item.identifier)) return [];
-    return [{ id: item.id, name: item.name, identifier: item.identifier }];
+    const optionalFields = ["originalPermitDate", "originalPermitNumber", "permitDate", "permitNumber", "inspectionDate", "validUntil", "renewalStartDate", "renewalDeadline", "kind", "actionType", "manufacturer", "model", "overallLength", "barrelLength", "caliber", "magazine", "compatibleAmmo", "purpose"] as const;
+    const optional = Object.fromEntries(optionalFields.flatMap((field) => isString(item[field]) ? [[field, item[field]]] : []));
+    return [{ id: item.id, name: item.name, identifier: item.identifier, ...optional }];
   }) : [];
   const firearmIds = new Set(firearms.map((item) => item.id));
   const productLinks = Array.isArray(value.productLinks) ? value.productLinks.flatMap((item): AmmunitionProductLink[] => {
@@ -28,7 +30,9 @@ export function normalizeAmmunitionLedger(value: unknown): AmmunitionLedgerData 
     if (!isRecord(item) || !isString(item.id) || !isString(item.date) || !entryTypes.includes(item.type as LedgerEntryType) || !isString(item.categoryId) || !categoryIds.has(item.categoryId) || typeof item.quantity !== "number" || !Number.isFinite(item.quantity) || item.quantity <= 0 || !isString(item.application) || !isString(item.createdAt)) return [];
     return [{ id: item.id, date: item.date, type: item.type as LedgerEntryType, categoryId: item.categoryId, quantity: Math.floor(item.quantity), application: item.application, createdAt: item.createdAt, ...(isString(item.firearmId) && firearmIds.has(item.firearmId) ? { firearmId: item.firearmId } : {}) }];
   }) : [];
-  return { trackingStartDate: isString(value.trackingStartDate) ? value.trackingStartDate : "", categories, firearms, productLinks, entries };
+  const profile = isRecord(value.permitProfile) ? value.permitProfile : {};
+  const permitProfile = { certificateNumber: isString(profile.certificateNumber) ? profile.certificateNumber : "", originalIssueDate: isString(profile.originalIssueDate) ? profile.originalIssueDate : "", issueDate: isString(profile.issueDate) ? profile.issueDate : "" };
+  return { trackingStartDate: isString(value.trackingStartDate) ? value.trackingStartDate : "", permitProfile, categories, firearms, productLinks, entries };
 }
 
 export function loadAmmunitionLedger(): AmmunitionLedgerData {
@@ -88,5 +92,5 @@ export function mergeAmmunitionLedger(current: AmmunitionLedgerData, imported: A
   imported.entries.forEach((item) => entries.set(item.id, item));
   const links = new Map(current.productLinks.map((item) => [item.ammunitionName, item]));
   imported.productLinks.forEach((item) => links.set(item.ammunitionName, item));
-  return { trackingStartDate: current.trackingStartDate || imported.trackingStartDate, categories: [...categories.values()], firearms: [...firearms.values()], productLinks: [...links.values()], entries: [...entries.values()] };
+  return { trackingStartDate: current.trackingStartDate || imported.trackingStartDate, permitProfile: current.permitProfile.certificateNumber ? current.permitProfile : imported.permitProfile, categories: [...categories.values()], firearms: [...firearms.values()], productLinks: [...links.values()], entries: [...entries.values()] };
 }

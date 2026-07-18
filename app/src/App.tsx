@@ -8,6 +8,8 @@ import { HistoryAnalysis } from "./components/HistoryAnalysis";
 import { MasterDataManager, type MasterKind } from "./components/MasterDataManager";
 import { DataManagement } from "./components/DataManagement";
 import { AmmunitionLedger } from "./components/AmmunitionLedger";
+import { PermitCountdown } from "./components/PermitCountdown";
+import { PermitManager } from "./components/PermitManager";
 import { createEmptyRound, type ShootingRound } from "./domain/shooting";
 import type { SessionReview } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
@@ -17,7 +19,7 @@ import { mergeMasterData, mergeSessions, type ShootLogBackup } from "./services/
 import { loadAmmunitionLedger, mergeAmmunitionLedger, saveAmmunitionLedger } from "./services/ammunitionLedger";
 import type { AmmunitionLedgerData } from "./domain/ammunition";
 
-type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "ammunition";
+type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
 
 function App() {
@@ -120,11 +122,12 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 1.1.3</p></header>
-    {screen === "list" && <><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 1.2.0</p></header>
+    {screen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
     {screen === "ammunition" && <AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
+    {screen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {screen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}
     {screen === "edit-session" && activeSession && <SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onCancel={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")} onStart={editSessionDetails} />}
     {screen === "round" && activeSession && activeRound && <>

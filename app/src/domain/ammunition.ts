@@ -11,6 +11,24 @@ export interface Firearm {
   id: string;
   name: string;
   identifier: string;
+  originalPermitDate?: string;
+  originalPermitNumber?: string;
+  permitDate?: string;
+  permitNumber?: string;
+  inspectionDate?: string;
+  validUntil?: string;
+  renewalStartDate?: string;
+  renewalDeadline?: string;
+  kind?: string;
+  actionType?: string;
+  manufacturer?: string;
+  model?: string;
+  overallLength?: string;
+  barrelLength?: string;
+  caliber?: string;
+  magazine?: string;
+  compatibleAmmo?: string;
+  purpose?: string;
 }
 
 export interface AmmunitionProductLink {
@@ -31,13 +49,18 @@ export interface ManualLedgerEntry {
 
 export interface AmmunitionLedgerData {
   trackingStartDate: string;
+  permitProfile: {
+    certificateNumber: string;
+    originalIssueDate: string;
+    issueDate: string;
+  };
   categories: AmmunitionCategory[];
   firearms: Firearm[];
   productLinks: AmmunitionProductLink[];
   entries: ManualLedgerEntry[];
 }
 
-export const emptyAmmunitionLedger = (): AmmunitionLedgerData => ({ trackingStartDate: "", categories: [], firearms: [], productLinks: [], entries: [] });
+export const emptyAmmunitionLedger = (): AmmunitionLedgerData => ({ trackingStartDate: "", permitProfile: { certificateNumber: "", originalIssueDate: "", issueDate: "" }, categories: [], firearms: [], productLinks: [], entries: [] });
 
 export const entryTypeLabels: Record<LedgerEntryType, string> = {
   opening: "開始残弾",
