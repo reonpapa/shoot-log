@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import "./components/AppShell.css";
 import { RoundInput } from "./components/RoundInput";
@@ -20,6 +20,8 @@ import { addSessionToMasterData, loadMasterData, saveMasterData, type MasterData
 import { mergeMasterData, mergeSessions, type ShootLogBackup } from "./services/backup";
 import { loadAmmunitionLedger, mergeAmmunitionLedger, saveAmmunitionLedger } from "./services/ammunitionLedger";
 import type { AmmunitionLedgerData } from "./domain/ammunition";
+import { useCloudSync } from "./hooks/useCloudSync";
+import type { LocalDataSet } from "./services/cloudSync";
 
 type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
@@ -31,6 +33,12 @@ function App() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [activeRoundId, setActiveRoundId] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("list");
+  const applyCloudData = useCallback((data: LocalDataSet) => {
+    setSessions(data.sessions);
+    setMasterData(data.masterData);
+    setAmmunitionLedger(data.ammunitionLedger);
+  }, []);
+  const cloudSync = useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCloudData: applyCloudData });
   const activeSession = useMemo(() => sessions.find((item) => item.id === activeSessionId) ?? null, [sessions, activeSessionId]);
   const activeRound = activeSession?.rounds.find((round) => round.id === activeRoundId) ?? activeSession?.rounds[0] ?? null;
   const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
@@ -133,16 +141,19 @@ function App() {
   }
   function deleteSession(id: string) {
     const item = sessions.find((session) => session.id === id);
-    if (item && window.confirm(`${item.session.date}の記録を削除しますか？${item.status === "completed" ? "\n実包台帳の自動消費行も削除され、残弾が再計算されます。" : ""}`)) setSessions((current) => current.filter((session) => session.id !== id));
+    if (item && window.confirm(`${item.session.date}の記録を削除しますか？${item.status === "completed" ? "\n実包台帳の自動消費行も削除され、残弾が再計算されます。" : ""}`)) {
+      cloudSync.recordSessionDeletion(id);
+      setSessions((current) => current.filter((session) => session.id !== id));
+    }
   }
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 1.3.6</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.0.0</p></header>
     <PwaStatus />
     {screen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
-    {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
+    {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} cloud={cloudSync.view} onBack={() => setScreen("list")} onImport={importBackup} onCloudSignIn={cloudSync.signIn} onCloudSignUp={cloudSync.signUp} onCloudSignOut={cloudSync.signOut} onCloudSync={cloudSync.syncNow} />}
     {screen === "ammunition" && <AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {screen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {screen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}

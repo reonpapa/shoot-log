@@ -1,0 +1,19 @@
+name: Keep Supabase active
+
+on:
+  schedule:
+    - cron: "17 0,8,16 * * *"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read health row
+        env:
+          SUPABASE_URL: https://ogterovgyxzufhobxlxw.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_LDGivdFiCvZX3Q8-DRZ5HA_0hmGnvv9
+        run: |
+          curl --fail --silent --show-error \
+            --header "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/shoot_log_keepalive?select=id&limit=1"

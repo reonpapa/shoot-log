@@ -1,0 +1,26 @@
+.cloud-account { grid-column: 1 / -1; display: grid; gap: 18px; padding: 24px; border: 1px solid #6d3bd155; border-radius: 14px; background: linear-gradient(135deg, #6d3bd112, #8881); }
+.cloud-account-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.cloud-account-heading span { font-size: .65rem; font-weight: 800; letter-spacing: .15em; opacity: .52; }
+.cloud-account-heading h3 { margin: 5px 0 6px; }
+.cloud-account-heading p, .cloud-signed-in p { margin: 0; font-size: .78rem; opacity: .65; }
+.cloud-state { flex: none; padding: 6px 10px; border-radius: 999px; background: #8882; font-size: .68rem; font-style: normal; font-weight: 800; }
+.cloud-state.synced { background: #4a9b6422; color: #3f8a58; }
+.cloud-state.syncing, .cloud-state.starting { background: #6d3bd122; color: #6d3bd1; }
+.cloud-state.offline { background: #ad7a2622; color: #9a6b20; }
+.cloud-state.error { background: #c64f4f22; color: #b44444; }
+.cloud-account form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cloud-account label { display: grid; gap: 6px; font-size: .72rem; font-weight: 800; }
+.cloud-account input { width: 100%; min-height: 42px; padding: 0 11px; border: 1px solid #8885; border-radius: 9px; background: #fff8; }
+.cloud-actions { display: flex; gap: 8px; align-items: center; }
+.cloud-account form .cloud-actions { grid-column: 1 / -1; }
+.cloud-actions button { min-height: 41px; padding: 0 13px; border: 1px solid #8885; border-radius: 9px; background: transparent; }
+.cloud-actions .primary-button { border: 0; background: #6d3bd1; color: #fff; }
+.cloud-actions button:disabled { cursor: wait; opacity: .52; }
+.cloud-signed-in { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.cloud-signed-in > div:first-child { display: grid; gap: 4px; }
+.cloud-signed-in small { font-size: .68rem; opacity: .58; }
+.cloud-notice, .cloud-error { margin: 0; padding: 10px 12px; border-radius: 8px; font-size: .76rem; font-weight: 700; }
+.cloud-notice { background: #4a9b641c; color: #3f8a58; }
+.cloud-error { background: #c64f4f1c; color: #b44444; }
+@media (prefers-color-scheme: dark) { .cloud-account input { background: #17161a; } }
+@media (max-width: 700px) { .cloud-account { padding: 19px; }.cloud-account-heading, .cloud-signed-in { align-items: stretch; flex-direction: column; }.cloud-account form { grid-template-columns: 1fr; }.cloud-account form .cloud-actions { grid-column: 1; }.cloud-actions { display: grid; grid-template-columns: 1fr 1fr; }.cloud-actions button { width: 100%; } }
