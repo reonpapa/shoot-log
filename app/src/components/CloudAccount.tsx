@@ -22,11 +22,50 @@ function formatSyncedAt(value: string): string {
   return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 }
 
+const authErrorMessages: Record<string, string> = {
+  invalid_credentials: "メールアドレスまたはパスワードが正しくありません。",
+  email_not_confirmed: "メールアドレスの確認が完了していません。確認メールのリンクを開いてください。",
+  same_password: "現在と同じパスワードは設定できません。異なるパスワードを入力してください。",
+  weak_password: "パスワードの強度が不足しています。8文字以上で、推測されにくいパスワードを入力してください。",
+  otp_expired: "再設定リンクの有効期限が切れています。もう一度、再設定メールを送信してください。",
+  flow_state_expired: "認証リンクの有効期限が切れています。もう一度、最初から操作してください。",
+  flow_state_not_found: "認証リンクを確認できませんでした。もう一度、最初から操作してください。",
+  session_expired: "ログインの有効期限が切れました。もう一度ログインしてください。",
+  session_not_found: "ログイン状態を確認できませんでした。もう一度ログインしてください。",
+  refresh_token_not_found: "ログイン状態を確認できませんでした。もう一度ログインしてください。",
+  refresh_token_already_used: "ログイン状態が更新されました。アプリを再読み込みして、もう一度ログインしてください。",
+  over_email_send_rate_limit: "メール送信回数の上限に達しました。時間をおいてから、もう一度お試しください。",
+  over_request_rate_limit: "操作回数の上限に達しました。数分待ってから、もう一度お試しください。",
+  email_exists: "このメールアドレスはすでに登録されています。ログインまたはパスワード再設定をお試しください。",
+  user_already_exists: "このメールアドレスはすでに登録されています。ログインまたはパスワード再設定をお試しください。",
+  email_address_invalid: "このメールアドレスは使用できません。入力内容を確認してください。",
+  email_address_not_authorized: "このメールアドレスには送信できません。メール送信設定を確認してください。",
+  email_provider_disabled: "メールアドレスによる登録が無効になっています。管理者へ確認してください。",
+  signup_disabled: "現在、新しいアカウントを登録できません。管理者へ確認してください。",
+  reauthentication_needed: "安全のため再認証が必要です。ログインし直してから、もう一度お試しください。",
+  reauthentication_not_valid: "再認証に失敗しました。もう一度お試しください。",
+  validation_failed: "入力内容を確認してください。",
+  captcha_failed: "本人確認に失敗しました。もう一度お試しください。",
+  request_timeout: "認証処理がタイムアウトしました。通信状態を確認して、もう一度お試しください。",
+  unexpected_failure: "認証サービスでエラーが発生しました。時間をおいてから、もう一度お試しください。",
+  user_banned: "このアカウントは現在利用できません。管理者へ確認してください。",
+  user_not_found: "アカウントを確認できませんでした。メールアドレスを確認してください。",
+};
+
 function readableError(caught: unknown): string {
-  if (!(caught instanceof Error) || !caught.message || caught.message === "{}") return "処理に失敗しました。通信状態を確認して、もう一度お試しください。";
-  if (/invalid login credentials/i.test(caught.message)) return "メールアドレスまたはパスワードが正しくありません。";
-  if (/email not confirmed/i.test(caught.message)) return "メールアドレスの確認が完了していません。確認メールのリンクを開いてください。";
-  return caught.message;
+  const details = caught && typeof caught === "object" ? caught as { code?: unknown; status?: unknown } : {};
+  const code = typeof details.code === "string" ? details.code : "";
+  if (code && authErrorMessages[code]) return authErrorMessages[code];
+  const message = caught instanceof Error ? caught.message : "";
+  if (/invalid login credentials/i.test(message)) return authErrorMessages.invalid_credentials;
+  if (/email not confirmed/i.test(message)) return authErrorMessages.email_not_confirmed;
+  if (/new password should be different|password.*different from (the )?(old|current)|same password/i.test(message)) return authErrorMessages.same_password;
+  if (/password should be at least|password.*too short|weak password/i.test(message)) return authErrorMessages.weak_password;
+  if (/auth session missing|session.*expired|otp.*expired/i.test(message)) return authErrorMessages.session_expired;
+  if (/email rate limit exceeded|too many emails/i.test(message)) return authErrorMessages.over_email_send_rate_limit;
+  if (/rate limit|too many requests/i.test(message) || details.status === 429) return authErrorMessages.over_request_rate_limit;
+  if (/failed to fetch|network|load failed/i.test(message)) return "通信できませんでした。接続状態を確認して、もう一度お試しください。";
+  return "認証処理に失敗しました。入力内容と通信状態を確認して、もう一度お試しください。";
 }
 
 export function CloudAccount({ view, passwordRecovery, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onDeleteAccount }: Props) {
