@@ -176,6 +176,53 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     }
   }, [applyPayload, reconcile, rememberSync, savePayload]);
 
+  const pullLatest = useCallback(async () => {
+    const user = userRef.current;
+    if (!user) return;
+    if (!readyRef.current) {
+      initializedUserRef.current = "";
+      await initializeForUser(user);
+      return;
+    }
+    if (savingRef.current) return;
+
+    savingRef.current = true;
+    setView((current) => ({ ...current, phase: "syncing", message: "クラウドの最新データを確認中…" }));
+    try {
+      const localPayload = createCloudPayload(dataRef.current, deletedSessionsRef.current);
+      const localSignature = cloudPayloadSignature(localPayload);
+      const remote = await loadCloudSnapshot();
+
+      if (!remote) {
+        await savePayload(user, localPayload, 0);
+      } else if (remote.revision === revisionRef.current) {
+        if (localSignature === lastSignatureRef.current) {
+          rememberSync(user, remote.revision, remote.payload, remote.updatedAt);
+        } else {
+          await savePayload(user, localPayload, remote.revision);
+        }
+      } else if (localSignature === lastSignatureRef.current) {
+        rememberSync(user, remote.revision, remote.payload, remote.updatedAt);
+        if (cloudPayloadSignature(remote.payload) !== localSignature) applyPayload(remote.payload);
+      } else {
+        const merged = mergeCloudPayload(localPayload, remote.payload);
+        const mergedSignature = cloudPayloadSignature(merged);
+        const remoteSignature = cloudPayloadSignature(remote.payload);
+        if (mergedSignature === remoteSignature) {
+          rememberSync(user, remote.revision, remote.payload, remote.updatedAt);
+        } else {
+          const saved = await savePayload(user, merged, remote.revision);
+          if (cloudPayloadSignature(saved.payload) !== localSignature) applyPayload(saved.payload);
+        }
+      }
+    } catch (error) {
+      const offline = !navigator.onLine;
+      setView((current) => ({ ...current, phase: offline ? "offline" : "error", message: errorMessage(error) }));
+    } finally {
+      savingRef.current = false;
+    }
+  }, [applyPayload, initializeForUser, rememberSync, savePayload]);
+
   useEffect(() => {
     let active = true;
     void supabase.auth.getSession().then(({ data }) => {
@@ -212,8 +259,7 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
 
   useEffect(() => {
     const resume = () => {
-      if (userRef.current && !readyRef.current) void initializeForUser(userRef.current);
-      else void pushCurrent();
+      void pullLatest();
     };
     window.addEventListener("online", resume);
     window.addEventListener("focus", resume);
@@ -221,7 +267,7 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
       window.removeEventListener("online", resume);
       window.removeEventListener("focus", resume);
     };
-  }, [initializeForUser, pushCurrent]);
+  }, [pullLatest]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -242,15 +288,8 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
   }, [pushCurrent]);
 
   const syncNow = useCallback(async () => {
-    const user = userRef.current;
-    if (!user) return;
-    if (!readyRef.current) {
-      initializedUserRef.current = "";
-      await initializeForUser(user);
-      return;
-    }
-    await pushCurrent();
-  }, [initializeForUser, pushCurrent]);
+    await pullLatest();
+  }, [pullLatest]);
 
   const recordSessionDeletion = useCallback((sessionId: string) => {
     const deletedSessions = { ...deletedSessionsRef.current, [sessionId]: new Date().toISOString() };
