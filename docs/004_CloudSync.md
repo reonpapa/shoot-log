@@ -1,6 +1,6 @@
 # Cloud Sync
 
-Version 2.3.0 uses Supabase while retaining LocalStorage as the immediate, offline-capable store. Account settings include password-manager integration, authenticated password changes, email password recovery, Japanese password error messages, and browser-specific PWA installation guidance. Signed-out users are locked to the account screen so device-local data is not exposed. PWA updates use only the active version cache.
+Version 2.3.1 uses Supabase while retaining LocalStorage as the immediate, offline-capable store. Account settings include password-manager integration, authenticated password changes, email password recovery, Japanese password error messages, and browser-specific PWA installation guidance. Signed-out users are locked to the account screen so device-local data is not exposed. Login inputs use an iOS-safe font size and constrained mobile width. PWA updates use only the active version cache.
 
 ## Flow
 
