@@ -4,6 +4,7 @@ import { emptyAmmunitionLedger } from "../domain/ammunition";
 import {
   cloudPayloadData,
   cloudPayloadSignature,
+  checkCloudAvailability,
   createCloudPayload,
   loadCloudSnapshot,
   mergeCloudPayload,
@@ -14,7 +15,10 @@ import {
 } from "../services/cloudSync";
 
 const META_KEY = "shoot-log.cloud-sync.v1";
+const HEALTH_META_KEY = "shoot-log.cloud-health.v1";
 const SAVE_DELAY_MS = 1_200;
+const HEALTH_INTERVAL_MS = 6 * 60 * 60 * 1_000;
+const HEALTH_RESUME_INTERVAL_MS = 5 * 60 * 1_000;
 
 function emptyLocalData(): LocalDataSet {
   return {
@@ -41,6 +45,15 @@ export interface CloudSyncView {
   lastSyncedAt: string;
 }
 
+export type CloudHealthStatus = "checking" | "healthy" | "offline" | "error";
+
+export interface CloudHealthView {
+  status: CloudHealthStatus;
+  message: string;
+  lastCheckedAt: string;
+  lastHealthyAt: string;
+}
+
 interface Options extends LocalDataSet {
   onApplyCloudData: (data: LocalDataSet) => void;
 }
@@ -58,6 +71,22 @@ function readMeta(): LocalCloudMeta | null {
 
 function writeMeta(meta: LocalCloudMeta): void {
   localStorage.setItem(META_KEY, JSON.stringify(meta));
+}
+
+function readHealthMeta(): Pick<CloudHealthView, "lastCheckedAt" | "lastHealthyAt"> {
+  try {
+    const value = JSON.parse(localStorage.getItem(HEALTH_META_KEY) ?? "null") as Partial<CloudHealthView> | null;
+    return {
+      lastCheckedAt: typeof value?.lastCheckedAt === "string" ? value.lastCheckedAt : "",
+      lastHealthyAt: typeof value?.lastHealthyAt === "string" ? value.lastHealthyAt : "",
+    };
+  } catch {
+    return { lastCheckedAt: "", lastHealthyAt: "" };
+  }
+}
+
+function writeHealthMeta(health: Pick<CloudHealthView, "lastCheckedAt" | "lastHealthyAt">): void {
+  localStorage.setItem(HEALTH_META_KEY, JSON.stringify(health));
 }
 
 function errorMessage(error: unknown): string {
@@ -81,6 +110,10 @@ function clearPasswordRecoveryUrl(): void {
 
 export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCloudData }: Options) {
   const [view, setView] = useState<CloudSyncView>({ phase: "signed-out", email: "", message: "クラウド同期を利用するにはログインしてください。", lastSyncedAt: "" });
+  const [health, setHealth] = useState<CloudHealthView>(() => {
+    const stored = readHealthMeta();
+    return { status: "checking", message: "Supabaseへの接続を確認しています…", ...stored };
+  });
   const [passwordRecovery, setPasswordRecovery] = useState(() => new URLSearchParams(window.location.search).get("password-recovery") === "1");
   const dataRef = useRef<LocalDataSet>({ sessions, masterData, ammunitionLedger });
   const userRef = useRef<User | null>(null);
@@ -92,10 +125,64 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
   const initializingUserRef = useRef("");
   const savingRef = useRef(false);
   const timerRef = useRef<number | null>(null);
+  const healthCheckingRef = useRef(false);
+  const lastHealthAttemptRef = useRef(0);
 
   useEffect(() => {
     dataRef.current = { sessions, masterData, ammunitionLedger };
   }, [sessions, masterData, ammunitionLedger]);
+
+  const checkHealth = useCallback(async () => {
+    if (healthCheckingRef.current) return;
+    healthCheckingRef.current = true;
+    lastHealthAttemptRef.current = Date.now();
+    const checkedAt = new Date().toISOString();
+    setHealth((current) => ({ ...current, status: "checking", message: "Supabaseへの接続を確認しています…" }));
+    try {
+      if (!navigator.onLine) throw new Error("OFFLINE");
+      await checkCloudAvailability();
+      const next: CloudHealthView = { status: "healthy", message: "Supabaseは正常に応答しています。", lastCheckedAt: checkedAt, lastHealthyAt: checkedAt };
+      setHealth(next);
+      writeHealthMeta(next);
+    } catch {
+      const offline = !navigator.onLine;
+      setHealth((current) => {
+        const next: CloudHealthView = {
+          ...current,
+          status: offline ? "offline" : "error",
+          message: offline ? "通信環境を確認後、自動的に再確認します。" : "Supabaseから応答を取得できませんでした。時間をおいて再確認します。",
+          lastCheckedAt: checkedAt,
+        };
+        writeHealthMeta(next);
+        return next;
+      });
+    } finally {
+      healthCheckingRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    void checkHealth();
+    const checkWhenDue = () => {
+      if (Date.now() - lastHealthAttemptRef.current >= HEALTH_RESUME_INTERVAL_MS) void checkHealth();
+    };
+    const checkWhenOnline = () => { void checkHealth(); };
+    const checkWhenVisible = () => {
+      if (document.visibilityState === "visible") checkWhenDue();
+    };
+    const interval = window.setInterval(() => { void checkHealth(); }, HEALTH_INTERVAL_MS);
+    window.addEventListener("focus", checkWhenDue);
+    window.addEventListener("online", checkWhenOnline);
+    window.addEventListener("pageshow", checkWhenDue);
+    document.addEventListener("visibilitychange", checkWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", checkWhenDue);
+      window.removeEventListener("online", checkWhenOnline);
+      window.removeEventListener("pageshow", checkWhenDue);
+      document.removeEventListener("visibilitychange", checkWhenVisible);
+    };
+  }, [checkHealth]);
 
   const rememberSync = useCallback((user: User, revision: number, payload: CloudSnapshotPayload, updatedAt: string) => {
     const signature = cloudPayloadSignature(payload);
@@ -366,5 +453,5 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     if (user && meta?.userId === user.id) writeMeta({ ...meta, deletedSessions });
   }, []);
 
-  return { view, passwordRecovery, signIn, signUp, signOut, sendPasswordReset, changePassword, completePasswordRecovery, syncNow, deleteAccount, recordSessionDeletion };
+  return { view, health, passwordRecovery, signIn, signUp, signOut, sendPasswordReset, changePassword, completePasswordRecovery, syncNow, checkHealth, deleteAccount, recordSessionDeletion };
 }

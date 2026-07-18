@@ -164,12 +164,12 @@ function App() {
   }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.6.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.7.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {displayedScreen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
-    {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} passwordRecovery={cloudSync.passwordRecovery} onBack={() => setScreen("list")} onPrivacy={() => setScreen("privacy")} onTerms={() => setScreen("terms")} onContact={() => setScreen("contact")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onDeleteAccount={cloudSync.deleteAccount} />}
+    {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} health={cloudSync.health} passwordRecovery={cloudSync.passwordRecovery} onBack={() => setScreen("list")} onPrivacy={() => setScreen("privacy")} onTerms={() => setScreen("terms")} onContact={() => setScreen("contact")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onCheckHealth={cloudSync.checkHealth} onDeleteAccount={cloudSync.deleteAccount} />}
     {displayedScreen === "privacy" && <Suspense fallback={<p>プライバシーポリシーを読み込んでいます…</p>}><PrivacyPolicy onBack={() => setScreen("account")} /></Suspense>}
     {displayedScreen === "terms" && <Suspense fallback={<p>利用規約を読み込んでいます…</p>}><TermsOfService onBack={() => setScreen("account")} /></Suspense>}
     {displayedScreen === "contact" && <Suspense fallback={<p>お問い合わせ画面を読み込んでいます…</p>}><ContactSupport onBack={() => setScreen("account")} /></Suspense>}

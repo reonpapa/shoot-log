@@ -113,6 +113,16 @@ export async function loadCloudSnapshot(): Promise<CloudSnapshotRow | null> {
   };
 }
 
+export async function checkCloudAvailability(): Promise<void> {
+  const { data, error } = await supabase
+    .from("shoot_log_keepalive")
+    .select("id")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("クラウド稼働確認データを取得できませんでした。");
+}
+
 export async function saveCloudSnapshot(payload: CloudSnapshotPayload, expectedRevision: number): Promise<CloudSnapshotRow> {
   const { data, error } = await supabase.rpc("save_shoot_log_snapshot", {
     p_payload: payload,
