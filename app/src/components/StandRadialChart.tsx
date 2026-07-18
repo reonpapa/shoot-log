@@ -27,11 +27,11 @@ export function StandRadialChart({ stats, directionScaleMax }: Props) {
     <circle className="radial-hit" cx="70" cy="69" r="54" strokeDasharray={`${circumferenceOuter * hitRate} ${circumferenceOuter}`} />
     <circle className="radial-track inner" cx="70" cy="69" r="44" />
     <circle className="radial-first" cx="70" cy="69" r="44" strokeDasharray={`${circumferenceInner * firstRate} ${circumferenceInner}`} />
-    <path className="direction-left" d={sectorPath(left, directionScaleMax, 120, 180)} />
-    <path className="direction-center" d={sectorPath(center, directionScaleMax, 60, 120)} />
-    <path className="direction-right" d={sectorPath(right, directionScaleMax, 0, 60)} />
-    <line className="direction-divider" x1="70" y1="69" x2="54.5" y2="95.8" />
-    <line className="direction-divider" x1="70" y1="69" x2="85.5" y2="95.8" />
-    <text className="stand-label" x="70" y="54">射台</text><text className="stand-number" x="70" y="68">{stats.standNo}</text>
+    <path className="direction-left" d={sectorPath(left, directionScaleMax, 180, 240)} />
+    <path className="direction-center" d={sectorPath(center, directionScaleMax, 240, 300)} />
+    <path className="direction-right" d={sectorPath(right, directionScaleMax, 300, 360)} />
+    <line className="direction-divider" x1="70" y1="69" x2="54.5" y2="42.2" />
+    <line className="direction-divider" x1="70" y1="69" x2="85.5" y2="42.2" />
+    <text className="stand-label" x="70" y="80">射台</text><text className="stand-number" x="70" y="95">{stats.standNo}</text>
   </svg><div className="radial-main"><strong>{Math.round(hitRate * 100)}%</strong><span>{stats.score}/{stats.targets}</span></div><div className="radial-directions"><span>← {left}</span><span>↑ {center}</span><span>→ {right}</span></div></article>;
 }
