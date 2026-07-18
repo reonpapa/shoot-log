@@ -2,6 +2,7 @@ import type { CloudHealthView, CloudSyncView } from "../hooks/useCloudSync";
 import { CloudAccount } from "./CloudAccount";
 import { CloudHealthStatus } from "./CloudHealthStatus";
 import { InstallGuide } from "./InstallGuide";
+import { OperationManual } from "./OperationManual";
 import "./AccountSettings.css";
 
 interface Props {
@@ -31,6 +32,7 @@ export function AccountSettings({ cloud, health, passwordRecovery, onBack, onPri
       {signedIn && <button onClick={onBack}>履歴へ戻る</button>}
     </header>
     <InstallGuide initiallyOpen={!signedIn} />
+    <OperationManual />
     <CloudAccount view={cloud} passwordRecovery={passwordRecovery} onPrivacy={onPrivacy} onTerms={onTerms} onSignIn={onSignIn} onSignUp={onSignUp} onSignOut={onSignOut} onSendPasswordReset={onSendPasswordReset} onChangePassword={onChangePassword} onCompletePasswordRecovery={onCompletePasswordRecovery} onSync={onSync} onDeleteAccount={onDeleteAccount} />
     <CloudHealthStatus health={health} onCheck={onCheckHealth} />
     <aside><strong>端末内データについて</strong><p>射撃記録は端末内へ即時保存され、ログイン中はクラウドへ自動同期されます。JSONファイルの保存・復元は「バックアップ」画面で行います。</p></aside>
