@@ -7,6 +7,8 @@ type AuthMode = "sign-in" | "sign-up" | "forgot-password";
 interface Props {
   view: CloudSyncView;
   passwordRecovery: boolean;
+  onPrivacy: () => void;
+  onTerms: () => void;
   onSignIn: (email: string, password: string) => Promise<void>;
   onSignUp: (email: string, password: string) => Promise<string>;
   onSignOut: () => Promise<void>;
@@ -68,7 +70,7 @@ function readableError(caught: unknown): string {
   return "認証処理に失敗しました。入力内容と通信状態を確認して、もう一度お試しください。";
 }
 
-export function CloudAccount({ view, passwordRecovery, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onDeleteAccount }: Props) {
+export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onDeleteAccount }: Props) {
   const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -82,6 +84,7 @@ export function CloudAccount({ view, passwordRecovery, onSignIn, onSignUp, onSig
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -96,6 +99,7 @@ export function CloudAccount({ view, passwordRecovery, onSignIn, onSignUp, onSig
     setAuthMode(mode);
     setPassword("");
     setPasswordConfirmation("");
+    setAcceptedTerms(false);
     setNotice("");
     setError("");
   }
@@ -105,6 +109,11 @@ export function CloudAccount({ view, passwordRecovery, onSignIn, onSignUp, onSig
     if (authMode === "sign-up" && password !== passwordConfirmation) {
       setNotice("");
       setError("確認用パスワードが一致していません。");
+      return;
+    }
+    if (authMode === "sign-up" && !acceptedTerms) {
+      setNotice("");
+      setError("利用規約とプライバシーポリシーへの同意が必要です。");
       return;
     }
     void run(async () => {
@@ -206,7 +215,8 @@ export function CloudAccount({ view, passwordRecovery, onSignIn, onSignUp, onSig
         <label className={authMode === "sign-up" ? "email-field" : ""}>メールアドレス<input required name="username" type="email" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
         <label>パスワード<input required name="password" minLength={8} type="password" autoComplete={authMode === "sign-in" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
         {authMode === "sign-up" && <label>パスワード（確認）<input required name="password-confirmation" minLength={8} type="password" autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} /></label>}
-        <div className="cloud-auth-submit"><button disabled={busy} className="primary-button" type="submit">{authMode === "sign-in" ? "ログイン" : "アカウントを作成"}</button><small>パスワードはMac・iPhoneのパスワード管理に保存できます。</small></div>
+        {authMode === "sign-up" && <div className="auth-legal-consent"><label><input required type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} /><span>内容を確認し、同意します。</span></label><nav aria-label="登録条件"><button type="button" onClick={onTerms}>利用規約・免責事項を読む</button><button type="button" onClick={onPrivacy}>プライバシーポリシーを読む</button></nav></div>}
+        <div className="cloud-auth-submit"><button disabled={busy || (authMode === "sign-up" && !acceptedTerms)} className="primary-button" type="submit">{authMode === "sign-in" ? "ログイン" : "アカウントを作成"}</button><small>パスワードはMac・iPhoneのパスワード管理に保存できます。</small></div>
       </form>
       {authMode === "sign-in" && <button type="button" className="forgot-password-link" onClick={() => changeAuthMode("forgot-password")}>パスワードを忘れた場合</button>}
     </>}

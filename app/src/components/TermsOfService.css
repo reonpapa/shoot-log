@@ -1,0 +1,18 @@
+.terms-of-service { display: grid; width: 100%; min-width: 0; gap: 15px; }
+.terms-of-service > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px; border: 1px solid #8885; border-radius: 15px; background: #8881; }
+.terms-of-service > header h2 { margin: 3px 0 6px; }
+.terms-of-service > header p:last-child { margin: 0; font-size: .75rem; opacity: .62; }
+.terms-of-service > header button { flex: none; min-height: 41px; padding: 0 13px; border: 1px solid #8885; border-radius: 9px; background: transparent; white-space: nowrap; }
+.terms-of-service-body { display: grid; gap: 0; overflow: hidden; border: 1px solid #8885; border-radius: 15px; background: #8881; }
+.terms-of-service-body > p { margin: 0; padding: 22px; font-size: .82rem; line-height: 1.8; }
+.terms-of-service-body section { padding: 20px 22px; border-top: 1px solid #8884; }
+.terms-of-service-body h3 { margin: 0 0 10px; font-size: 1rem; }
+.terms-of-service-body section > p { margin: 8px 0; font-size: .78rem; line-height: 1.8; opacity: .78; }
+.terms-of-service-body ul { display: grid; gap: 6px; margin: 8px 0; padding-left: 21px; font-size: .78rem; line-height: 1.7; opacity: .78; }
+.terms-of-service-body a { color: #6d3bd1; overflow-wrap: anywhere; }
+.terms-contact { background: #6d3bd10a; }
+.terms-contact dl { display: grid; gap: 7px; margin: 0; }
+.terms-contact dl > div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; font-size: .78rem; }
+.terms-contact dt { font-weight: 800; opacity: .62; }
+.terms-contact dd { margin: 0; }
+@media (max-width: 700px) { .terms-of-service > header { flex-direction: column; padding: 18px 16px; }.terms-of-service > header button { width: 100%; }.terms-of-service-body > p, .terms-of-service-body section { padding: 18px 16px; }.terms-contact dl > div { grid-template-columns: 1fr; gap: 3px; } }

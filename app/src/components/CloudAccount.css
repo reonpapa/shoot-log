@@ -15,8 +15,14 @@
 .cloud-auth-tabs button { min-height: 38px; padding: 0 14px; border: 1px solid #8885; border-radius: 999px; background: transparent; }
 .cloud-auth-tabs button.selected { border-color: #6d3bd1; background: #6d3bd118; color: #6d3bd1; font-weight: 800; }
 .cloud-account form .email-field { grid-column: 1 / -1; }
+.auth-legal-consent { display: grid; grid-column: 1 / -1; gap: 7px; padding: 12px; border: 1px solid #8884; border-radius: 9px; background: #8881; }
+.cloud-account .auth-legal-consent > label { display: flex; align-items: center; gap: 9px; }
+.cloud-account .auth-legal-consent input { flex: none; width: 20px; min-height: 20px; margin: 0; padding: 0; accent-color: #6d3bd1; }
+.auth-legal-consent nav { display: flex; flex-wrap: wrap; gap: 7px 12px; padding-left: 29px; }
+.auth-legal-consent button { padding: 0; border: 0; background: transparent; color: #6d3bd1; font-size: .7rem; text-decoration: underline; }
 .cloud-auth-submit { display: flex; grid-column: 1 / -1; align-items: center; gap: 12px; }
 .cloud-auth-submit button { flex: none; min-height: 41px; padding: 0 16px; border: 0; border-radius: 9px; background: #6d3bd1; color: #fff; }
+.cloud-auth-submit button:disabled { cursor: not-allowed; opacity: .45; }
 .cloud-auth-submit small { font-size: .68rem; opacity: .58; }
 .cloud-actions { display: flex; gap: 8px; align-items: center; }
 .cloud-account form .cloud-actions { grid-column: 1 / -1; }
