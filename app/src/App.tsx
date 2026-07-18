@@ -43,7 +43,8 @@ function App() {
   const activeSession = useMemo(() => sessions.find((item) => item.id === activeSessionId) ?? null, [sessions, activeSessionId]);
   const activeRound = activeSession?.rounds.find((round) => round.id === activeRoundId) ?? activeSession?.rounds[0] ?? null;
   const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
-  const displayedScreen: Screen = cloudSync.passwordRecovery ? "account" : screen;
+  const signedIn = cloudSync.view.phase !== "signed-out" && !!cloudSync.view.email;
+  const displayedScreen: Screen = cloudSync.passwordRecovery || !signedIn ? "account" : screen;
 
   useEffect(() => saveSessions(sessions), [sessions]);
   useEffect(() => saveMasterData(masterData), [masterData]);
@@ -149,14 +150,22 @@ function App() {
     }
   }
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
+  async function signIn(email: string, password: string) {
+    await cloudSync.signIn(email, password);
+    setScreen("list");
+  }
+  async function signOut() {
+    await cloudSync.signOut();
+    setScreen("account");
+  }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.2.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.2.2</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {displayedScreen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
-    {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} passwordRecovery={cloudSync.passwordRecovery} onBack={() => setScreen("list")} onSignIn={cloudSync.signIn} onSignUp={cloudSync.signUp} onSignOut={cloudSync.signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onDeleteAccount={cloudSync.deleteAccount} />}
+    {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} passwordRecovery={cloudSync.passwordRecovery} onBack={() => setScreen("list")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onDeleteAccount={cloudSync.deleteAccount} />}
     {displayedScreen === "ammunition" && <AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {displayedScreen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {displayedScreen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}

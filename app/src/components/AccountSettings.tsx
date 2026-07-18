@@ -17,10 +17,11 @@ interface Props {
 }
 
 export function AccountSettings({ cloud, passwordRecovery, onBack, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onDeleteAccount }: Props) {
+  const signedIn = cloud.phase !== "signed-out" && !!cloud.email;
   return <section className="account-settings">
     <header>
       <div><p className="eyebrow">ACCOUNT SETTINGS</p><h2>アカウント設定</h2><p>ログイン、クラウド同期、アカウントの管理を行います。</p></div>
-      <button onClick={onBack}>履歴へ戻る</button>
+      {signedIn && <button onClick={onBack}>履歴へ戻る</button>}
     </header>
     <CloudAccount view={cloud} passwordRecovery={passwordRecovery} onSignIn={onSignIn} onSignUp={onSignUp} onSignOut={onSignOut} onSendPasswordReset={onSendPasswordReset} onChangePassword={onChangePassword} onCompletePasswordRecovery={onCompletePasswordRecovery} onSync={onSync} onDeleteAccount={onDeleteAccount} />
     <aside><strong>端末内データについて</strong><p>射撃記録は端末内へ即時保存され、ログイン中はクラウドへ自動同期されます。JSONファイルの保存・復元は「バックアップ」画面で行います。</p></aside>
