@@ -11,6 +11,13 @@
 .cloud-account form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .cloud-account label { display: grid; gap: 6px; font-size: .72rem; font-weight: 800; }
 .cloud-account input { width: 100%; min-height: 42px; padding: 0 11px; border: 1px solid #8885; border-radius: 9px; background: #fff8; }
+.cloud-auth-tabs { display: flex; gap: 7px; }
+.cloud-auth-tabs button { min-height: 38px; padding: 0 14px; border: 1px solid #8885; border-radius: 999px; background: transparent; }
+.cloud-auth-tabs button.selected { border-color: #6d3bd1; background: #6d3bd118; color: #6d3bd1; font-weight: 800; }
+.cloud-account form .email-field { grid-column: 1 / -1; }
+.cloud-auth-submit { display: flex; grid-column: 1 / -1; align-items: center; gap: 12px; }
+.cloud-auth-submit button { flex: none; min-height: 41px; padding: 0 16px; border: 0; border-radius: 9px; background: #6d3bd1; color: #fff; }
+.cloud-auth-submit small { font-size: .68rem; opacity: .58; }
 .cloud-actions { display: flex; gap: 8px; align-items: center; }
 .cloud-account form .cloud-actions { grid-column: 1 / -1; }
 .cloud-actions button { min-height: 41px; padding: 0 13px; border: 1px solid #8885; border-radius: 9px; background: transparent; }
@@ -31,4 +38,4 @@
 .delete-confirmation .danger-button { justify-self: start; min-height: 41px; padding: 0 13px; border: 0; border-radius: 9px; background: #b44444; color: #fff; }
 .delete-confirmation .danger-button:disabled { cursor: not-allowed; opacity: .42; }
 @media (prefers-color-scheme: dark) { .cloud-account input { background: #17161a; } }
-@media (max-width: 700px) { .cloud-account { padding: 19px; }.cloud-account-heading, .cloud-signed-in { align-items: stretch; flex-direction: column; }.cloud-account form { grid-template-columns: 1fr; }.cloud-account form .cloud-actions { grid-column: 1; }.cloud-actions { display: grid; grid-template-columns: 1fr 1fr; }.cloud-actions button { width: 100%; } }
+@media (max-width: 700px) { .cloud-account { padding: 19px; }.cloud-account-heading, .cloud-signed-in { align-items: stretch; flex-direction: column; }.cloud-account form { grid-template-columns: 1fr; }.cloud-account form .email-field, .cloud-account form .cloud-actions, .cloud-auth-submit { grid-column: 1; }.cloud-auth-submit { align-items: stretch; flex-direction: column; }.cloud-auth-submit button { width: 100%; }.cloud-actions { display: grid; grid-template-columns: 1fr 1fr; }.cloud-actions button { width: 100%; } }
