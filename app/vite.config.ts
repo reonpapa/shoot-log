@@ -22,7 +22,7 @@ function offlineServiceWorker(baseUrl: string): Plugin {
       ];
       const precache = [...new Set(files)];
       const source = `
-const CACHE_NAME = "shoot-log-v2.1.1";
+const CACHE_NAME = "shoot-log-v2.1.2";
 const BASE_URL = ${JSON.stringify(baseUrl)};
 const PRECACHE = ${JSON.stringify(precache)};
 
@@ -49,18 +49,23 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(caches.match(BASE_URL + "index.html").then((cached) => cached || fetch(request)));
+    event.respondWith(
+      fetch(request).then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          void caches.open(CACHE_NAME).then((cache) => cache.put(BASE_URL + "index.html", copy));
+        }
+        return response;
+      }).catch(() => caches.open(CACHE_NAME).then((cache) => cache.match(BASE_URL + "index.html"))),
+    );
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-      if (response.ok) {
-        const copy = response.clone();
-        void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-      }
+    caches.open(CACHE_NAME).then((cache) => cache.match(request).then((cached) => cached || fetch(request).then((response) => {
+      if (response.ok) void cache.put(request, response.clone());
       return response;
-    })),
+    }))),
   );
 });
 `.trimStart();

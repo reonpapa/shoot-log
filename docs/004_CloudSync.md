@@ -1,6 +1,6 @@
 # Cloud Sync
 
-Version 2.1.1 uses Supabase while retaining LocalStorage as the immediate, offline-capable store. Account and cloud-sync controls are separated from JSON backup management, and authentication forms integrate with device password managers.
+Version 2.1.2 uses Supabase while retaining LocalStorage as the immediate, offline-capable store. Account and cloud-sync controls are separated from JSON backup management, authentication forms integrate with device password managers, and PWA updates use only the active version cache.
 
 ## Flow
 

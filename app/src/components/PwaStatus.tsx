@@ -64,11 +64,16 @@ export function PwaStatus() {
     const clearInstallPrompt = () => setInstallPrompt(null);
     const goOnline = () => setIsOnline(true);
     const goOffline = () => setIsOnline(false);
+    const checkForUpdate = () => {
+      if (document.visibilityState === "visible") void registrationRef.current?.update();
+    };
 
     window.addEventListener("beforeinstallprompt", captureInstallPrompt);
     window.addEventListener("appinstalled", clearInstallPrompt);
     window.addEventListener("online", goOnline);
     window.addEventListener("offline", goOffline);
+    window.addEventListener("focus", checkForUpdate);
+    document.addEventListener("visibilitychange", checkForUpdate);
     return () => {
       disposed = true;
       if (import.meta.env.PROD && "serviceWorker" in navigator) navigator.serviceWorker.removeEventListener("controllerchange", reloadAfterUpdate);
@@ -76,6 +81,8 @@ export function PwaStatus() {
       window.removeEventListener("appinstalled", clearInstallPrompt);
       window.removeEventListener("online", goOnline);
       window.removeEventListener("offline", goOffline);
+      window.removeEventListener("focus", checkForUpdate);
+      document.removeEventListener("visibilitychange", checkForUpdate);
     };
   }, []);
 
