@@ -149,11 +149,11 @@ function App() {
   function returnToList() { setActiveSessionId(null); setActiveRoundId(null); setScreen("list"); }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.0.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.0.2</p></header>
     <PwaStatus />
     {screen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {screen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
-    {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} cloud={cloudSync.view} onBack={() => setScreen("list")} onImport={importBackup} onCloudSignIn={cloudSync.signIn} onCloudSignUp={cloudSync.signUp} onCloudSignOut={cloudSync.signOut} onCloudSync={cloudSync.syncNow} />}
+    {screen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} cloud={cloudSync.view} onBack={() => setScreen("list")} onImport={importBackup} onCloudSignIn={cloudSync.signIn} onCloudSignUp={cloudSync.signUp} onCloudSignOut={cloudSync.signOut} onCloudSync={cloudSync.syncNow} onCloudDeleteAccount={cloudSync.deleteAccount} />}
     {screen === "ammunition" && <AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {screen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
     {screen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}

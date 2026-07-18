@@ -22,5 +22,13 @@
 .cloud-notice, .cloud-error { margin: 0; padding: 10px 12px; border-radius: 8px; font-size: .76rem; font-weight: 700; }
 .cloud-notice { background: #4a9b641c; color: #3f8a58; }
 .cloud-error { background: #c64f4f1c; color: #b44444; }
+.cloud-account-delete { padding-top: 12px; border-top: 1px solid #8883; }
+.delete-link { padding: 0; border: 0; background: transparent; color: #b44444; font-size: .72rem; text-decoration: underline; }
+.delete-confirmation { display: grid; gap: 10px; margin-top: 12px; padding: 14px; border: 1px solid #c64f4f55; border-radius: 10px; background: #c64f4f0c; }
+.delete-confirmation > strong { color: #b44444; font-size: .82rem; }
+.delete-confirmation p { margin: 0; font-size: .74rem; opacity: .72; }
+.delete-confirmation label { max-width: 440px; }
+.delete-confirmation .danger-button { justify-self: start; min-height: 41px; padding: 0 13px; border: 0; border-radius: 9px; background: #b44444; color: #fff; }
+.delete-confirmation .danger-button:disabled { cursor: not-allowed; opacity: .42; }
 @media (prefers-color-scheme: dark) { .cloud-account input { background: #17161a; } }
 @media (max-width: 700px) { .cloud-account { padding: 19px; }.cloud-account-heading, .cloud-signed-in { align-items: stretch; flex-direction: column; }.cloud-account form { grid-template-columns: 1fr; }.cloud-account form .cloud-actions { grid-column: 1; }.cloud-actions { display: grid; grid-template-columns: 1fr 1fr; }.cloud-actions button { width: 100%; } }

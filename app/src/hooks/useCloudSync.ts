@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { emptyAmmunitionLedger } from "../domain/ammunition";
 import {
   cloudPayloadData,
   cloudPayloadSignature,
@@ -14,6 +15,14 @@ import {
 
 const META_KEY = "shoot-log.cloud-sync.v1";
 const SAVE_DELAY_MS = 1_200;
+
+function emptyLocalData(): LocalDataSet {
+  return {
+    sessions: [],
+    masterData: { rangeNames: [], ammunitionNames: [] },
+    ammunitionLedger: emptyAmmunitionLedger(),
+  };
+}
 
 interface LocalCloudMeta {
   userId: string;
@@ -146,7 +155,15 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
       const remote = await loadCloudSnapshot();
       let finalPayload: CloudSnapshotPayload;
 
-      if (!remote) {
+      if (meta && meta.userId !== user.id) {
+        if (remote) {
+          rememberSync(user, remote.revision, remote.payload, remote.updatedAt);
+          finalPayload = remote.payload;
+        } else {
+          const saved = await savePayload(user, createCloudPayload(emptyLocalData(), {}), 0);
+          finalPayload = saved.payload;
+        }
+      } else if (!remote) {
         const saved = await savePayload(user, localPayload, 0);
         finalPayload = saved.payload;
       } else if (meta?.userId === user.id && meta.revision === remote.revision) {
@@ -275,7 +292,12 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const emailRedirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo },
+    });
     if (error) throw error;
     return data.session ? "アカウントを作成し、ログインしました。" : "確認メールを送信しました。メール内のリンクを開いてください。";
   }, []);
@@ -291,6 +313,13 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     await pullLatest();
   }, [pullLatest]);
 
+  const deleteAccount = useCallback(async () => {
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    const { error } = await supabase.rpc("delete_shoot_log_account");
+    if (error) throw error;
+    await supabase.auth.signOut({ scope: "local" });
+  }, []);
+
   const recordSessionDeletion = useCallback((sessionId: string) => {
     const deletedSessions = { ...deletedSessionsRef.current, [sessionId]: new Date().toISOString() };
     deletedSessionsRef.current = deletedSessions;
@@ -299,5 +328,5 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     if (user && meta?.userId === user.id) writeMeta({ ...meta, deletedSessions });
   }, []);
 
-  return { view, signIn, signUp, signOut, syncNow, recordSessionDeletion };
+  return { view, signIn, signUp, signOut, syncNow, deleteAccount, recordSessionDeletion };
 }
