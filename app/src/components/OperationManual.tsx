@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
+import { shouldUseManualShareSheet } from "./manualSharing";
 import "./OperationManual.css";
 
 const MANUAL_URL = `${import.meta.env.BASE_URL}manuals/shoot-log-operation-manual.pdf`;
-const MANUAL_FILENAME = "shoot-log-v2.10.2-operation-manual.pdf";
+const MANUAL_FILENAME = "shoot-log-v2.10.3-operation-manual.pdf";
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";
 
 export function OperationManual() {
   const [manualFile, setManualFile] = useState<File | null>(null);
   const [manualState, setManualState] = useState<ManualState>("loading");
+  const usesShareSheet = shouldUseManualShareSheet(navigator);
 
   useEffect(() => {
     let active = true;
@@ -39,7 +41,8 @@ export function OperationManual() {
         files: [manualFile],
         title: "Shoot Log 操作マニュアル",
       };
-      const canShareFile = typeof navigator.share === "function"
+      const canShareFile = usesShareSheet
+        && typeof navigator.share === "function"
         && (typeof navigator.canShare !== "function" || navigator.canShare(shareData));
 
       if (canShareFile) {
@@ -63,8 +66,8 @@ export function OperationManual() {
   const buttonLabel = manualState === "loading"
     ? "マニュアルを準備中…"
     : manualState === "saving"
-      ? "保存画面を開いています…"
-      : "操作マニュアルを保存";
+      ? usesShareSheet ? "保存画面を開いています…" : "ダウンロードしています…"
+      : usesShareSheet ? "操作マニュアルを保存" : "操作マニュアルをダウンロード";
 
   return <section className="operation-manual">
     <div className="operation-manual-heading">
@@ -73,7 +76,7 @@ export function OperationManual() {
         <h3>操作マニュアル</h3>
         <p>インストールから射撃入力、分析、実包管理、バックアップまでを画像付きで説明します。</p>
       </div>
-      <strong>PDF・全16ページ</strong>
+      <strong>PDF・全17ページ</strong>
     </div>
     <button
       className="operation-manual-download"
@@ -82,10 +85,10 @@ export function OperationManual() {
       onClick={() => void saveManual()}
     >
       <span>{buttonLabel}</span>
-      <small>Version 2.10.2対応</small>
+      <small>Version 2.10.3対応</small>
     </button>
-    <p className="operation-manual-note">iPhoneでは共有画面の「ファイルに保存」を選びます。保存後は、そのままShoot Logへ戻れます。</p>
-    {manualState === "saved" && <p className="operation-manual-status" role="status">保存操作を開始しました。</p>}
+    <p className="operation-manual-note">iPhone・iPadでは共有画面の「ファイルに保存」を選びます。Mac・WindowsではPDFを直接ダウンロードします。</p>
+    {manualState === "saved" && <p className="operation-manual-status" role="status">{usesShareSheet ? "保存操作を開始しました。" : "ダウンロードを開始しました。"}</p>}
     {manualState === "error" && <p className="operation-manual-status is-error" role="alert">マニュアルを準備できませんでした。通信状態を確認して、もう一度この画面を開いてください。</p>}
   </section>;
 }
