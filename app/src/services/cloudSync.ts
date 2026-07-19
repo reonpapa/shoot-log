@@ -33,6 +33,22 @@ export interface CloudSnapshotRow {
   updatedAt: string;
 }
 
+export class CloudSyncConflictError extends Error {
+  readonly code = "SYNC_CONFLICT";
+
+  constructor() {
+    super("別の端末の更新と重なりました。");
+    this.name = "CloudSyncConflictError";
+  }
+}
+
+export function isCloudSyncConflict(error: unknown): boolean {
+  if (error instanceof CloudSyncConflictError) return true;
+  if (!error || typeof error !== "object") return false;
+  const value = error as { code?: unknown; message?: unknown };
+  return value.code === "40001" || (typeof value.message === "string" && value.message.includes("SYNC_CONFLICT"));
+}
+
 function normalizeDeletedSessions(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
@@ -129,7 +145,7 @@ export async function saveCloudSnapshot(payload: CloudSnapshotPayload, expectedR
     p_expected_revision: expectedRevision,
   });
   if (error) throw error;
-  if (!data) throw new Error("クラウド保存結果を取得できませんでした。");
+  if (!data) throw new CloudSyncConflictError();
   const row = Array.isArray(data) ? data[0] : data;
   return {
     payload: parseCloudPayload(row.payload),

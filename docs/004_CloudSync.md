@@ -10,6 +10,7 @@ Version 2.7.4 uses Supabase while retaining LocalStorage as the immediate, offli
 4. When connectivity returns, pending local changes are retried automatically.
 5. Session deletions are tracked as tombstones so another device cannot restore a deleted session.
 6. When a different account signs in on the same device, only that account's cloud snapshot is loaded; data from the previous account is never merged into it.
+7. Same-browser tabs serialize cloud writes. Expected revision conflicts return an empty result, then the client reloads and merges without recording a Postgres error for normal concurrent edits.
 
 ## Security
 

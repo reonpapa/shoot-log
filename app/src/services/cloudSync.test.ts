@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCloudPayload, mergeCloudPayload } from "./cloudSync";
+import { CloudSyncConflictError, createCloudPayload, isCloudSyncConflict, mergeCloudPayload } from "./cloudSync";
 import { createLedger, createStoredSession } from "../test/fixtures";
 
 const dataSet = (sessions: ReturnType<typeof createStoredSession>[]) => ({
@@ -45,5 +45,11 @@ describe("クラウド同期の競合解決", () => {
 
     expect(merged.sessions).toHaveLength(1);
     expect(merged.sessions[0].updatedAt).toBe(newer.updatedAt);
+  });
+
+  it("新旧どちらの競合応答も判定できる", () => {
+    expect(isCloudSyncConflict(new CloudSyncConflictError())).toBe(true);
+    expect(isCloudSyncConflict({ code: "40001", message: "SYNC_CONFLICT" })).toBe(true);
+    expect(isCloudSyncConflict(new Error("ネットワークエラー"))).toBe(false);
   });
 });
