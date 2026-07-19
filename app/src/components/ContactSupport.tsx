@@ -4,7 +4,7 @@ interface Props {
   onBack: () => void;
 }
 
-const APP_VERSION = "2.10.3";
+const APP_VERSION = "2.10.4";
 
 function createInquiryHref(): string {
   const subject = "[Shoot Log] お問い合わせ";
@@ -30,7 +30,7 @@ function createInquiryHref(): string {
 Shoot Log Version ${APP_VERSION}
 
 ※パスワード、認証メールのリンク、所持許可証番号などは記載しないでください。`;
-  return `mailto:reonpapa@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return `mailto:aliexadduser@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 export default function ContactSupport({ onBack }: Props) {
