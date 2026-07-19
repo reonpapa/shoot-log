@@ -4,6 +4,7 @@ import type { SessionReview } from "../domain/shooting";
 import { SessionReviewForm } from "./SessionReviewForm";
 import { StandRadialChart } from "./StandRadialChart";
 import { PracticeThemeBanner } from "./PracticeThemeBanner";
+import { ThemeAchievementControl } from "./ThemeAchievementControl";
 import "./SessionAnalysis.css";
 
 interface Props { session: StoredSession; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
@@ -29,6 +30,7 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
     </header>
 
     <PracticeThemeBanner compact theme={session.session.practiceTheme ?? ""} achievement={session.review.themeAchievement} />
+    <ThemeAchievementControl review={session.review} theme={session.session.practiceTheme ?? ""} onChange={onSaveReview} />
 
     <div className="analysis-total"><div><span>総合スコア</span><strong>{stats.score}<small> / {stats.targets}</small></strong></div><div><span>命中率</span><strong>{stats.targets ? Math.round(stats.score / stats.targets * 100) : 0}<small>%</small></strong></div><div><span>消費実包</span><strong>{stats.cartridgesUsed}<small>発</small></strong></div></div>
 
@@ -40,6 +42,6 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
     <div className="analysis-details"><article><span>命中内訳</span><strong>初矢 {stats.firstShotHits}</strong><strong>二の矢 {stats.secondShotHits}</strong></article><article><span>失中方向</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>
 
     <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>射台別分析</h3></div><div className="radial-legend"><span><i className="legend-hit" />総合命中率</span><span><i className="legend-first" />初矢命中率</span><span><i className="legend-left" />←失中</span><span><i className="legend-center" />↑失中</span><span><i className="legend-right" />→失中</span></div></header><div className="stand-analysis-grid">{standStats.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
-    <SessionReviewForm review={session.review} practiceTheme={session.session.practiceTheme ?? ""} onSave={onSaveReview} />
+    <SessionReviewForm review={session.review} onSave={onSaveReview} />
   </section>;
 }
