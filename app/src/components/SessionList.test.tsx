@@ -15,6 +15,9 @@ describe("過去の練習テーマ", () => {
 
     expect(markup).toContain("過去の練習テーマ");
     expect(markup).toContain("スコア推移");
+    expect(markup).toContain("できた 1");
+    expect(markup).toContain("一部できた 2");
+    expect(markup).toContain("できなかった 0");
     expect(markup).toContain("07-18");
     expect(markup).toContain("08-01");
   });
