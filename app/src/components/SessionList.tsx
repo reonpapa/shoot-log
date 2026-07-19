@@ -3,14 +3,24 @@ import { calculateSessionStats } from "../domain/shootingStats";
 import { useState } from "react";
 import type { Firearm } from "../domain/ammunition";
 import type { ThemeAchievement } from "../domain/shooting";
+import { filterSessionsByPracticeTheme, getPracticeThemeProgress } from "../services/sessionPlanning";
 import "./SessionList.css";
 
-interface Props { sessions: StoredSession[]; firearms: Firearm[]; onCreate: () => void; onManage: () => void; onData: () => void; onAccount: () => void; onAmmunition: () => void; onOpen: (id: string) => void; onDelete: (id: string) => void; }
-export function SessionList({ sessions, firearms, onCreate, onManage, onData, onAccount, onAmmunition, onOpen, onDelete }: Props) {
+interface Props { sessions: StoredSession[]; firearms: Firearm[]; suggestedPracticeTheme: string; onCreate: () => void; onManage: () => void; onData: () => void; onAccount: () => void; onAmmunition: () => void; onOpen: (id: string) => void; onDelete: (id: string) => void; }
+export function SessionList({ sessions, firearms, suggestedPracticeTheme, onCreate, onManage, onData, onAccount, onAmmunition, onOpen, onDelete }: Props) {
   const [page, setPage] = useState(1);
+  const [showThemeOnly, setShowThemeOnly] = useState(false);
   const pageSize = 10;
   const drafts = sessions.filter((item) => item.status === "draft");
-  const orderedSessions = [...sessions].sort((a, b) =>
+  const currentTheme = suggestedPracticeTheme.trim();
+  const themeSessions = filterSessionsByPracticeTheme(sessions, currentTheme);
+  const themeProgress = getPracticeThemeProgress(sessions, currentTheme);
+  const scoreTrend = themeProgress.sessions.slice(-5).map((item) => {
+    const stats = calculateSessionStats({ id: item.id, date: item.session.date, rangeName: item.session.rangeName, ammunitionName: item.session.ammunitionName, weather: item.session.weather, rounds: item.rounds, sessionMemo: item.session.memo });
+    return { id: item.id, date: item.session.date, score: stats.score, targets: stats.targets, rate: stats.targets ? stats.score / stats.targets * 100 : 0 };
+  });
+  const filteredSessions = showThemeOnly && currentTheme ? themeSessions : sessions;
+  const orderedSessions = [...filteredSessions].sort((a, b) =>
     b.session.date.localeCompare(a.session.date) || b.createdAt.localeCompare(a.createdAt)
   );
   const totalPages = Math.max(1, Math.ceil(orderedSessions.length / pageSize));
@@ -18,9 +28,15 @@ export function SessionList({ sessions, firearms, onCreate, onManage, onData, on
   const visibleSessions = orderedSessions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   return <section className="session-list">
     <header className="session-list-header"><div><p className="eyebrow">SESSIONS</p><h2>射撃履歴</h2></div><div className="session-list-actions"><button className="account-button" onClick={onAccount}>アカウント</button><button onClick={onData}>バックアップ</button><button onClick={onManage}>登録内容を管理</button><button className="ammo-ledger-button" onClick={onAmmunition}>実包管理</button><button className="primary-button" onClick={onCreate}>＋ 新しいセッション</button></div></header>
+    {currentTheme && <section className={`active-practice-theme${showThemeOnly ? " filtering" : ""}`} aria-label="継続中の練習テーマ">
+      <header><div><p className="eyebrow">CURRENT FOCUS</p><strong>継続中の練習テーマ</strong><h3>{currentTheme}</h3></div><button type="button" aria-pressed={showThemeOnly} onClick={() => { setShowThemeOnly((current) => !current); setPage(1); }}>{showThemeOnly ? "すべての履歴を表示" : `関連履歴 ${themeSessions.length}件を表示`}</button></header>
+      <div className="practice-theme-kpis"><article><span>実施回数</span><strong>{themeProgress.sessionCount}<small>回</small></strong></article><article><span>現在の連続</span><strong>{themeProgress.consecutiveCount}<small>回</small></strong></article><article><span>できた</span><strong>{themeProgress.achievedCount}<small>回</small></strong></article></div>
+      <div className="practice-theme-results"><span className="achieved">できた {themeProgress.achievedCount}</span><span className="partial">一部できた {themeProgress.partialCount}</span><span className="not-achieved">できなかった {themeProgress.notAchievedCount}</span></div>
+      {scoreTrend.length > 0 ? <section className="practice-theme-trend"><h4>このテーマのスコア推移 <small>直近5回</small></h4><div>{scoreTrend.map((item) => <article key={item.id}><strong>{item.score}<small>/{item.targets}</small></strong><div className="practice-theme-trend-track"><i style={{ height: `${item.rate}%` }} /></div><span>{item.date.slice(5)}</span></article>)}</div></section> : <p className="practice-theme-pending">次回このテーマで射撃すると、ここに進捗とスコア推移が表示されます。</p>}
+    </section>}
     {drafts.length > 0 && <button className="unfinished-alert" onClick={() => onOpen(drafts[0].id)}><strong>未完了セッション {drafts.length}件</strong><span>入力を続ける →</span></button>}
     {sessions.length === 0 ? <div className="empty-session"><p>まだ射撃記録がありません。</p><button onClick={onCreate}>最初のセッションを作成</button></div> :
-      <div className="session-card-list">{visibleSessions.map((item) => {
+      orderedSessions.length === 0 ? <div className="empty-session"><p>このテーマに関連する履歴はありません。</p><button onClick={() => { setShowThemeOnly(false); setPage(1); }}>すべての履歴を表示</button></div> : <div className="session-card-list">{visibleSessions.map((item) => {
         const stats = calculateSessionStats({ id: item.id, date: item.session.date, rangeName: item.session.rangeName, ammunitionName: item.session.ammunitionName, weather: item.session.weather, rounds: item.rounds, sessionMemo: item.session.memo });
         const firearm = firearms.find((candidate) => candidate.id === item.session.firearmId);
         return <article className={`session-card${item.status === "draft" ? " unfinished" : ""}`} key={item.id}>
