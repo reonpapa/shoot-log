@@ -14,6 +14,24 @@ export interface StandStats {
   misses: number;
   missDirections: Record<MissDirection, number>;
 }
+export interface RoundWindowStats {
+  rounds: number;
+  averageScore: number;
+  firstShotHitRate: number;
+}
+export interface RoundWindowComparison {
+  windowSize: number;
+  previous: RoundWindowStats;
+  recent: RoundWindowStats;
+  averageScoreDelta: number;
+  firstShotHitRateDelta: number;
+  weakestStand: {
+    standNo: number;
+    hitRate: number;
+    previousHitRate: number;
+    delta: number;
+  };
+}
 const directions = (): Record<MissDirection, number> => ({ left: 0, center: 0, right: 0, unknown: 0 });
 
 export function calculateShotCartridges(shot: Shot, round: ShootingRound): number {
@@ -73,4 +91,45 @@ export function calculateStandStats(session: ShootingSession): StandStats[] {
     }
   }
   return result;
+}
+
+function calculateRoundWindowStats(rounds: ShootingRound[]): RoundWindowStats {
+  const stats = rounds.map(calculateRoundStats);
+  const targets = stats.reduce((sum, item) => sum + item.targets, 0);
+  const score = stats.reduce((sum, item) => sum + item.score, 0);
+  const firstShotHits = stats.reduce((sum, item) => sum + item.firstShotHits, 0);
+  return {
+    rounds: rounds.length,
+    averageScore: rounds.length ? score / rounds.length : 0,
+    firstShotHitRate: targets ? firstShotHits / targets * 100 : 0,
+  };
+}
+
+export function calculateRoundWindowComparison(rounds: ShootingRound[], windowSize = 5): RoundWindowComparison | null {
+  if (!Number.isInteger(windowSize) || windowSize <= 0 || rounds.length < windowSize * 2) return null;
+  const recentRounds = rounds.slice(-windowSize);
+  const previousRounds = rounds.slice(-(windowSize * 2), -windowSize);
+  const previous = calculateRoundWindowStats(previousRounds);
+  const recent = calculateRoundWindowStats(recentRounds);
+  const recentStands = calculateStandStats({ id: "recent", date: "", rangeName: "", ammunitionName: "", rounds: recentRounds });
+  const previousStands = calculateStandStats({ id: "previous", date: "", rangeName: "", ammunitionName: "", rounds: previousRounds });
+  const weakest = recentStands
+    .filter((stand) => stand.targets > 0)
+    .map((stand) => ({ ...stand, hitRate: stand.score / stand.targets * 100 }))
+    .sort((a, b) => a.hitRate - b.hitRate || a.standNo - b.standNo)[0];
+  const previousWeakestStand = previousStands.find((stand) => stand.standNo === weakest.standNo);
+  const previousHitRate = previousWeakestStand?.targets ? previousWeakestStand.score / previousWeakestStand.targets * 100 : 0;
+  return {
+    windowSize,
+    previous,
+    recent,
+    averageScoreDelta: recent.averageScore - previous.averageScore,
+    firstShotHitRateDelta: recent.firstShotHitRate - previous.firstShotHitRate,
+    weakestStand: {
+      standNo: weakest.standNo,
+      hitRate: weakest.hitRate,
+      previousHitRate,
+      delta: weakest.hitRate - previousHitRate,
+    },
+  };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateRoundStats, calculateSessionStats } from "./shootingStats";
+import { calculateRoundStats, calculateRoundWindowComparison, calculateSessionStats } from "./shootingStats";
 import { createRound } from "../test/fixtures";
 
 describe("射撃集計", () => {
@@ -47,5 +47,37 @@ describe("射撃集計", () => {
 
     expect(stats.expectedCartridgesUsed).toBe(3);
     expect(stats.cartridgesUsed).toBe(5);
+  });
+
+  it("直近5ラウンドをその前5ラウンドと比較する", () => {
+    const previous = Array.from({ length: 5 }, (_, index) => createRound({
+      roundNo: index + 1,
+      finalResults: Array.from({ length: 25 }, () => "hit-on-first"),
+    }));
+    const recentResults = Array.from({ length: 25 }, (_, index) => index % 5 === 4 ? "miss" as const : "hit-on-first" as const);
+    const recent = Array.from({ length: 5 }, (_, index) => createRound({
+      roundNo: index + 6,
+      finalResults: recentResults,
+    }));
+
+    const comparison = calculateRoundWindowComparison([...previous, ...recent]);
+
+    expect(comparison).not.toBeNull();
+    expect(comparison?.previous.averageScore).toBe(25);
+    expect(comparison?.recent.averageScore).toBe(20);
+    expect(comparison?.averageScoreDelta).toBe(-5);
+    expect(comparison?.firstShotHitRateDelta).toBe(-20);
+    expect(comparison?.weakestStand).toEqual({
+      standNo: 5,
+      hitRate: 0,
+      previousHitRate: 100,
+      delta: -100,
+    });
+  });
+
+  it("比較に必要な10ラウンド未満では結果を作らない", () => {
+    const rounds = Array.from({ length: 9 }, (_, index) => createRound({ roundNo: index + 1 }));
+
+    expect(calculateRoundWindowComparison(rounds)).toBeNull();
   });
 });
