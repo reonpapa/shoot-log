@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createStoredSession } from "../test/fixtures";
-import { filterSessionsByPracticeTheme, getPracticeThemeProgress, getSuggestedPracticeTheme } from "./sessionPlanning";
+import { createRound, createStoredSession } from "../test/fixtures";
+import { filterSessionsByPracticeTheme, getPracticeThemeHistory, getPracticeThemeProgress, getSuggestedPracticeTheme } from "./sessionPlanning";
 
 describe("次回の練習テーマ", () => {
   it("明示した次回課題を最優先する", () => {
@@ -86,5 +86,53 @@ describe("練習テーマの進捗", () => {
     draft.session.practiceTheme = "初矢の照準を確認する";
 
     expect(getPracticeThemeProgress([draft], "初矢の照準を確認する").sessionCount).toBe(0);
+  });
+});
+
+describe("練習テーマ履歴", () => {
+  it("表記揺れをまとめて新しいテーマ順に集計する", () => {
+    const older = createStoredSession({ id: "older", date: "2026-07-10" });
+    older.session.practiceTheme = "クレーを見てから\n銃を動かす";
+    older.review.themeAchievement = "partial";
+    const newer = createStoredSession({ id: "newer", date: "2026-07-19" });
+    newer.session.practiceTheme = "クレーを見てから  銃を動かす";
+    newer.review.themeAchievement = "achieved";
+    const latestOther = createStoredSession({ id: "latest-other", date: "2026-07-20" });
+    latestOther.session.practiceTheme = "頬付けを安定させる";
+
+    const history = getPracticeThemeHistory([older, newer, latestOther]);
+
+    expect(history.map((item) => item.theme)).toEqual(["頬付けを安定させる", "クレーを見てから  銃を動かす"]);
+    expect(history[1]).toMatchObject({ sessionCount: 2, ratedCount: 2, achievedCount: 1, achievementRate: 50 });
+  });
+
+  it("テーマ別の平均ラウンドスコアを計算する", () => {
+    const tenHits = createRound({ finalResults: [
+      ...Array.from({ length: 10 }, () => "hit-on-first" as const),
+      ...Array.from({ length: 15 }, () => "miss" as const),
+    ] });
+    const twentyHits = createRound({ roundNo: 2, finalResults: [
+      ...Array.from({ length: 20 }, () => "hit-on-first" as const),
+      ...Array.from({ length: 5 }, () => "miss" as const),
+    ] });
+    const session = createStoredSession({ rounds: [tenHits, twentyHits] });
+    session.session.practiceTheme = "初矢を丁寧に撃つ";
+
+    expect(getPracticeThemeHistory([session])[0].averageScore).toBe(15);
+  });
+
+  it("達成度が未入力なら達成率を未評価にする", () => {
+    const session = createStoredSession();
+    session.session.practiceTheme = "初矢を丁寧に撃つ";
+
+    expect(getPracticeThemeHistory([session])[0]).toMatchObject({ ratedCount: 0, achievementRate: null });
+  });
+
+  it("未完了セッションとテーマ未設定セッションを除外する", () => {
+    const draft = createStoredSession({ id: "draft", status: "draft" });
+    draft.session.practiceTheme = "初矢を丁寧に撃つ";
+    const blank = createStoredSession({ id: "blank" });
+
+    expect(getPracticeThemeHistory([draft, blank])).toEqual([]);
   });
 });
