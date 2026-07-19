@@ -42,6 +42,6 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
     <div className="analysis-details"><article><span>命中内訳</span><strong>初矢 {stats.firstShotHits}</strong><strong>二の矢 {stats.secondShotHits}</strong></article><article><span>失中方向</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>
 
     <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>射台別分析</h3></div><div className="radial-legend"><span><i className="legend-hit" />総合命中率</span><span><i className="legend-first" />初矢命中率</span><span><i className="legend-left" />←失中</span><span><i className="legend-center" />↑失中</span><span><i className="legend-right" />→失中</span></div></header><div className="stand-analysis-grid">{standStats.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
-    <SessionReviewForm review={session.review} onSave={onSaveReview} />
+    <SessionReviewForm review={session.review} onSave={onSaveReview} onBack={onBack} />
   </section>;
 }
