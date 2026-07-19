@@ -1,0 +1,18 @@
+.privacy-policy { display: grid; width: 100%; min-width: 0; gap: 15px; }
+.privacy-policy > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px; border: 1px solid #8885; border-radius: 15px; background: #8881; }
+.privacy-policy > header h2 { margin: 3px 0 6px; }
+.privacy-policy > header p:last-child { margin: 0; font-size: .75rem; opacity: .62; }
+.privacy-policy > header button { flex: none; min-height: 41px; padding: 0 13px; border: 1px solid #8885; border-radius: 9px; background: transparent; white-space: nowrap; }
+.privacy-policy-body { display: grid; gap: 0; overflow: hidden; border: 1px solid #8885; border-radius: 15px; background: #8881; }
+.privacy-policy-body > p { margin: 0; padding: 22px; font-size: .82rem; line-height: 1.8; }
+.privacy-policy-body section { padding: 20px 22px; border-top: 1px solid #8884; }
+.privacy-policy-body h3 { margin: 0 0 10px; font-size: 1rem; }
+.privacy-policy-body section > p { margin: 8px 0; font-size: .78rem; line-height: 1.8; opacity: .78; }
+.privacy-policy-body ul { display: grid; gap: 6px; margin: 8px 0; padding-left: 21px; font-size: .78rem; line-height: 1.7; opacity: .78; }
+.privacy-policy-body a { color: var(--accent-text); overflow-wrap: anywhere; }
+.privacy-contact { background: #6d3bd10a; }
+.privacy-contact dl { display: grid; gap: 7px; margin: 0; }
+.privacy-contact dl > div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; font-size: .78rem; }
+.privacy-contact dt { font-weight: 800; opacity: .62; }
+.privacy-contact dd { margin: 0; }
+@media (max-width: 700px) { .privacy-policy > header { flex-direction: column; padding: 18px 16px; }.privacy-policy > header button { width: 100%; }.privacy-policy-body > p, .privacy-policy-body section { padding: 18px 16px; }.privacy-contact dl > div { grid-template-columns: 1fr; gap: 3px; } }

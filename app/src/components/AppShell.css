@@ -1,0 +1,25 @@
+#root { max-width: 100%; overflow-x: clip; }
+.app-shell > * { min-width: 0; max-width: 100%; }
+.round-navigation { display: flex; align-items: stretch; gap: 7px; margin-bottom: 10px; }
+.round-navigation .round-tabs { flex: 1; min-width: 0; margin-bottom: 0; }
+.round-navigation > .delete-round-button { flex: none; min-height: 40px; padding: 0 12px; border: 1px solid #c64f4f88; border-radius: 9px; background: transparent; color: #b44444; white-space: nowrap; }
+
+@media (max-width: 700px) {
+  .app-shell {
+    width: 100%;
+    max-width: 100%;
+    padding-top: max(22px, calc(env(safe-area-inset-top) + 12px));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(48px, calc(env(safe-area-inset-bottom) + 28px));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+  .app-header { align-items: flex-end; gap: 12px; margin-bottom: 20px; padding-inline: 2px; }
+  .app-header > div { min-width: 0; }
+  .app-header h1 { font-size: clamp(2.35rem, 12vw, 3rem); white-space: nowrap; }
+  .app-header .eyebrow { font-size: .61rem; letter-spacing: .13em; white-space: nowrap; }
+  .app-header .version { flex: none; padding-bottom: 2px; font-size: .72rem; white-space: nowrap; }
+  .round-navigation > .delete-round-button { padding-inline: 9px; font-size: .72rem; }
+  .session-summary, .session-summary > div { min-width: 0; width: 100%; }
+  .session-actions { display: grid !important; grid-template-columns: 1fr 1fr; }
+  .session-actions .complete-button { grid-column: 1 / -1; }
+}
