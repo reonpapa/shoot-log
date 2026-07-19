@@ -23,6 +23,7 @@ import { loadAmmunitionLedger, mergeAmmunitionLedger, saveAmmunitionLedger } fro
 import type { AmmunitionLedgerData } from "./domain/ammunition";
 import { useCloudSync } from "./hooks/useCloudSync";
 import type { LocalDataSet } from "./services/cloudSync";
+import { getSuggestedPracticeTheme } from "./services/sessionPlanning";
 
 type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "privacy" | "terms" | "contact" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
@@ -47,9 +48,7 @@ function App() {
   const activeSession = useMemo(() => sessions.find((item) => item.id === activeSessionId) ?? null, [sessions, activeSessionId]);
   const activeRound = activeSession?.rounds.find((round) => round.id === activeRoundId) ?? activeSession?.rounds[0] ?? null;
   const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
-  const suggestedPracticeTheme = useMemo(() => [...sessions]
-    .filter((item) => item.status === "completed" && item.review.nextChallenge.trim())
-    .sort((a, b) => b.session.date.localeCompare(a.session.date) || b.createdAt.localeCompare(a.createdAt))[0]?.review.nextChallenge.trim() ?? "", [sessions]);
+  const suggestedPracticeTheme = useMemo(() => getSuggestedPracticeTheme(sessions), [sessions]);
   const signedIn = cloudSync.view.phase !== "signed-out" && !!cloudSync.view.email;
   const publicScreen = screen === "privacy" || screen === "terms" || screen === "contact";
   const displayedScreen: Screen = cloudSync.passwordRecovery || (!signedIn && !publicScreen) ? "account" : screen;
@@ -168,7 +167,7 @@ function App() {
   }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.9.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.10.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}

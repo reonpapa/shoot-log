@@ -20,7 +20,10 @@ export interface SessionReview {
   findings: string;
   problems: string;
   nextChallenge: string;
+  themeAchievement?: ThemeAchievement;
 }
+
+export type ThemeAchievement = "achieved" | "partial" | "not-achieved";
 
 export interface Shot {
   id: string;

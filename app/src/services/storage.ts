@@ -18,6 +18,7 @@ const isStand = (value: unknown): value is StandNo => [1, 2, 3, 4, 5].includes(v
 const shotResults: ShotResult[] = ["hit", "miss", "not-fired"];
 const finalResults: FinalResult[] = ["hit-on-first", "hit-on-second", "miss", "skip"];
 const missDirections: MissDirection[] = ["left", "center", "right", "unknown"];
+const themeAchievements = ["achieved", "partial", "not-achieved"] as const;
 
 function normalizeRound(value: unknown): ShootingRound | null {
   if (!isRecord(value) || !isString(value.id) || typeof value.roundNo !== "number" || !isStand(value.startStandNo) || !Array.isArray(value.shots) || value.shots.length !== 25) return null;
@@ -44,7 +45,7 @@ export function normalizeStoredSession(value: unknown): StoredSession | null {
     id: value.id,
     session: { date: details.date, rangeName: details.rangeName, discipline: details.discipline as SessionDetails["discipline"], ammunitionName: details.ammunitionName, ...(isString(details.firearmId) ? { firearmId: details.firearmId } : {}), practiceTheme: isString(details.practiceTheme) ? details.practiceTheme : "", weather: isString(details.weather) ? details.weather : "", memo: isString(details.memo) ? details.memo : "" },
     rounds: rounds as ShootingRound[],
-    review: { findings: isString(review.findings) ? review.findings : "", problems: isString(review.problems) ? review.problems : "", nextChallenge: isString(review.nextChallenge) ? review.nextChallenge : "" },
+    review: { findings: isString(review.findings) ? review.findings : "", problems: isString(review.problems) ? review.problems : "", nextChallenge: isString(review.nextChallenge) ? review.nextChallenge : "", ...(themeAchievements.includes(review.themeAchievement as typeof themeAchievements[number]) ? { themeAchievement: review.themeAchievement as typeof themeAchievements[number] } : {}) },
     status: value.status === "completed" ? "completed" : "draft",
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,

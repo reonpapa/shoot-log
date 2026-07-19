@@ -15,7 +15,9 @@ describe("射撃履歴の互換性", () => {
   it("保存された練習テーマを保持する", () => {
     const session = createStoredSession({ rounds: [completeRound()] });
     session.session.practiceTheme = "クレーを見てから銃を動かす";
+    session.review.themeAchievement = "partial";
 
     expect(normalizeStoredSession(session)?.session.practiceTheme).toBe("クレーを見てから銃を動かす");
+    expect(normalizeStoredSession(session)?.review.themeAchievement).toBe("partial");
   });
 });

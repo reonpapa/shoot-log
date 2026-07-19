@@ -36,8 +36,8 @@
         };
         document.getElementById("pwa-recovery-button")?.addEventListener("click", () => void recover());
         window.setTimeout(() => {
-          if (!window.__SHOOT_LOG_READY__ && navigator.onLine && sessionStorage.getItem("shoot-log-auto-recovery-2.9.1") !== "1") {
-            sessionStorage.setItem("shoot-log-auto-recovery-2.9.1", "1");
+          if (!window.__SHOOT_LOG_READY__ && navigator.onLine && sessionStorage.getItem("shoot-log-auto-recovery-2.10.0") !== "1") {
+            sessionStorage.setItem("shoot-log-auto-recovery-2.10.0", "1");
             void recover();
           }
         }, 12000);
