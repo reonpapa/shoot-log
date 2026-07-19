@@ -47,10 +47,15 @@ export function SessionList({ sessions, firearms, suggestedPracticeTheme, onCrea
       <div className="practice-theme-history-grid">{visibleThemeHistory.map((item) => {
         const selected = isSamePracticeTheme(selectedTheme, item.theme);
         const relatedCount = filterSessionsByPracticeTheme(sessions, item.theme).length;
+        const historyScoreTrend = getPracticeThemeProgress(sessions, item.theme).sessions.slice(-5).map((session) => {
+          const stats = calculateSessionStats({ id: session.id, date: session.session.date, rangeName: session.session.rangeName, ammunitionName: session.session.ammunitionName, weather: session.session.weather, rounds: session.rounds, sessionMemo: session.session.memo });
+          return { id: session.id, date: session.session.date, score: stats.score, targets: stats.targets, rate: stats.targets ? stats.score / stats.targets * 100 : 0 };
+        });
         return <button type="button" className={`practice-theme-history-card${selected ? " selected" : ""}`} aria-pressed={selected} key={item.theme} onClick={() => toggleThemeFilter(item.theme)}>
           <span className="practice-theme-history-date">最終実施 {item.latestDate}</span>
           <strong>{item.theme}</strong>
           <div><span>実施 <b>{item.sessionCount}回</b></span><span>達成率 <b>{item.achievementRate === null ? "未評価" : `${Math.round(item.achievementRate)}%`}</b></span><span>平均 <b>{item.averageScore === null ? "—" : item.averageScore.toFixed(1)} / 25</b></span></div>
+          <div className="practice-theme-history-trend"><h4>スコア推移 <small>直近5回</small></h4><div>{historyScoreTrend.map((score) => <article key={score.id}><strong>{score.score}<small>/{score.targets}</small></strong><div><i style={{ height: `${score.rate}%` }} /></div><span>{score.date.slice(5)}</span></article>)}</div></div>
           <small>{selected ? "選択中・押すと解除" : `関連履歴 ${relatedCount}件を表示 →`}</small>
         </button>;
       })}</div>
