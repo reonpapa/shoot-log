@@ -50,6 +50,7 @@ export interface CloudSyncView {
   email: string;
   message: string;
   lastSyncedAt: string;
+  pendingChanges: number;
 }
 
 export type CloudHealthStatus = "checking" | "healthy" | "offline" | "error";
@@ -117,7 +118,7 @@ function clearPasswordRecoveryUrl(): void {
 }
 
 export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCloudData }: Options) {
-  const [view, setView] = useState<CloudSyncView>({ phase: "signed-out", email: "", message: "クラウド同期を利用するにはログインしてください。", lastSyncedAt: "" });
+  const [view, setView] = useState<CloudSyncView>({ phase: "signed-out", email: "", message: "クラウド同期を利用するにはログインしてください。", lastSyncedAt: "", pendingChanges: 0 });
   const [health, setHealth] = useState<CloudHealthView>(() => {
     const stored = readHealthMeta();
     return { status: "checking", message: "Supabaseへの接続を確認しています…", ...stored };
@@ -198,7 +199,7 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     deletedSessionsRef.current = payload.deletedSessions;
     lastSignatureRef.current = signature;
     writeMeta({ userId: user.id, revision, lastSignature: signature, lastSyncedAt: updatedAt, deletedSessions: payload.deletedSessions });
-    setView({ phase: "synced", email: user.email ?? "", message: "クラウドと同期済み", lastSyncedAt: updatedAt });
+    setView({ phase: "synced", email: user.email ?? "", message: "クラウドと同期済み", lastSyncedAt: updatedAt, pendingChanges: 0 });
   }, []);
 
   const applyPayload = useCallback((payload: CloudSnapshotPayload) => {
@@ -233,7 +234,10 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
       const user = userRef.current;
       if (!user || !readyRef.current || savingRef.current) return;
       const payload = createCloudPayload(dataRef.current, deletedSessionsRef.current);
-      if (cloudPayloadSignature(payload) === lastSignatureRef.current) return;
+      if (cloudPayloadSignature(payload) === lastSignatureRef.current) {
+        setView((current) => ({ ...current, pendingChanges: 0 }));
+        return;
+      }
       savingRef.current = true;
       setView((current) => ({ ...current, phase: "syncing", message: "クラウドへ保存中…" }));
       try {
@@ -262,7 +266,7 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     initializingUserRef.current = user.id;
     userRef.current = user;
     readyRef.current = false;
-    setView({ phase: "starting", email: user.email ?? "", message: "初回データを確認中…", lastSyncedAt: "" });
+    setView({ phase: "starting", email: user.email ?? "", message: "初回データを確認中…", lastSyncedAt: "", pendingChanges: 0 });
     try {
       await withCloudSyncLock(async () => {
         const meta = readMeta();
@@ -305,7 +309,7 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
       });
     } catch (error) {
       const offline = !navigator.onLine;
-      setView({ phase: offline ? "offline" : "error", email: user.email ?? "", message: errorMessage(error), lastSyncedAt: "" });
+      setView({ phase: offline ? "offline" : "error", email: user.email ?? "", message: errorMessage(error), lastSyncedAt: "", pendingChanges: 1 });
     } finally {
       initializingUserRef.current = "";
     }
@@ -375,7 +379,7 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
         userRef.current = null;
         readyRef.current = false;
         initializedUserRef.current = "";
-        setView({ phase: "signed-out", email: "", message: "クラウド同期を利用するにはログインしてください。", lastSyncedAt: "" });
+        setView({ phase: "signed-out", email: "", message: "クラウド同期を利用するにはログインしてください。", lastSyncedAt: "", pendingChanges: 0 });
       }
     });
     return () => {
@@ -388,6 +392,12 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     if (!readyRef.current || !userRef.current) return;
     const payload = createCloudPayload({ sessions, masterData, ammunitionLedger }, deletedSessionsRef.current);
     if (cloudPayloadSignature(payload) === lastSignatureRef.current) return;
+    setView((current) => ({
+      ...current,
+      phase: navigator.onLine ? current.phase : "offline",
+      message: navigator.onLine ? (current.phase === "error" ? current.message : "端末内の変更をまもなく同期します。") : "通信できないため端末内に保存しました。接続後に自動同期します。",
+      pendingChanges: 1,
+    }));
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => { void pushCurrent(); }, SAVE_DELAY_MS);
     return () => {
@@ -399,10 +409,19 @@ export function useCloudSync({ sessions, masterData, ammunitionLedger, onApplyCl
     const resume = () => {
       void pullLatest();
     };
+    const goOffline = () => {
+      setView((current) => current.email ? {
+        ...current,
+        phase: "offline",
+        message: current.pendingChanges ? "通信できないため端末内に保存しました。接続後に自動同期します。" : "現在オフラインです。通信復帰後に最新データを確認します。",
+      } : current);
+    };
     window.addEventListener("online", resume);
+    window.addEventListener("offline", goOffline);
     window.addEventListener("focus", resume);
     return () => {
       window.removeEventListener("online", resume);
+      window.removeEventListener("offline", goOffline);
       window.removeEventListener("focus", resume);
     };
   }, [pullLatest]);
