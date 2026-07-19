@@ -3,6 +3,7 @@ import type { StoredSession } from "../services/storage";
 import type { SessionReview } from "../domain/shooting";
 import { SessionReviewForm } from "./SessionReviewForm";
 import { StandRadialChart } from "./StandRadialChart";
+import { PracticeThemeBanner } from "./PracticeThemeBanner";
 import "./SessionAnalysis.css";
 
 interface Props { session: StoredSession; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
@@ -26,6 +27,8 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
       <div><p className="eyebrow">SESSION COMPLETE</p><h2>{session.session.date}　{session.session.rangeName}</h2><p>{session.session.discipline.toUpperCase()} ・ {session.session.ammunitionName}</p></div>
       <div className="analysis-actions"><button onClick={onBack}>履歴へ戻る</button><button onClick={onEdit}>基本情報を編集</button><button className="primary-button" onClick={onResume}>スコア編集を再開</button></div>
     </header>
+
+    <PracticeThemeBanner compact theme={session.session.practiceTheme ?? ""} />
 
     <div className="analysis-total"><div><span>総合スコア</span><strong>{stats.score}<small> / {stats.targets}</small></strong></div><div><span>命中率</span><strong>{stats.targets ? Math.round(stats.score / stats.targets * 100) : 0}<small>%</small></strong></div><div><span>消費実包</span><strong>{stats.cartridgesUsed}<small>発</small></strong></div></div>
 

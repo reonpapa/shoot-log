@@ -11,6 +11,7 @@ export interface SessionDetails {
   discipline: Discipline;
   ammunitionName: string;
   firearmId?: string;
+  practiceTheme?: string;
   weather: string;
   memo: string;
 }
