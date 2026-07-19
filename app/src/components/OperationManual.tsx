@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "./OperationManual.css";
 
 const MANUAL_URL = `${import.meta.env.BASE_URL}manuals/shoot-log-operation-manual.pdf`;
-const MANUAL_FILENAME = "shoot-log-v2.9.0-operation-manual.pdf";
+const MANUAL_FILENAME = "shoot-log-v2.9.1-operation-manual.pdf";
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";
 
@@ -82,7 +82,7 @@ export function OperationManual() {
       onClick={() => void saveManual()}
     >
       <span>{buttonLabel}</span>
-      <small>Version 2.9.0対応</small>
+      <small>Version 2.9.1対応</small>
     </button>
     <p className="operation-manual-note">iPhoneでは共有画面の「ファイルに保存」を選びます。保存後は、そのままShoot Logへ戻れます。</p>
     {manualState === "saved" && <p className="operation-manual-status" role="status">保存操作を開始しました。</p>}
