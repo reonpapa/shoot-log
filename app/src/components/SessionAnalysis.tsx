@@ -10,9 +10,9 @@ import type { PracticeRecommendation } from "../services/sessionPlanning";
 import { AiAnalysisExport } from "./AiAnalysisExport";
 import "./SessionAnalysis.css";
 
-interface Props { session: StoredSession; reviewAdvice: PracticeRecommendation | null; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
+interface Props { session: StoredSession; reviewAdvice: PracticeRecommendation | null; aiInitiallyOpen?: boolean; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
 
-export function SessionAnalysis({ session, reviewAdvice, onBack, onResume, onEdit, onSaveReview }: Props) {
+export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false, onBack, onResume, onEdit, onSaveReview }: Props) {
   const stats = calculateSessionStats({
     id: session.id,
     date: session.session.date,
@@ -46,7 +46,7 @@ export function SessionAnalysis({ session, reviewAdvice, onBack, onResume, onEdi
 
     <div className="analysis-details"><article><span>命中内訳</span><strong>初矢 {stats.firstShotHits}</strong><strong>二の矢 {stats.secondShotHits}</strong></article><article><span>失中方向</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>
 
-    <AiAnalysisExport session={session} />
+    <AiAnalysisExport session={session} initiallyOpen={aiInitiallyOpen} />
 
     {halfComparison && <section className={`session-half-analysis ${halfComparison.trend}`}>
       <header><div><p className="eyebrow">SESSION PACE</p><h3>前半・後半の安定度</h3></div><strong>{halfComparison.trend === "declined" ? "後半に低下" : halfComparison.trend === "improved" ? "後半に向上" : "安定"}</strong></header>

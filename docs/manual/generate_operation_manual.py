@@ -16,7 +16,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 
 
-VERSION = "2.19.6"
+VERSION = "2.19.7"
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "app/public/manuals/shoot-log-operation-manual.pdf"
 SCORE_INPUT_SCREENSHOT = Path(__file__).resolve().parent / "screenshots/score-input.png"
