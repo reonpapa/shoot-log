@@ -21,10 +21,12 @@ interface Props {
 const today = () => new Date().toLocaleDateString("sv-SE");
 
 const weatherOptions = ["晴れ", "薄曇り", "曇り", "小雨", "雨", "雪", "霧"];
+const windDirectionOptions = ["向かい風", "追い風", "左から", "右から", "変化あり"];
+const windStrengthOptions = ["ほぼ無風", "弱い", "普通", "強い"];
 
 export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル", initialValue, title = "新しい射撃", kicker = "NEW SESSION", submitLabel = "セッション開始", rangeNames = [], ammunitionNames = [], firearms = [], practiceRecommendation = null }: Props) {
   const suggestedPracticeTheme = practiceRecommendation?.theme ?? "";
-  const [form, setForm] = useState<SessionDraft>(initialValue ?? { date: today(), rangeName: "", discipline: "trap", ammunitionName: "", firearmId: firearms[0]?.id ?? "", practiceTheme: suggestedPracticeTheme, weather: "", memo: "" });
+  const [form, setForm] = useState<SessionDraft>(initialValue ?? { date: today(), rangeName: "", discipline: "trap", ammunitionName: "", firearmId: firearms[0]?.id ?? "", practiceTheme: suggestedPracticeTheme, weather: "", temperature: "", windDirection: "", windStrength: "", memo: "" });
   const [showRecommendation, setShowRecommendation] = useState(!!practiceRecommendation && !initialValue);
   const [recommendationAccepted, setRecommendationAccepted] = useState(false);
   const [newRange, setNewRange] = useState(rangeNames.length === 0);
@@ -33,7 +35,7 @@ export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル"
   const update = <K extends keyof SessionDraft>(key: K, value: SessionDraft[K]) => setForm((current) => ({ ...current, [key]: value }));
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const clean = { ...form, rangeName: form.rangeName.trim(), ammunitionName: form.ammunitionName.trim(), practiceTheme: form.practiceTheme?.trim() ?? "", weather: form.weather.trim(), memo: form.memo.trim() };
+    const clean = { ...form, rangeName: form.rangeName.trim(), ammunitionName: form.ammunitionName.trim(), practiceTheme: form.practiceTheme?.trim() ?? "", weather: form.weather.trim(), temperature: form.temperature?.trim() ?? "", windDirection: form.windDirection?.trim() ?? "", windStrength: form.windStrength?.trim() ?? "", memo: form.memo.trim() };
     if (clean.rangeName && clean.ammunitionName) onStart(clean);
   }
   return <section className="session-form">
@@ -45,6 +47,9 @@ export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル"
       <label><span>実包</span>{newAmmunition ? <div className="master-new"><input required placeholder="例：Fiocchi TT TWO" value={form.ammunitionName} onChange={(e) => update("ammunitionName", e.target.value)} />{ammunitionNames.length > 0 && <button type="button" onClick={() => { setNewAmmunition(false); update("ammunitionName", ammunitionNames[0] ?? ""); }}>選択に戻る</button>}</div> : <select required value={form.ammunitionName} onChange={(e) => { if (e.target.value === "__new__") { setNewAmmunition(true); update("ammunitionName", ""); } else update("ammunitionName", e.target.value); }}><option value="" disabled>選択してください</option>{ammunitionNames.map((name) => <option key={name}>{name}</option>)}<option value="__new__">＋ 新しい実包を登録</option></select>}</label>
       <label><span>使用銃</span><select value={form.firearmId ?? ""} onChange={(e) => update("firearmId", e.target.value)}><option value="">未設定</option>{firearms.map((firearm) => <option key={firearm.id} value={firearm.id}>{firearm.name}・{firearm.identifier}</option>)}</select></label>
       <label><span>天候</span><select value={form.weather} onChange={(e) => update("weather", e.target.value)}><option value="">未選択</option>{weatherOptions.map((weather) => <option key={weather}>{weather}</option>)}{form.weather && !weatherOptions.includes(form.weather) && <option>{form.weather}</option>}</select></label>
+      <label><span>気温</span><div className="temperature-input"><input inputMode="decimal" placeholder="例：18" value={form.temperature ?? ""} onChange={(e) => update("temperature", e.target.value)} /><small>℃</small></div></label>
+      <label><span>風向</span><select value={form.windDirection ?? ""} onChange={(e) => update("windDirection", e.target.value)}><option value="">未選択</option>{windDirectionOptions.map((value) => <option key={value}>{value}</option>)}</select></label>
+      <label><span>風の強さ</span><select value={form.windStrength ?? ""} onChange={(e) => update("windStrength", e.target.value)}><option value="">未選択</option>{windStrengthOptions.map((value) => <option key={value}>{value}</option>)}</select></label>
       {showRecommendation && practiceRecommendation && <section className="wide next-practice-navigator" aria-label="次回練習ナビ">
         <header><div><p className="eyebrow">NEXT PRACTICE</p><strong>次回練習ナビ</strong></div><span>おすすめ</span></header>
         <h3>{practiceRecommendation.theme}</h3>

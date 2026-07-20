@@ -5,6 +5,7 @@ import { SessionReviewForm } from "./SessionReviewForm";
 import { StandRadialChart } from "./StandRadialChart";
 import { PracticeThemeBanner } from "./PracticeThemeBanner";
 import { ThemeAchievementControl } from "./ThemeAchievementControl";
+import { formatShootingConditions } from "../services/sessionConditions";
 import "./SessionAnalysis.css";
 
 interface Props { session: StoredSession; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
@@ -23,10 +24,11 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
   const standStats = calculateStandStats(shootingSession);
   const halfComparison = calculateSessionHalfComparison(session.rounds);
   const directionScaleMax = Math.max(1, ...standStats.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
+  const conditions = formatShootingConditions(session.session);
 
   return <section className="session-analysis">
     <header className="analysis-header">
-      <div><p className="eyebrow">SESSION COMPLETE</p><h2>{session.session.date}　{session.session.rangeName}</h2><p>{session.session.discipline.toUpperCase()} ・ {session.session.ammunitionName}</p></div>
+      <div><p className="eyebrow">SESSION COMPLETE</p><h2>{session.session.date}　{session.session.rangeName}</h2><p>{session.session.discipline.toUpperCase()} ・ {session.session.ammunitionName}</p>{conditions && <p className="analysis-conditions">コンディション：{conditions}</p>}</div>
       <div className="analysis-actions"><button onClick={onBack}>履歴へ戻る</button><button onClick={onEdit}>基本情報を編集</button><button className="primary-button" onClick={onResume}>スコア編集を再開</button></div>
     </header>
 

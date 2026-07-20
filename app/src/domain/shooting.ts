@@ -13,6 +13,9 @@ export interface SessionDetails {
   firearmId?: string;
   practiceTheme?: string;
   weather: string;
+  temperature?: string;
+  windDirection?: string;
+  windStrength?: string;
   memo: string;
 }
 

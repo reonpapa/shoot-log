@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Firearm } from "../domain/ammunition";
 import type { ThemeAchievement } from "../domain/shooting";
 import { filterSessionsByPracticeTheme, getPracticeThemeHistory, getPracticeThemeProgress, isSamePracticeTheme } from "../services/sessionPlanning";
+import { formatShootingConditions } from "../services/sessionConditions";
 import "./SessionList.css";
 
 interface Props { sessions: StoredSession[]; firearms: Firearm[]; suggestedPracticeTheme: string; onCreate: () => void; onManage: () => void; onData: () => void; onAccount: () => void; onAmmunition: () => void; onOpen: (id: string) => void; onDelete: (id: string) => void; }
@@ -70,7 +71,7 @@ export function SessionList({ sessions, firearms, suggestedPracticeTheme, onCrea
         const firearm = firearms.find((candidate) => candidate.id === item.session.firearmId);
         return <article className={`session-card${item.status === "draft" ? " unfinished" : ""}`} key={item.id}>
           <button className="session-card-main" onClick={() => onOpen(item.id)}>
-            <div className="session-card-info"><strong>{item.session.date}</strong><span>{item.session.rangeName}</span><small>{item.session.discipline.toUpperCase()} ・ {firearm ? `${firearm.name}（${firearm.identifier}）` : "使用銃未設定"} ・ {item.session.ammunitionName}</small><div className="session-card-meta">{item.session.weather && <span>天候：{item.session.weather}</span>}{item.session.memo && <span className="session-card-memo">メモ：{item.session.memo}</span>}{item.session.practiceTheme && <span className="session-card-theme">テーマ：{item.session.practiceTheme}{item.review.themeAchievement && <b className={`session-theme-result ${item.review.themeAchievement}`}>{achievementLabel(item.review.themeAchievement)}</b>}</span>}{item.review?.nextChallenge && <span className="session-card-challenge">次回：{item.review.nextChallenge}</span>}</div></div>
+            <div className="session-card-info"><strong>{item.session.date}</strong><span>{item.session.rangeName}</span><small>{item.session.discipline.toUpperCase()} ・ {firearm ? `${firearm.name}（${firearm.identifier}）` : "使用銃未設定"} ・ {item.session.ammunitionName}</small><div className="session-card-meta">{formatShootingConditions(item.session) && <span>コンディション：{formatShootingConditions(item.session)}</span>}{item.session.memo && <span className="session-card-memo">メモ：{item.session.memo}</span>}{item.session.practiceTheme && <span className="session-card-theme">テーマ：{item.session.practiceTheme}{item.review.themeAchievement && <b className={`session-theme-result ${item.review.themeAchievement}`}>{achievementLabel(item.review.themeAchievement)}</b>}</span>}{item.review?.nextChallenge && <span className="session-card-challenge">次回：{item.review.nextChallenge}</span>}</div></div>
             <div className="session-card-score"><strong>{stats.score}</strong><span>/ {stats.targets}</span><small>{item.rounds.length}R ・ 実包{stats.cartridgesUsed}発</small>{item.status === "draft" && <b>未完了・入力を続ける</b>}{item.status === "completed" && <small>完了</small>}</div>
           </button>
           <button className="session-delete-button" aria-label={`${item.session.date}の記録を削除`} onClick={() => onDelete(item.id)}>削除</button>
