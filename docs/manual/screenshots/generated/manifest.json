@@ -1,0 +1,105 @@
+{
+  "version": "2.19.7",
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "deviceScaleFactor": 2
+  },
+  "captures": [
+    {
+      "name": "01-install",
+      "scene": "login",
+      "selector": ".install-guide"
+    },
+    {
+      "name": "02-login",
+      "scene": "login",
+      "selector": ".cloud-account"
+    },
+    {
+      "name": "03-account",
+      "scene": "account",
+      "selector": ".account-settings"
+    },
+    {
+      "name": "04-history",
+      "scene": "history",
+      "selector": ".session-list-header"
+    },
+    {
+      "name": "05-practice-theme",
+      "scene": "history",
+      "selector": ".active-practice-theme"
+    },
+    {
+      "name": "06-history-analysis",
+      "scene": "history-analysis",
+      "selector": ".history-analysis"
+    },
+    {
+      "name": "07-new-session",
+      "scene": "form",
+      "selector": ".session-form"
+    },
+    {
+      "name": "08-round-setup",
+      "scene": "round",
+      "selector": ".round-navigation"
+    },
+    {
+      "name": "09-current-shot",
+      "scene": "round",
+      "selector": ".current-shot"
+    },
+    {
+      "name": "10-analysis-summary",
+      "scene": "analysis",
+      "selector": ".analysis-header"
+    },
+    {
+      "name": "11-ai-analysis",
+      "scene": "analysis&openAi=1",
+      "selector": ".ai-analysis-export"
+    },
+    {
+      "name": "12-session-pace",
+      "scene": "analysis",
+      "selector": ".session-half-analysis"
+    },
+    {
+      "name": "13-stand-analysis",
+      "scene": "analysis",
+      "selector": ".stand-analysis"
+    },
+    {
+      "name": "14-review",
+      "scene": "analysis",
+      "selector": ".session-review"
+    },
+    {
+      "name": "15-master-data",
+      "scene": "master",
+      "selector": ".master-manager"
+    },
+    {
+      "name": "16-ammunition-ledger",
+      "scene": "ledger",
+      "selector": ".ammo-ledger-header"
+    },
+    {
+      "name": "17-firearm-permit",
+      "scene": "permit",
+      "selector": ".permit-profile"
+    },
+    {
+      "name": "18-backup",
+      "scene": "backup",
+      "selector": ".data-management"
+    },
+    {
+      "name": "19-support",
+      "scene": "support",
+      "selector": ".contact-support"
+    }
+  ]
+}
