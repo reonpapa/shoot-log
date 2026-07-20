@@ -3,6 +3,8 @@ import { calculateRoundStats, calculateRoundWindowComparison, calculateSessionSt
 import type { FireMode } from "../domain/shooting";
 import type { StoredSession } from "../services/storage";
 import { getAmmunitionPerformance } from "../services/ammunitionPerformance";
+import { getConditionPerformance, type ConditionPerformance } from "../services/conditionPerformance";
+import { formatWindDirection } from "../services/sessionConditions";
 import { StandRadialChart } from "./StandRadialChart";
 import "./HistoryAnalysis.css";
 
@@ -37,12 +39,15 @@ export function HistoryAnalysis({ sessions }: Props) {
   const stands = calculateStandStats({ id: "history", date: "", rangeName: "", ammunitionName: "", rounds });
   const directionScaleMax = Math.max(1, ...stands.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
   const ammunitionPerformance = getAmmunitionPerformance(filtered);
+  const conditionPerformance = getConditionPerformance(filtered);
+  const hasConditionPerformance = conditionPerformance.weather.length > 0 || conditionPerformance.windDirection.length > 0 || conditionPerformance.windStrength.length > 0;
 
   return <section className="history-analysis">
     <header><div><p className="eyebrow">PERFORMANCE</p><h2>成長分析</h2></div><small>対象セッション {filtered.length}件</small></header>
     <div className="analysis-filters"><label><span>射撃場</span><select value={rangeName} onChange={(event) => setRangeName(event.target.value)}><option value="all">すべて</option>{rangeOptions.map((name) => <option key={name}>{name}</option>)}</select></label><label><span>実包</span><select value={ammunitionName} onChange={(event) => setAmmunitionName(event.target.value)}><option value="all">すべて</option>{ammunitionOptions.map((name) => <option key={name}>{name}</option>)}</select></label><label><span>発射方式</span><select value={fireMode} onChange={(event) => setFireMode(event.target.value as "all" | FireMode)}><option value="all">すべて</option><option value="single">1発撃ち</option><option value="double">2発撃ち</option></select></label><label><span>期間</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}><option value="all">全期間</option><option value="5">直近5回</option><option value="10">直近10回</option></select></label></div>
     {rounds.length === 0 ? <div className="analysis-empty">条件に一致するラウンドがありません。</div> : <>
       <div className="history-kpis"><article><span>平均スコア</span><strong>{average.toFixed(1)}<small> / 25</small></strong></article><article><span>最高ラウンド</span><strong>{best}<small> / 25</small></strong></article><article><span>対象ラウンド</span><strong>{rounds.length}<small>R</small></strong></article><article><span>消費実包</span><strong>{totalCartridges}<small>発</small></strong></article></div>
+      {hasConditionPerformance && <section className="condition-performance"><header><div><p className="eyebrow">CONDITION PERFORMANCE</p><h3>天候・風別パフォーマンス</h3></div><small>同じ絞り込み条件で比較</small></header><div className="condition-performance-groups"><ConditionGroup title="天候" items={conditionPerformance.weather} /><ConditionGroup title="風向" items={conditionPerformance.windDirection} formatLabel={formatWindDirection} /><ConditionGroup title="風の強さ" items={conditionPerformance.windStrength} /></div><p>記録数が少ない条件は参考値です。射撃場・実包・練習テーマなど、ほかの違いも含めて判断してください。</p></section>}
       {ammunitionPerformance.length > 0 && <section className="ammunition-performance"><header><div><p className="eyebrow">AMMUNITION PERFORMANCE</p><h3>実包別パフォーマンス</h3></div><small>同じ絞り込み条件で比較</small></header><div>{ammunitionPerformance.map((item) => <article key={item.ammunitionName}><header><strong>{item.ammunitionName}</strong>{item.roundCount < 3 && <span>参考値</span>}</header><div><p><span>平均</span><strong>{item.averageScore.toFixed(1)}<small> / 25</small></strong></p><p><span>命中率</span><strong>{item.hitRate.toFixed(1)}<small>%</small></strong></p><p><span>初矢</span><strong>{item.firstShotHitRate.toFixed(1)}<small>%</small></strong></p></div><small>{item.sessionCount}セッション・{item.roundCount}ラウンド</small></article>)}</div><p>ラウンド数が少ない実包は「参考値」として表示します。射撃場や天候などの条件差も含めて判断してください。</p></section>}
       <section className={`performance-comparison${comparison ? "" : " is-pending"}`}>
         <header><div><p className="eyebrow">RECENT COMPARISON</p><h3>直近5ラウンド比較</h3></div><small>同じ絞り込み条件で、その前5ラウンドと比較</small></header>
@@ -60,6 +65,11 @@ export function HistoryAnalysis({ sessions }: Props) {
       <section className="history-stands"><header><h3>射台別成績</h3><div className="radial-legend"><span><i className="legend-hit" />総合命中率</span><span><i className="legend-first" />初矢命中率</span><span><i className="legend-left" />←失中</span><span><i className="legend-center" />↑失中</span><span><i className="legend-right" />→失中</span></div></header><div>{stands.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
     </>}
   </section>;
+}
+
+function ConditionGroup({ title, items, formatLabel = (value) => value }: { title: string; items: ConditionPerformance[]; formatLabel?: (value: string) => string }) {
+  if (items.length === 0) return null;
+  return <section><h4>{title}</h4><div>{items.map((item) => <article key={item.condition}><header><strong>{formatLabel(item.condition)}</strong>{item.roundCount < 3 && <span>参考値</span>}</header><p><b>{item.averageScore.toFixed(1)}</b><small> / 25</small></p><footer><span>命中率 {item.hitRate.toFixed(1)}%</span><span>{item.sessionCount}回・{item.roundCount}R</span></footer></article>)}</div></section>;
 }
 
 function deltaClass(value: number): string {

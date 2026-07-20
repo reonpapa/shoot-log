@@ -21,7 +21,13 @@ interface Props {
 const today = () => new Date().toLocaleDateString("sv-SE");
 
 const weatherOptions = ["晴れ", "薄曇り", "曇り", "小雨", "雨", "雪", "霧"];
-const windDirectionOptions = ["向かい風", "追い風", "左から", "右から", "変化あり"];
+const windDirectionOptions = [
+  { value: "向かい風", label: "向かい風 ↓" },
+  { value: "追い風", label: "追い風 ↑" },
+  { value: "左から", label: "左から →" },
+  { value: "右から", label: "右から ←" },
+  { value: "変化あり", label: "変化あり ↕" },
+];
 const windStrengthOptions = ["ほぼ無風", "弱い", "普通", "強い"];
 
 export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル", initialValue, title = "新しい射撃", kicker = "NEW SESSION", submitLabel = "セッション開始", rangeNames = [], ammunitionNames = [], firearms = [], practiceRecommendation = null }: Props) {
@@ -48,7 +54,7 @@ export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル"
       <label><span>使用銃</span><select value={form.firearmId ?? ""} onChange={(e) => update("firearmId", e.target.value)}><option value="">未設定</option>{firearms.map((firearm) => <option key={firearm.id} value={firearm.id}>{firearm.name}・{firearm.identifier}</option>)}</select></label>
       <label><span>天候</span><select value={form.weather} onChange={(e) => update("weather", e.target.value)}><option value="">未選択</option>{weatherOptions.map((weather) => <option key={weather}>{weather}</option>)}{form.weather && !weatherOptions.includes(form.weather) && <option>{form.weather}</option>}</select></label>
       <label><span>気温</span><div className="temperature-input"><input inputMode="decimal" placeholder="例：18" value={form.temperature ?? ""} onChange={(e) => update("temperature", e.target.value)} /><small>℃</small></div></label>
-      <label><span>風向</span><select value={form.windDirection ?? ""} onChange={(e) => update("windDirection", e.target.value)}><option value="">未選択</option>{windDirectionOptions.map((value) => <option key={value}>{value}</option>)}</select></label>
+      <label><span>風向</span><select value={form.windDirection ?? ""} onChange={(e) => update("windDirection", e.target.value)}><option value="">未選択</option>{windDirectionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
       <label><span>風の強さ</span><select value={form.windStrength ?? ""} onChange={(e) => update("windStrength", e.target.value)}><option value="">未選択</option>{windStrengthOptions.map((value) => <option key={value}>{value}</option>)}</select></label>
       {showRecommendation && practiceRecommendation && <section className="wide next-practice-navigator" aria-label="次回練習ナビ">
         <header><div><p className="eyebrow">NEXT PRACTICE</p><strong>次回練習ナビ</strong></div><span>おすすめ</span></header>
