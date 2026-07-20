@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type { Firearm } from "../domain/ammunition";
 import type { SessionDetails } from "../domain/shooting";
+import type { PracticeRecommendation } from "../services/sessionPlanning";
 import "./SessionForm.css";
 
 export type SessionDraft = SessionDetails;
@@ -13,7 +14,7 @@ interface Props {
   rangeNames?: string[];
   ammunitionNames?: string[];
   firearms?: Firearm[];
-  suggestedPracticeTheme?: string;
+  practiceRecommendation?: PracticeRecommendation | null;
   onCancel: () => void;
   cancelLabel?: string;
 }
@@ -21,10 +22,14 @@ const today = () => new Date().toLocaleDateString("sv-SE");
 
 const weatherOptions = ["晴れ", "薄曇り", "曇り", "小雨", "雨", "雪", "霧"];
 
-export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル", initialValue, title = "新しい射撃", kicker = "NEW SESSION", submitLabel = "セッション開始", rangeNames = [], ammunitionNames = [], firearms = [], suggestedPracticeTheme = "" }: Props) {
+export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル", initialValue, title = "新しい射撃", kicker = "NEW SESSION", submitLabel = "セッション開始", rangeNames = [], ammunitionNames = [], firearms = [], practiceRecommendation = null }: Props) {
+  const suggestedPracticeTheme = practiceRecommendation?.theme ?? "";
   const [form, setForm] = useState<SessionDraft>(initialValue ?? { date: today(), rangeName: "", discipline: "trap", ammunitionName: "", firearmId: firearms[0]?.id ?? "", practiceTheme: suggestedPracticeTheme, weather: "", memo: "" });
+  const [showRecommendation, setShowRecommendation] = useState(!!practiceRecommendation && !initialValue);
+  const [recommendationAccepted, setRecommendationAccepted] = useState(false);
   const [newRange, setNewRange] = useState(rangeNames.length === 0);
   const [newAmmunition, setNewAmmunition] = useState(ammunitionNames.length === 0);
+  const practiceThemeRef = useRef<HTMLTextAreaElement>(null);
   const update = <K extends keyof SessionDraft>(key: K, value: SessionDraft[K]) => setForm((current) => ({ ...current, [key]: value }));
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,7 +45,13 @@ export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル"
       <label><span>実包</span>{newAmmunition ? <div className="master-new"><input required placeholder="例：Fiocchi TT TWO" value={form.ammunitionName} onChange={(e) => update("ammunitionName", e.target.value)} />{ammunitionNames.length > 0 && <button type="button" onClick={() => { setNewAmmunition(false); update("ammunitionName", ammunitionNames[0] ?? ""); }}>選択に戻る</button>}</div> : <select required value={form.ammunitionName} onChange={(e) => { if (e.target.value === "__new__") { setNewAmmunition(true); update("ammunitionName", ""); } else update("ammunitionName", e.target.value); }}><option value="" disabled>選択してください</option>{ammunitionNames.map((name) => <option key={name}>{name}</option>)}<option value="__new__">＋ 新しい実包を登録</option></select>}</label>
       <label><span>使用銃</span><select value={form.firearmId ?? ""} onChange={(e) => update("firearmId", e.target.value)}><option value="">未設定</option>{firearms.map((firearm) => <option key={firearm.id} value={firearm.id}>{firearm.name}・{firearm.identifier}</option>)}</select></label>
       <label><span>天候</span><select value={form.weather} onChange={(e) => update("weather", e.target.value)}><option value="">未選択</option>{weatherOptions.map((weather) => <option key={weather}>{weather}</option>)}{form.weather && !weatherOptions.includes(form.weather) && <option>{form.weather}</option>}</select></label>
-      <label className="wide practice-theme-field"><span>今日の練習テーマ</span><textarea rows={4} placeholder="例：銃を急いで振らず、クレーを見てから動く" value={form.practiceTheme ?? ""} onChange={(e) => update("practiceTheme", e.target.value)} />{!initialValue && suggestedPracticeTheme && <small>前回の「次回試すこと」から引き継ぎました。自由に編集できます。</small>}</label>
+      {showRecommendation && practiceRecommendation && <section className="wide next-practice-navigator" aria-label="次回練習ナビ">
+        <header><div><p className="eyebrow">NEXT PRACTICE</p><strong>次回練習ナビ</strong></div><span>おすすめ</span></header>
+        <h3>{practiceRecommendation.theme}</h3>
+        <p>{practiceRecommendation.reason}</p>
+        <div><button type="button" className={recommendationAccepted ? "accepted" : ""} onClick={() => { update("practiceTheme", practiceRecommendation.theme); setRecommendationAccepted(true); }}>{recommendationAccepted ? "採用しました" : "このテーマを採用"}</button><button type="button" onClick={() => { update("practiceTheme", practiceRecommendation.theme); practiceThemeRef.current?.focus(); }}>編集して採用</button><button type="button" onClick={() => { if (form.practiceTheme === practiceRecommendation.theme) update("practiceTheme", ""); setShowRecommendation(false); }}>今回は使わない</button></div>
+      </section>}
+      <label className="wide practice-theme-field"><span>今日の練習テーマ</span><textarea ref={practiceThemeRef} rows={4} placeholder="例：銃を急いで振らず、クレーを見てから動く" value={form.practiceTheme ?? ""} onChange={(e) => update("practiceTheme", e.target.value)} />{!initialValue && suggestedPracticeTheme && showRecommendation && <small>提案は自由に編集できます。採用しなくても記録には影響しません。</small>}</label>
       <label className="wide"><span>メモ</span><textarea rows={3} placeholder="任意" value={form.memo} onChange={(e) => update("memo", e.target.value)} /></label>
       <div className="form-actions wide"><button className="form-cancel-button" type="button" onClick={onCancel}>{cancelLabel}</button><button className="primary-button" type="submit">{submitLabel}</button></div>
     </form>

@@ -24,7 +24,7 @@ import { loadAmmunitionLedger, mergeAmmunitionLedger, saveAmmunitionLedger } fro
 import type { AmmunitionLedgerData } from "./domain/ammunition";
 import { useCloudSync } from "./hooks/useCloudSync";
 import type { LocalDataSet } from "./services/cloudSync";
-import { getSuggestedPracticeTheme } from "./services/sessionPlanning";
+import { getPracticeRecommendation } from "./services/sessionPlanning";
 
 type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "privacy" | "terms" | "contact" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
@@ -49,7 +49,8 @@ function App() {
   const activeSession = useMemo(() => sessions.find((item) => item.id === activeSessionId) ?? null, [sessions, activeSessionId]);
   const activeRound = activeSession?.rounds.find((round) => round.id === activeRoundId) ?? activeSession?.rounds[0] ?? null;
   const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
-  const suggestedPracticeTheme = useMemo(() => getSuggestedPracticeTheme(sessions), [sessions]);
+  const practiceRecommendation = useMemo(() => getPracticeRecommendation(sessions), [sessions]);
+  const suggestedPracticeTheme = practiceRecommendation?.theme ?? "";
   const signedIn = cloudSync.view.phase !== "signed-out" && !!cloudSync.view.email;
   const publicScreen = screen === "privacy" || screen === "terms" || screen === "contact";
   const displayedScreen: Screen = cloudSync.passwordRecovery || (!signedIn && !publicScreen) ? "account" : screen;
@@ -168,7 +169,7 @@ function App() {
   }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.10.12</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1>Shoot Log</h1></div><p className="version">Version 2.11.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
@@ -179,7 +180,7 @@ function App() {
     {displayedScreen === "contact" && <Suspense fallback={<p>お問い合わせ画面を読み込んでいます…</p>}><ContactSupport onBack={() => setScreen("account")} /></Suspense>}
     {displayedScreen === "ammunition" && <Suspense fallback={<p>実包管理を読み込んでいます…</p>}><AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} /></Suspense>}
     {displayedScreen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} />}
-    {displayedScreen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}
+    {displayedScreen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} practiceRecommendation={practiceRecommendation} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}
     {displayedScreen === "edit-session" && activeSession && <SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onCancel={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")} onStart={editSessionDetails} />}
     {displayedScreen === "round" && activeSession && activeRound && <>
       <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length}ラウンド</span><strong>{activeStats?.score} / {activeStats?.targets}　実包 {activeStats?.cartridgesUsed}発</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>基本情報を編集</button><button onClick={returnToList}>履歴へ戻る</button><button className="complete-button" onClick={completeSession}>セッション完了</button></div></section>

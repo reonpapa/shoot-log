@@ -1,5 +1,11 @@
 import type { StoredSession } from "./storage";
-import { calculateRoundStats } from "../domain/shootingStats";
+import { calculateRoundStats, calculateStandStats } from "../domain/shootingStats";
+
+export interface PracticeRecommendation {
+  theme: string;
+  reason: string;
+  source: "next-challenge" | "continue-theme" | "weakest-stand" | "miss-direction" | "first-shot";
+}
 
 export interface PracticeThemeProgress {
   sessions: StoredSession[];
@@ -21,16 +27,69 @@ export interface PracticeThemeSummary {
 }
 
 export function getSuggestedPracticeTheme(sessions: StoredSession[]): string {
+  return getPracticeRecommendation(sessions)?.theme ?? "";
+}
+
+export function getPracticeRecommendation(sessions: StoredSession[]): PracticeRecommendation | null {
   const previous = [...sessions]
     .filter((item) => item.status === "completed")
     .sort((a, b) => b.session.date.localeCompare(a.session.date) || b.createdAt.localeCompare(a.createdAt))[0];
-  if (!previous) return "";
+  if (!previous) return null;
   const nextChallenge = previous.review.nextChallenge.trim();
-  if (nextChallenge) return nextChallenge;
+  if (nextChallenge) return { theme: nextChallenge, reason: "前回の振り返りで「次回試すこと」に記録されています。", source: "next-challenge" };
   if (["partial", "not-achieved"].includes(previous.review.themeAchievement ?? "")) {
-    return previous.session.practiceTheme?.trim() ?? "";
+    const theme = previous.session.practiceTheme?.trim() ?? "";
+    if (theme) return { theme, reason: "前回の達成度が「一部できた」または「できなかった」ため、継続を提案します。", source: "continue-theme" };
   }
-  return "";
+
+  const recent = [...sessions]
+    .filter((item) => item.status === "completed")
+    .sort((a, b) => b.session.date.localeCompare(a.session.date) || b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 5);
+  const rounds = recent.flatMap((item) => item.rounds);
+  const enteredShots = rounds.flatMap((round) => round.shots).filter((shot) => shot.finalResult !== "skip");
+  if (enteredShots.length < 50) return null;
+
+  const standStats = calculateStandStats({ id: "practice-recommendation", date: "", rangeName: "", ammunitionName: "", rounds });
+  const weakest = standStats
+    .filter((stand) => stand.targets >= 10)
+    .map((stand) => ({ ...stand, hitRate: stand.score / stand.targets * 100 }))
+    .sort((a, b) => a.hitRate - b.hitRate || a.standNo - b.standNo)[0];
+  const totalHits = enteredShots.filter((shot) => shot.finalResult === "hit-on-first" || shot.finalResult === "hit-on-second").length;
+  const overallHitRate = totalHits / enteredShots.length * 100;
+  if (weakest && weakest.hitRate <= overallHitRate - 8) {
+    return {
+      theme: `Stand ${weakest.standNo}でクレーをよく見て、丁寧に撃つ`,
+      reason: `直近${recent.length}回ではStand ${weakest.standNo}の命中率が${Math.round(weakest.hitRate)}%で、全体より${Math.round(overallHitRate - weakest.hitRate)}ポイント低くなっています。`,
+      source: "weakest-stand",
+    };
+  }
+
+  const misses = enteredShots.filter((shot) => shot.finalResult === "miss");
+  const knownMisses = misses.filter((shot) => shot.missDirection && shot.missDirection !== "unknown");
+  const directionCounts = { left: 0, center: 0, right: 0 };
+  for (const shot of knownMisses) directionCounts[shot.missDirection as keyof typeof directionCounts] += 1;
+  const dominantDirection = (Object.entries(directionCounts) as [keyof typeof directionCounts, number][])
+    .sort((a, b) => b[1] - a[1])[0];
+  if (dominantDirection && dominantDirection[1] >= 3 && dominantDirection[1] / Math.max(knownMisses.length, 1) >= 0.45) {
+    const label = { left: "左方向", center: "ストレート", right: "右方向" }[dominantDirection[0]];
+    return {
+      theme: `${label}のクレーを最後まで見続ける`,
+      reason: `方向を記録した直近の失中${knownMisses.length}枚のうち、${label}が${dominantDirection[1]}枚と最も多くなっています。`,
+      source: "miss-direction",
+    };
+  }
+
+  const firstShotHits = enteredShots.filter((shot) => shot.finalResult === "hit-on-first").length;
+  const firstShotRate = firstShotHits / enteredShots.length * 100;
+  if (firstShotRate < 70) {
+    return {
+      theme: "初矢を急がず、クレーを見てから銃を動かす",
+      reason: `直近${recent.length}回の初矢命中率が${Math.round(firstShotRate)}%のため、初矢の安定を提案します。`,
+      source: "first-shot",
+    };
+  }
+  return null;
 }
 
 export function normalizePracticeTheme(value: string | undefined): string {
