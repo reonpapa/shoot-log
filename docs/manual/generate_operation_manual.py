@@ -15,7 +15,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 
 
-VERSION = "2.19.3"
+VERSION = "2.19.4"
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "app/public/manuals/shoot-log-operation-manual.pdf"
 
@@ -175,7 +175,7 @@ def draw_account(c, x, y, w, h):
     mini_card(c, "CLOUD SYNC  同期済み", "最終同期 7/20 15:30", x, top - 47, w, 42, "green")
     mini_button(c, "今すぐ同期", x, top - 72, w, primary=True)
     mini_card(c, "FIREARM PERMIT", "更新申請期間まで 84日", x, top - 120, w, 40, "orange")
-    mini_card(c, "操作マニュアル", "Version 2.19.3対応", x, top - 166, w, 40, "purple")
+    mini_card(c, "操作マニュアル", "Version 2.19.4対応", x, top - 166, w, 40, "purple")
     mini_card(c, "複数端末のデータ同期", "ログイン中  sample@example.com", x, top - 212, w, 40)
     mini_button(c, "ログアウト", x, top - 237, w)
     text(c, "パスワードを変更", x, top - 258, 5.5, PURPLE)
@@ -208,8 +208,8 @@ def draw_session_form(c, x, y, w, h):
 
 def draw_round(c, x, y, w, h):
     top = y + h
-    mini_button(c, "1発撃ち", x, top - 21, (w - 4) / 2, primary=True)
-    mini_button(c, "2発撃ち", x + (w + 4) / 2, top - 21, (w - 4) / 2)
+    mini_button(c, "1発撃ち", x, top - 21, (w - 4) / 2)
+    mini_button(c, "2発撃ち", x + (w + 4) / 2, top - 21, (w - 4) / 2, primary=True)
     text(c, "開始射台  1    実包消費  自動計算 25発", x, top - 37, 5.2, MUTED)
     cell = (w - 8) / 5
     for row in range(5):

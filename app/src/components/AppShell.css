@@ -2,7 +2,10 @@
 .app-shell > * { min-width: 0; max-width: 100%; }
 .round-navigation { display: flex; align-items: stretch; gap: 7px; margin-bottom: 10px; }
 .round-navigation .round-tabs { flex: 1; min-width: 0; margin-bottom: 0; }
-.round-navigation > .delete-round-button { flex: none; min-height: 40px; padding: 0 12px; border: 1px solid #c64f4f88; border-radius: 9px; background: transparent; color: #b44444; white-space: nowrap; }
+.round-navigation .round-actions { display: flex; flex: none; gap: 7px; }
+.round-navigation .round-actions button { flex: none; min-height: 40px; padding: 0 12px; border: 1px solid #8885; border-radius: 9px; background: transparent; white-space: nowrap; }
+.round-navigation .round-actions .add-round-button { border-style: dashed; }
+.round-navigation .round-actions .delete-round-button { border-color: #c64f4f88; color: #b44444; }
 
 @media (max-width: 700px) {
   .app-shell {
@@ -18,7 +21,10 @@
   .app-header h1 { font-size: clamp(2.35rem, 12vw, 3rem); white-space: nowrap; }
   .app-header .eyebrow { font-size: .61rem; letter-spacing: .13em; white-space: nowrap; }
   .app-header .version { flex: none; padding-bottom: 2px; font-size: .72rem; white-space: nowrap; }
-  .round-navigation > .delete-round-button { padding-inline: 9px; font-size: .72rem; }
+  .round-navigation .round-actions button { padding-inline: 9px; font-size: .72rem; }
+  .round-navigation.round-navigation-stacked { flex-direction: column; }
+  .round-navigation.round-navigation-stacked .round-actions { width: 100%; }
+  .round-navigation.round-navigation-stacked .round-actions button { flex: 1; }
   .session-summary, .session-summary > div { min-width: 0; width: 100%; }
   .session-actions { display: grid !important; grid-template-columns: 1fr 1fr; }
   .session-actions .complete-button { grid-column: 1 / -1; }

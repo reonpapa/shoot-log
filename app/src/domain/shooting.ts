@@ -69,7 +69,7 @@ export function createEmptyRound(roundNo: number, startStandNo: StandNo = 1): Sh
     id: crypto.randomUUID(),
     roundNo,
     startStandNo,
-    fireMode: "single",
+    fireMode: "double",
     shots: Array.from({ length: 25 }, (_, index) => ({
       id: crypto.randomUUID(),
       targetNo: index + 1,
