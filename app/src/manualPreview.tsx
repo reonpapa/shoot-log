@@ -71,6 +71,37 @@ function createRound(roundNo: number, results: FinalResult[]): ShootingRound {
   };
 }
 
+function createEmptyRound(roundNo: number): ShootingRound {
+  return {
+    id: `demo-empty-round-${roundNo}`,
+    roundNo,
+    startStandNo: 1,
+    fireMode: "double",
+    shots: Array.from({ length: 25 }, (_, index) => ({
+      id: `demo-empty-shot-${roundNo}-${index + 1}`,
+      targetNo: index + 1,
+      standNo: ((index % 5) + 1) as 1 | 2 | 3 | 4 | 5,
+      firstShotResult: "not-fired" as const,
+      secondShotResult: "not-fired" as const,
+      finalResult: "skip" as const,
+    })),
+  };
+}
+
+function createPartiallyEnteredRound(roundNo: number): ShootingRound {
+  const entered = createRound(roundNo, ["hit-on-first", "hit-on-second", "hit-on-first", "miss"]);
+  return {
+    ...entered,
+    shots: entered.shots.map((shot, index) => index < 12 ? shot : {
+      ...shot,
+      firstShotResult: "not-fired" as const,
+      secondShotResult: "not-fired" as const,
+      finalResult: "skip" as const,
+      missDirection: undefined,
+    }),
+  };
+}
+
 const rounds = [
   createRound(1, ["hit-on-first", "hit-on-first", "miss", "hit-on-second"]),
   createRound(2, ["hit-on-first", "hit-on-second", "hit-on-first", "miss", "hit-on-first"]),
@@ -131,16 +162,19 @@ const signedOutCloud: CloudSyncView = { phase: "signed-out", email: "", message:
 const health: CloudHealthView = { status: "healthy", message: "クラウドへ接続できます。", lastCheckedAt: "2026-07-20T06:30:00.000Z", lastHealthyAt: "2026-07-20T06:30:00.000Z" };
 
 function AppHeader() {
-  return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.19.11</p></header>;
+  return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.19.14</p></header>;
 }
 
-function RoundScene() {
-  const [activeRound, setActiveRound] = useState(rounds[0]);
-  const stats = calculateSessionStats({ id: session.id, date: session.session.date, rangeName: session.session.rangeName, ammunitionName: session.session.ammunitionName, weather: session.session.weather, rounds, sessionMemo: session.session.memo });
+function RoundScene({ state }: { state: "before" | "after" }) {
+  const sceneRounds = state === "before"
+    ? [1, 2, 3, 4].map(createEmptyRound)
+    : [createPartiallyEnteredRound(1), createEmptyRound(2), createEmptyRound(3), createEmptyRound(4)];
+  const [activeRound, setActiveRound] = useState(sceneRounds[0]);
+  const stats = calculateSessionStats({ id: session.id, date: session.session.date, rangeName: session.session.rangeName, ammunitionName: session.session.ammunitionName, weather: session.session.weather, rounds: sceneRounds, sessionMemo: session.session.memo });
   return <>
     <section className="session-summary"><div><strong>{session.session.date}</strong><span>{session.session.rangeName}</span></div><div><span>TRAP ・ 4ラウンド</span><strong>{stats.score} / {stats.targets}　実包 {stats.cartridgesUsed}発</strong><span>{session.session.ammunitionName}</span></div><div className="session-actions"><button>基本情報を編集</button><button>履歴へ戻る</button><button className="complete-button">セッション完了</button></div></section>
     <PracticeThemeBanner theme={session.session.practiceTheme ?? ""} />
-    <div className="round-navigation round-navigation-stacked"><nav className="round-tabs" aria-label="ラウンド選択">{rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRound(round)}>Round {round.roundNo}</button>)}</nav><div className="round-actions"><button className="delete-round-button">Round {activeRound.roundNo} 削除</button></div></div>
+    <div className="round-navigation round-navigation-stacked"><nav className="round-tabs" aria-label="ラウンド選択">{sceneRounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRound(round)}>Round {round.roundNo}</button>)}</nav><div className="round-actions"><button className="delete-round-button">Round {activeRound.roundNo} 削除</button></div></div>
     <RoundInput key={activeRound.id} round={activeRound} onChange={setActiveRound} />
   </>;
 }
@@ -157,7 +191,8 @@ function ManualPreview() {
   else if (scene === "history") content = <SessionList sessions={sessions} firearms={[firearm]} suggestedPracticeTheme="クレーを見てから動く" onCreate={noop} onManage={noop} onData={noop} onAccount={noop} onAmmunition={noop} onOpen={noop} onDelete={noop} />;
   else if (scene === "history-analysis") content = <HistoryAnalysis sessions={sessions} />;
   else if (scene === "form") content = <SessionForm initialValue={session.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={[firearm]} onCancel={noop} onStart={noop} />;
-  else if (scene === "round") content = <RoundScene />;
+  else if (scene === "round-before") content = <RoundScene state="before" />;
+  else if (scene === "round-after") content = <RoundScene state="after" />;
   else if (scene === "analysis") content = <SessionAnalysis session={session} reviewAdvice={null} aiInitiallyOpen={openAi} onBack={noop} onResume={noop} onEdit={noop} onSaveReview={noop} />;
   else if (scene === "master") content = <MasterDataManager masterData={masterData} onBack={noop} onAdd={noop} onRename={noop} onDelete={noop} />;
   else if (scene === "ledger") content = <AmmunitionLedger data={ledger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setLedger} onBack={noop} />;

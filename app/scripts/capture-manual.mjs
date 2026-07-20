@@ -5,12 +5,11 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { createServer } from "vite";
 
-const VERSION = "2.19.11";
+const VERSION = "2.19.14";
 const pdfOnly = process.argv.includes("--pdf-only");
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(appRoot, "..");
 const screenshotDir = join(repoRoot, "docs/manual/screenshots/generated");
-const scoreInputFallback = join(repoRoot, "docs/manual/screenshots/score-input.png");
 const manualOutput = join(appRoot, "public/manuals/shoot-log-operation-manual.pdf");
 
 const chromeCandidates = [
@@ -37,8 +36,8 @@ const captures = [
   { name: "05-practice-theme", scene: "history", selector: ".active-practice-theme" },
   { name: "06-history-analysis", scene: "history-analysis", selector: ".history-analysis" },
   { name: "07-new-session", scene: "form", selector: ".session-form" },
-  { name: "08-round-setup", scene: "round", selector: ".round-navigation", fallback: scoreInputFallback, fallbackPosition: "top" },
-  { name: "09-current-shot", scene: "round", selector: ".current-shot", fallback: scoreInputFallback, fallbackPosition: "bottom" },
+  { name: "08-round-setup", scene: "round-before", selector: ".round-navigation" },
+  { name: "09-current-shot", scene: "round-after", selector: ".current-shot" },
   { name: "10-analysis-summary", scene: "analysis", selector: ".analysis-header" },
   { name: "11-ai-analysis", scene: "analysis&openAi=1", selector: ".ai-analysis-export" },
   { name: "12-session-pace", scene: "analysis", selector: ".session-half-analysis" },
@@ -78,18 +77,6 @@ function escapeHtml(value) {
 async function imageData(name) {
   const bytes = await readFile(join(screenshotDir, `${name}.png`));
   return `data:image/png;base64,${bytes.toString("base64")}`;
-}
-
-async function renderFallbackScreenshot(page, capture) {
-  const bytes = await readFile(capture.fallback);
-  const source = `data:image/png;base64,${bytes.toString("base64")}`;
-  const position = capture.fallbackPosition === "bottom" ? "bottom: 0;" : "top: 0;";
-  await page.setContent(`<!doctype html><html><head><style>
-    html, body { width: 390px; height: 844px; margin: 0; overflow: hidden; background: #f3f1f0; }
-    img { position: absolute; left: 50%; width: 520px; height: auto; transform: translateX(-50%); ${position} }
-  </style></head><body><img alt="実際のスコア入力画面" src="${source}"></body></html>`, { waitUntil: "domcontentloaded", timeout: 0 });
-  await page.waitForFunction(() => document.images[0]?.complete === true, { timeout: 0 });
-  await page.screenshot({ path: join(screenshotDir, `${capture.name}.png`), type: "png" });
 }
 
 async function buildManualHtml() {
@@ -150,12 +137,7 @@ try {
       try {
         await page.waitForSelector(capture.selector, { visible: true, timeout: 10_000 });
       } catch (error) {
-        if (!capture.fallback || !existsSync(capture.fallback)) {
-          throw new Error(`撮影 ${capture.name}（${capture.selector}）を表示できませんでした。`, { cause: error });
-        }
-        await renderFallbackScreenshot(page, capture);
-        process.stdout.write(`代替画像: ${capture.name}（${capture.fallbackPosition === "bottom" ? "下部" : "上部"}）\n`);
-        continue;
+        throw new Error(`撮影 ${capture.name}（${capture.selector}）を表示できませんでした。`, { cause: error });
       }
       await page.evaluate(async (selector) => {
         await document.fonts.ready;
@@ -167,8 +149,11 @@ try {
       process.stdout.write(`撮影: ${capture.name}\n`);
     }
 
-    const manifestCaptures = captures.map(({ fallback, ...capture }) => ({ ...capture, ...(fallback ? { fallback: "score-input.png" } : {}) }));
-    await writeFile(join(screenshotDir, "manifest.json"), JSON.stringify({ version: VERSION, viewport: { width: 390, height: 844, deviceScaleFactor: 2 }, captures: manifestCaptures }, null, 2));
+    const roundSetupImage = await readFile(join(screenshotDir, "08-round-setup.png"));
+    const currentShotImage = await readFile(join(screenshotDir, "09-current-shot.png"));
+    if (roundSetupImage.equals(currentShotImage)) throw new Error("ラウンド準備と結果入力の画像が同一です。");
+
+    await writeFile(join(screenshotDir, "manifest.json"), JSON.stringify({ version: VERSION, viewport: { width: 390, height: 844, deviceScaleFactor: 2 }, captures }, null, 2));
   }
 
   const manualPage = await browser.newPage();

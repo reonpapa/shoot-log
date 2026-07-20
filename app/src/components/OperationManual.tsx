@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { shouldUseManualShareSheet } from "./manualSharing";
 import "./OperationManual.css";
 
-const APP_VERSION = "2.19.11";
+const APP_VERSION = "2.19.14";
 const MANUAL_URL = `${import.meta.env.BASE_URL}manuals/shoot-log-operation-manual.pdf?v=${APP_VERSION}`;
 const MANUAL_FILENAME = `shoot-log-v${APP_VERSION}-operation-manual.pdf`;
 

@@ -1,5 +1,5 @@
 {
-  "version": "2.19.11",
+  "version": "2.19.14",
   "viewport": {
     "width": 390,
     "height": 844,
@@ -43,17 +43,13 @@
     },
     {
       "name": "08-round-setup",
-      "scene": "round",
-      "selector": ".round-navigation",
-      "fallbackPosition": "top",
-      "fallback": "score-input.png"
+      "scene": "round-before",
+      "selector": ".round-navigation"
     },
     {
       "name": "09-current-shot",
-      "scene": "round",
-      "selector": ".current-shot",
-      "fallbackPosition": "bottom",
-      "fallback": "score-input.png"
+      "scene": "round-after",
+      "selector": ".current-shot"
     },
     {
       "name": "10-analysis-summary",
