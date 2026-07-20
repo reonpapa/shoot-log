@@ -32,6 +32,20 @@ export interface RoundWindowComparison {
     delta: number;
   };
 }
+export interface SessionHalfStats {
+  rounds: number;
+  averageScore: number;
+  hitRate: number;
+  firstShotHitRate: number;
+}
+export interface SessionHalfComparison {
+  first: SessionHalfStats;
+  second: SessionHalfStats;
+  averageScoreDelta: number;
+  hitRateDelta: number;
+  firstShotHitRateDelta: number;
+  trend: "improved" | "stable" | "declined";
+}
 const directions = (): Record<MissDirection, number> => ({ left: 0, center: 0, right: 0, unknown: 0 });
 
 export function calculateShotCartridges(shot: Shot, round: ShootingRound): number {
@@ -132,4 +146,33 @@ export function calculateRoundWindowComparison(rounds: ShootingRound[], windowSi
       delta: weakest.hitRate - previousHitRate,
     },
   };
+}
+
+function calculateSessionHalfStats(rounds: ShootingRound[]): SessionHalfStats {
+  const stats = rounds.map(calculateRoundStats);
+  const targets = stats.reduce((sum, item) => sum + item.targets, 0);
+  const score = stats.reduce((sum, item) => sum + item.score, 0);
+  const firstShotHits = stats.reduce((sum, item) => sum + item.firstShotHits, 0);
+  return {
+    rounds: rounds.length,
+    averageScore: rounds.length ? score / rounds.length : 0,
+    hitRate: targets ? score / targets * 100 : 0,
+    firstShotHitRate: targets ? firstShotHits / targets * 100 : 0,
+  };
+}
+
+export function calculateSessionHalfComparison(rounds: ShootingRound[]): SessionHalfComparison | null {
+  if (rounds.length < 2) return null;
+  const midpoint = Math.ceil(rounds.length / 2);
+  const first = calculateSessionHalfStats(rounds.slice(0, midpoint));
+  const second = calculateSessionHalfStats(rounds.slice(midpoint));
+  const averageScoreDelta = second.averageScore - first.averageScore;
+  const hitRateDelta = second.hitRate - first.hitRate;
+  const firstShotHitRateDelta = second.firstShotHitRate - first.firstShotHitRate;
+  const trend = hitRateDelta <= -5 || firstShotHitRateDelta <= -7
+    ? "declined"
+    : hitRateDelta >= 5 || firstShotHitRateDelta >= 7
+      ? "improved"
+      : "stable";
+  return { first, second, averageScoreDelta, hitRateDelta, firstShotHitRateDelta, trend };
 }

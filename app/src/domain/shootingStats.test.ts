@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateRoundStats, calculateRoundWindowComparison, calculateSessionStats } from "./shootingStats";
+import { calculateRoundStats, calculateRoundWindowComparison, calculateSessionHalfComparison, calculateSessionStats } from "./shootingStats";
 import { createRound } from "../test/fixtures";
 
 describe("射撃集計", () => {
@@ -79,5 +79,22 @@ describe("射撃集計", () => {
     const rounds = Array.from({ length: 9 }, (_, index) => createRound({ roundNo: index + 1 }));
 
     expect(calculateRoundWindowComparison(rounds)).toBeNull();
+  });
+
+  it("セッションの前半と後半を比較して後半の低下を判定する", () => {
+    const first = [1, 2].map((roundNo) => createRound({ roundNo, finalResults: Array.from({ length: 25 }, () => "hit-on-first") }));
+    const laterResults = Array.from({ length: 25 }, (_, index) => index < 5 ? "miss" as const : "hit-on-first" as const);
+    const second = [3, 4].map((roundNo) => createRound({ roundNo, finalResults: laterResults }));
+
+    const comparison = calculateSessionHalfComparison([...first, ...second]);
+
+    expect(comparison?.first.averageScore).toBe(25);
+    expect(comparison?.second.averageScore).toBe(20);
+    expect(comparison?.hitRateDelta).toBe(-20);
+    expect(comparison?.trend).toBe("declined");
+  });
+
+  it("1ラウンドだけなら前後半比較を行わない", () => {
+    expect(calculateSessionHalfComparison([createRound()])).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { calculateSessionStats, calculateRoundStats, calculateStandStats } from "../domain/shootingStats";
+import { calculateSessionHalfComparison, calculateSessionStats, calculateRoundStats, calculateStandStats } from "../domain/shootingStats";
 import type { StoredSession } from "../services/storage";
 import type { SessionReview } from "../domain/shooting";
 import { SessionReviewForm } from "./SessionReviewForm";
@@ -21,6 +21,7 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
   });
   const shootingSession = { id: session.id, date: session.session.date, rangeName: session.session.rangeName, ammunitionName: session.session.ammunitionName, weather: session.session.weather, rounds: session.rounds, sessionMemo: session.session.memo };
   const standStats = calculateStandStats(shootingSession);
+  const halfComparison = calculateSessionHalfComparison(session.rounds);
   const directionScaleMax = Math.max(1, ...standStats.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
 
   return <section className="session-analysis">
@@ -41,7 +42,17 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
 
     <div className="analysis-details"><article><span>命中内訳</span><strong>初矢 {stats.firstShotHits}</strong><strong>二の矢 {stats.secondShotHits}</strong></article><article><span>失中方向</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>
 
+    {halfComparison && <section className={`session-half-analysis ${halfComparison.trend}`}>
+      <header><div><p className="eyebrow">SESSION PACE</p><h3>前半・後半の安定度</h3></div><strong>{halfComparison.trend === "declined" ? "後半に低下" : halfComparison.trend === "improved" ? "後半に向上" : "安定"}</strong></header>
+      <div className="session-half-grid"><article><span>前半 {halfComparison.first.rounds}R</span><strong>{halfComparison.first.averageScore.toFixed(1)}<small> / 25</small></strong><p>命中率 {Math.round(halfComparison.first.hitRate)}%　初矢 {Math.round(halfComparison.first.firstShotHitRate)}%</p></article><article><span>後半 {halfComparison.second.rounds}R</span><strong>{halfComparison.second.averageScore.toFixed(1)}<small> / 25</small></strong><p>命中率 {Math.round(halfComparison.second.hitRate)}%　初矢 {Math.round(halfComparison.second.firstShotHitRate)}%</p></article><article className="session-half-delta"><span>後半の変化</span><strong>{formatPointDelta(halfComparison.hitRateDelta)}<small>pt</small></strong><p>初矢 {formatPointDelta(halfComparison.firstShotHitRateDelta)}pt</p></article></div>
+      <p className="session-half-advice">{halfComparison.trend === "declined" ? "後半は構えを急がず、各ラウンドの最初に頬付けと視線を整えましょう。" : halfComparison.trend === "improved" ? "後半に調子を上げています。うまくいった構えや視線を振り返りに残しましょう。" : "前半から後半まで安定しています。現在のルーティンを継続しましょう。"}</p>
+    </section>}
+
     <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>射台別分析</h3></div><div className="radial-legend"><span><i className="legend-hit" />総合命中率</span><span><i className="legend-first" />初矢命中率</span><span><i className="legend-left" />←失中</span><span><i className="legend-center" />↑失中</span><span><i className="legend-right" />→失中</span></div></header><div className="stand-analysis-grid">{standStats.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
     <SessionReviewForm review={session.review} onSave={onSaveReview} onBack={onBack} />
   </section>;
+}
+
+function formatPointDelta(value: number): string {
+  return `${value > 0 ? "+" : ""}${Math.round(value)}`;
 }
