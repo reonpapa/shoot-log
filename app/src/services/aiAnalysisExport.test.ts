@@ -14,6 +14,9 @@ describe("AI分析用データ", () => {
     const prompt = createAiAnalysisPrompt(session);
     expect(prompt).toContain("総合スコア：1/2");
     expect(prompt).toContain("コンディション：晴れ・18℃");
+    expect(prompt).toContain("失中したクレーの飛翔方向");
+    expect(prompt).toContain("弾が外れた方向や照準位置ではありません");
+    expect(prompt).toContain("記録されていない原因は断定しないでください");
     expect(prompt).not.toContain("秘密の射撃場");
     expect(prompt).not.toContain("secret-firearm");
     expect(prompt).not.toContain("個人的なメモ");
