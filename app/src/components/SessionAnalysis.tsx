@@ -6,11 +6,12 @@ import { StandRadialChart } from "./StandRadialChart";
 import { PracticeThemeBanner } from "./PracticeThemeBanner";
 import { ThemeAchievementControl } from "./ThemeAchievementControl";
 import { formatShootingConditions } from "../services/sessionConditions";
+import type { PracticeRecommendation } from "../services/sessionPlanning";
 import "./SessionAnalysis.css";
 
-interface Props { session: StoredSession; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
+interface Props { session: StoredSession; reviewAdvice: PracticeRecommendation | null; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
 
-export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveReview }: Props) {
+export function SessionAnalysis({ session, reviewAdvice, onBack, onResume, onEdit, onSaveReview }: Props) {
   const stats = calculateSessionStats({
     id: session.id,
     date: session.session.date,
@@ -51,7 +52,7 @@ export function SessionAnalysis({ session, onBack, onResume, onEdit, onSaveRevie
     </section>}
 
     <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>射台別分析</h3></div><div className="radial-legend"><span><i className="legend-hit" />総合命中率</span><span><i className="legend-first" />初矢命中率</span><span><i className="legend-left" />←失中</span><span><i className="legend-center" />↑失中</span><span><i className="legend-right" />→失中</span></div></header><div className="stand-analysis-grid">{standStats.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
-    <SessionReviewForm review={session.review} onSave={onSaveReview} onBack={onBack} />
+    <SessionReviewForm review={session.review} advice={reviewAdvice} onSave={onSaveReview} onBack={onBack} />
   </section>;
 }
 

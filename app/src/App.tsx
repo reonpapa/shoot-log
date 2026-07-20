@@ -50,6 +50,7 @@ function App() {
   const activeRound = activeSession?.rounds.find((round) => round.id === activeRoundId) ?? activeSession?.rounds[0] ?? null;
   const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
   const practiceRecommendation = useMemo(() => getPracticeRecommendation(sessions), [sessions]);
+  const reviewAdvice = useMemo(() => activeSession ? getPracticeRecommendation([activeSession]) : null, [activeSession]);
   const suggestedPracticeTheme = practiceRecommendation?.theme ?? "";
   const signedIn = cloudSync.view.phase !== "signed-out" && !!cloudSync.view.email;
   const publicScreen = screen === "privacy" || screen === "terms" || screen === "contact";
@@ -169,7 +170,7 @@ function App() {
   }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.16.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.17.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
@@ -188,7 +189,7 @@ function App() {
       <div className="round-navigation"><nav className="round-tabs" aria-label="ラウンド選択">{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}</nav>{activeSession.rounds.length > 1 && <button className="delete-round-button" onClick={deleteActiveRound}>Round {activeRound.roundNo} 削除</button>}</div>
       <RoundInput key={activeRound.id} round={activeRound} onChange={updateRound} />
     </>}
-    {displayedScreen === "analysis" && activeSession && <SessionAnalysis session={activeSession} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} onSaveReview={saveReview} />}
+    {displayedScreen === "analysis" && activeSession && <SessionAnalysis session={activeSession} reviewAdvice={reviewAdvice} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} onSaveReview={saveReview} />}
   </main>;
 }
 export default App;
