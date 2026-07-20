@@ -2,6 +2,7 @@ import { useState } from "react";
 import { calculateRoundStats, calculateRoundWindowComparison, calculateSessionStats, calculateStandStats } from "../domain/shootingStats";
 import type { FireMode } from "../domain/shooting";
 import type { StoredSession } from "../services/storage";
+import { getAmmunitionPerformance } from "../services/ammunitionPerformance";
 import { StandRadialChart } from "./StandRadialChart";
 import "./HistoryAnalysis.css";
 
@@ -35,12 +36,14 @@ export function HistoryAnalysis({ sessions }: Props) {
   const totalCartridges = filtered.reduce((sum, item) => sum + calculateSessionStats({ id: item.id, date: item.session.date, rangeName: item.session.rangeName, ammunitionName: item.session.ammunitionName, weather: item.session.weather, rounds: item.rounds, sessionMemo: item.session.memo }).cartridgesUsed, 0);
   const stands = calculateStandStats({ id: "history", date: "", rangeName: "", ammunitionName: "", rounds });
   const directionScaleMax = Math.max(1, ...stands.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
+  const ammunitionPerformance = getAmmunitionPerformance(filtered);
 
   return <section className="history-analysis">
     <header><div><p className="eyebrow">PERFORMANCE</p><h2>成長分析</h2></div><small>対象セッション {filtered.length}件</small></header>
     <div className="analysis-filters"><label><span>射撃場</span><select value={rangeName} onChange={(event) => setRangeName(event.target.value)}><option value="all">すべて</option>{rangeOptions.map((name) => <option key={name}>{name}</option>)}</select></label><label><span>実包</span><select value={ammunitionName} onChange={(event) => setAmmunitionName(event.target.value)}><option value="all">すべて</option>{ammunitionOptions.map((name) => <option key={name}>{name}</option>)}</select></label><label><span>発射方式</span><select value={fireMode} onChange={(event) => setFireMode(event.target.value as "all" | FireMode)}><option value="all">すべて</option><option value="single">1発撃ち</option><option value="double">2発撃ち</option></select></label><label><span>期間</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}><option value="all">全期間</option><option value="5">直近5回</option><option value="10">直近10回</option></select></label></div>
     {rounds.length === 0 ? <div className="analysis-empty">条件に一致するラウンドがありません。</div> : <>
       <div className="history-kpis"><article><span>平均スコア</span><strong>{average.toFixed(1)}<small> / 25</small></strong></article><article><span>最高ラウンド</span><strong>{best}<small> / 25</small></strong></article><article><span>対象ラウンド</span><strong>{rounds.length}<small>R</small></strong></article><article><span>消費実包</span><strong>{totalCartridges}<small>発</small></strong></article></div>
+      {ammunitionPerformance.length > 0 && <section className="ammunition-performance"><header><div><p className="eyebrow">AMMUNITION PERFORMANCE</p><h3>実包別パフォーマンス</h3></div><small>同じ絞り込み条件で比較</small></header><div>{ammunitionPerformance.map((item) => <article key={item.ammunitionName}><header><strong>{item.ammunitionName}</strong>{item.roundCount < 3 && <span>参考値</span>}</header><div><p><span>平均</span><strong>{item.averageScore.toFixed(1)}<small> / 25</small></strong></p><p><span>命中率</span><strong>{item.hitRate.toFixed(1)}<small>%</small></strong></p><p><span>初矢</span><strong>{item.firstShotHitRate.toFixed(1)}<small>%</small></strong></p></div><small>{item.sessionCount}セッション・{item.roundCount}ラウンド</small></article>)}</div><p>ラウンド数が少ない実包は「参考値」として表示します。射撃場や天候などの条件差も含めて判断してください。</p></section>}
       <section className={`performance-comparison${comparison ? "" : " is-pending"}`}>
         <header><div><p className="eyebrow">RECENT COMPARISON</p><h3>直近5ラウンド比較</h3></div><small>同じ絞り込み条件で、その前5ラウンドと比較</small></header>
         {comparison ? <div className="comparison-grid">

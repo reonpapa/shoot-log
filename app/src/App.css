@@ -1,7 +1,8 @@
 #root { min-height: 100vh; }
 .app-shell { width: min(100%, 920px); margin: 0 auto; padding: 24px 16px 64px; }
 .app-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
-.app-header h1 { margin: 2px 0 0; font-size: clamp(2rem, 7vw, 3.8rem); line-height: 1; }
+.app-header h1 { display: flex; align-items: center; gap: .18em; margin: 2px 0 0; font-size: clamp(2rem, 7vw, 3.8rem); line-height: 1; }
+.app-header h1 img { flex: none; width: 1em; height: 1em; border-radius: 22%; }
 .eyebrow { margin: 0; font-size: .72rem; font-weight: 800; letter-spacing: .16em; opacity: .58; }
 .version { margin: 0; font-size: .8rem; opacity: .58; }
 .primary-button, .complete-button { min-height: 42px; padding: 0 15px; border: 0; border-radius: 9px; background: #6d3bd1; color: white; font-weight: 800; }
