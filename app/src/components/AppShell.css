@@ -23,6 +23,8 @@
   .app-header .version { flex: none; padding-bottom: 2px; font-size: .72rem; white-space: nowrap; }
   .round-navigation .round-actions button { padding-inline: 9px; font-size: .72rem; }
   .round-navigation.round-navigation-stacked { flex-direction: column; }
+  .round-navigation.round-navigation-stacked .round-tabs { overflow-x: visible; }
+  .round-navigation.round-navigation-stacked .round-tabs button { flex: 1; min-width: 0; padding-inline: 4px; font-size: clamp(.82rem, 4vw, 1rem); }
   .round-navigation.round-navigation-stacked .round-actions { width: 100%; }
   .round-navigation.round-navigation-stacked .round-actions button { flex: 1; }
   .session-summary, .session-summary > div { min-width: 0; width: 100%; }

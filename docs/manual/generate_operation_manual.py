@@ -9,15 +9,17 @@ from reportlab.lib.colors import Color, HexColor, white
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 
 
-VERSION = "2.19.4"
+VERSION = "2.19.6"
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "app/public/manuals/shoot-log-operation-manual.pdf"
+SCORE_INPUT_SCREENSHOT = Path(__file__).resolve().parent / "screenshots/score-input.png"
 
 PAGE_W, PAGE_H = A4
 PURPLE = HexColor("#6d3bd1")
@@ -117,20 +119,51 @@ def note_box(c: canvas.Canvas, title_value: str, body: str, x: float, y: float, 
     paragraph(c, body, x + 12, y + h - 29, w - 24, NOTE)
 
 
+SCREEN_KICKERS = {
+    "ログイン": "ACCOUNT SETTINGS",
+    "アカウント設定": "ACCOUNT SETTINGS",
+    "射撃履歴": "SESSIONS",
+    "新しいセッション": "NEW SESSION",
+    "Round 1": "ROUND INPUT",
+    "成績分析": "SESSION COMPLETE",
+    "振り返り / AI分析": "REVIEW / OPTIONAL AI ANALYSIS",
+    "練習テーマ": "CURRENT FOCUS",
+    "登録内容を管理": "MASTER DATA",
+    "実包管理": "AMMUNITION LEDGER",
+    "所持許可・更新管理": "FIREARM PERMIT",
+    "バックアップ": "DATA BACKUP",
+    "アプリアップデート": "APP UPDATE",
+    "お問い合わせ": "SUPPORT",
+}
+
+
 def phone(c: canvas.Canvas, x: float, y: float, w: float, h: float, title_value: str, draw_content):
-    round_rect(c, x, y, w, h, 24, HexColor("#151219"), HexColor("#151219"), 1)
-    inset = 7
-    round_rect(c, x + inset, y + inset, w - 2 * inset, h - 2 * inset, 18, white, white, 0)
-    c.setFillColor(HexColor("#151219"))
-    c.roundRect(x + w * 0.36, y + h - 13, w * 0.28, 6, 3, stroke=0, fill=1)
-    sx, sy, sw, sh = x + 13, y + 18, w - 26, h - 38
-    text(c, "Shoot Log", sx, sy + sh - 10, 8.2, INK)
-    text(c, f"v{VERSION}", sx + sw, sy + sh - 10, 4.8, MUTED, "right")
-    text(c, title_value, sx, sy + sh - 28, 10.5, INK)
+    # The screen is reconstructed from the current React component hierarchy and CSS tokens.
+    round_rect(c, x, y, w, h, 22, HexColor("#17161a"), HexColor("#17161a"), 1)
+    inset = 4
+    round_rect(c, x + inset, y + inset, w - 2 * inset, h - 2 * inset, 18, HexColor("#f5f4f2"), HexColor("#f5f4f2"), 0)
+    c.setFillColor(HexColor("#17161a"))
+    c.roundRect(x + w * 0.37, y + h - 10, w * 0.26, 4, 2, stroke=0, fill=1)
+    sx, sy, sw, sh = x + 12, y + 16, w - 24, h - 31
+
+    # Actual app header: eyebrow, purple target icon, app name and version.
+    text(c, "CLAY SHOOTING ANALYSIS", sx, sy + sh - 13, 4.2, MUTED)
+    c.setFillColor(PURPLE)
+    c.circle(sx + 7, sy + sh - 31, 7, stroke=0, fill=1)
+    c.setFillColor(HexColor("#b99cff"))
+    c.circle(sx + 7, sy + sh - 31, 4.4, stroke=0, fill=1)
+    c.setFillColor(white)
+    c.circle(sx + 7, sy + sh - 31, 1.4, stroke=0, fill=1)
+    text(c, "Shoot Log", sx + 18, sy + sh - 35, 12.5, INK)
+    text(c, f"Version {VERSION}", sx + sw, sy + sh - 34, 4.7, MUTED, "right")
+
+    content_top = sy + sh - 57
+    text(c, SCREEN_KICKERS.get(title_value, "SHOOT LOG"), sx, content_top, 4.6, PURPLE)
+    text(c, title_value, sx, content_top - 17, 10.7, INK)
     c.setStrokeColor(LINE)
-    c.line(sx, sy + sh - 36, sx + sw, sy + sh - 36)
-    draw_content(c, sx, sy, sw, sh - 43)
-    text(c, "画面イメージ（説明用データ）", x + w / 2, y - 11, 5.2, MUTED, "center")
+    c.line(sx, content_top - 25, sx + sw, content_top - 25)
+    draw_content(c, sx, sy, sw, content_top - sy - 32)
+    text(c, "現行UIを基にした再現図（架空データ）", x + w / 2, y - 11, 5.2, MUTED, "center")
 
 
 def mini_button(c, label, x, y, w, h=19, primary=False, danger=False):
@@ -138,21 +171,21 @@ def mini_button(c, label, x, y, w, h=19, primary=False, danger=False):
     stroke = PURPLE if primary else HexColor("#e3baba") if danger else LINE
     color = white if primary else RED if danger else INK
     round_rect(c, x, y, w, h, 5, fill, stroke)
-    text(c, label, x + w / 2, y + h / 2 - 2.5, 5.9, color, "center")
+    text(c, label, x + w / 2, y + h / 2 - 2.5, 6.1, color, "center")
 
 
 def mini_card(c, title_value, detail, x, y, w, h=38, tone="plain"):
     fill = {"plain": SURFACE, "purple": PURPLE_LIGHT, "green": GREEN_LIGHT, "orange": ORANGE_LIGHT, "red": RED_LIGHT}[tone]
     stroke = {"plain": LINE, "purple": HexColor("#cbb8ef"), "green": HexColor("#b9ddc4"), "orange": HexColor("#efd1a7"), "red": HexColor("#ecc2c2")}[tone]
     round_rect(c, x, y, w, h, 6, fill, stroke)
-    text(c, title_value, x + 7, y + h - 13, 6.2, INK)
-    text(c, detail, x + 7, y + 8, 5.1, MUTED)
+    text(c, title_value, x + 7, y + h - 13, 6.5, INK)
+    text(c, detail, x + 7, y + 8, 5.3, MUTED)
 
 
 def mini_field(c, label, value, x, y, w, h=27):
-    text(c, label, x, y + h - 7, 4.8, MUTED)
+    text(c, label, x, y + h - 7, 5.0, MUTED)
     round_rect(c, x, y, w, h - 9, 4, white, LINE)
-    text(c, value, x + 6, y + 5, 5.5, INK)
+    text(c, value, x + 6, y + 5, 5.8, INK)
 
 
 def draw_history(c, x, y, w, h):
@@ -164,34 +197,33 @@ def draw_history(c, x, y, w, h):
     mini_button(c, "登録内容を管理", x, top - 45, bw)
     mini_button(c, "実包管理", x + bw + gap, top - 45, bw)
     mini_button(c, "＋ 新しいセッション", x, top - 70, w, primary=True)
-    mini_card(c, "継続中の練習テーマ", "頬付けを安定させる", x, top - 118, w, 40, "purple")
-    mini_card(c, "2026-07-20  大井射撃場", "TRAP  64/100  ・  完了", x, top - 164, w, 41)
-    mini_card(c, "2026-07-13  大井射撃場", "TRAP  58/100  ・  完了", x, top - 210, w, 41)
-    mini_card(c, "過去の練習テーマ", "3テーマ  /  スコア推移を確認", x, top - 256, w, 41, "green")
+    mini_card(c, "CURRENT FOCUS  継続中の練習テーマ", "クレーを見てから動く  ・  関連履歴3件", x, top - 121, w, 43, "purple")
+    mini_card(c, "2026-07-20  大井射撃場", "TRAP  64/100  ・  4R  ・  完了", x, top - 170, w, 43)
+    mini_card(c, "2026-07-13  大井射撃場", "TRAP  58/100  ・  4R  ・  完了", x, top - 219, w, 43)
+    mini_card(c, "THEME HISTORY  過去の練習テーマ", "3テーマ  ・  達成率とスコア推移", x, top - 268, w, 43, "green")
 
 
 def draw_account(c, x, y, w, h):
     top = y + h
-    mini_card(c, "CLOUD SYNC  同期済み", "最終同期 7/20 15:30", x, top - 47, w, 42, "green")
-    mini_button(c, "今すぐ同期", x, top - 72, w, primary=True)
-    mini_card(c, "FIREARM PERMIT", "更新申請期間まで 84日", x, top - 120, w, 40, "orange")
-    mini_card(c, "操作マニュアル", "Version 2.19.4対応", x, top - 166, w, 40, "purple")
-    mini_card(c, "複数端末のデータ同期", "ログイン中  sample@example.com", x, top - 212, w, 40)
-    mini_button(c, "ログアウト", x, top - 237, w)
-    text(c, "パスワードを変更", x, top - 258, 5.5, PURPLE)
-    text(c, "お問い合わせ  /  利用規約  /  プライバシー", x, top - 283, 4.8, MUTED)
+    mini_card(c, "CLOUD SYNC    同期済み", "クラウドと同期されています  ・  同期待ち なし", x, top - 51, w, 46, "green")
+    mini_button(c, "今すぐ同期", x, top - 76, w, primary=True)
+    mini_card(c, "FIREARM PERMIT    更新まで余裕あり", "サンプル上下二連  ・  申請期限 2027-02-28", x, top - 128, w, 46, "orange")
+    mini_card(c, "操作マニュアル", f"Version {VERSION}対応  ・  開く / 保存", x, top - 180, w, 46, "purple")
+    mini_card(c, "複数端末のデータ同期", "ログイン中  demo@example.com", x, top - 232, w, 46)
+    mini_button(c, "ログアウト", x, top - 257, w)
+    text(c, "パスワードを変更", x, top - 279, 5.7, PURPLE)
 
 
 def draw_login(c, x, y, w, h):
     top = y + h
-    mini_card(c, "CLOUD SYNC", "複数端末のデータ同期", x, top - 45, w, 39, "purple")
+    mini_card(c, "CLOUD SYNC", "複数端末の射撃記録を安全に同期", x, top - 47, w, 41, "purple")
     mini_button(c, "ログイン", x, top - 70, (w - 4) / 2, primary=True)
     mini_button(c, "新規登録", x + (w + 4) / 2, top - 70, (w - 4) / 2)
-    mini_field(c, "メールアドレス", "sample@example.com", x, top - 108, w)
+    mini_field(c, "メールアドレス", "demo@example.com", x, top - 108, w)
     mini_field(c, "パスワード", "●●●●●●●●", x, top - 144, w)
     mini_button(c, "ログイン", x, top - 171, w, primary=True)
     text(c, "パスワードを忘れた場合", x, top - 193, 5.3, PURPLE)
-    note_box(c, "初回のみ", "利用規約とプライバシーポリシーを確認して新規登録します。", x, top - 257, w, 54, "green")
+    mini_card(c, "初回のみ", "利用規約とプライバシーポリシーを確認", x, top - 245, w, 41, "green")
 
 
 def draw_session_form(c, x, y, w, h):
@@ -208,54 +240,58 @@ def draw_session_form(c, x, y, w, h):
 
 def draw_round(c, x, y, w, h):
     top = y + h
-    mini_button(c, "1発撃ち", x, top - 21, (w - 4) / 2)
-    mini_button(c, "2発撃ち", x + (w + 4) / 2, top - 21, (w - 4) / 2, primary=True)
-    text(c, "開始射台  1    実包消費  自動計算 25発", x, top - 37, 5.2, MUTED)
+    tab_w = (w - 8) / 3
+    mini_button(c, "Round 1", x, top - 20, tab_w)
+    mini_button(c, "Round 2", x + tab_w + 4, top - 20, tab_w)
+    mini_button(c, "Round 3", x + 2 * (tab_w + 4), top - 20, tab_w, primary=True)
+    mini_button(c, "＋ Round", x, top - 44, (w - 4) / 2)
+    mini_button(c, "Round 3 削除", x + (w + 4) / 2, top - 44, (w - 4) / 2, danger=True)
+    mini_button(c, "1発撃ち", x, top - 69, (w - 4) / 2)
+    mini_button(c, "2発撃ち", x + (w + 4) / 2, top - 69, (w - 4) / 2, primary=True)
+    text(c, "開始射台  1    実包消費  自動計算", x, top - 85, 5.2, MUTED)
     cell = (w - 8) / 5
     for row in range(5):
         for col in range(5):
             value = "○" if (row + col) % 4 else "×"
             fill = PURPLE_LIGHT if value == "○" else RED_LIGHT
-            round_rect(c, x + col * (cell + 2), top - 62 - row * 24, cell, 20, 4, fill, LINE)
-            text(c, value, x + col * (cell + 2) + cell / 2, top - 55 - row * 24, 7, PURPLE if value == "○" else RED, "center")
-    mini_card(c, "現在  18番  /  Stand 4", "スコア 13  ・  失中 5", x, top - 205, w, 42)
-    mini_button(c, "命中", x, top - 232, (w - 8) / 3, primary=True)
-    mini_button(c, "失中", x + (w - 8) / 3 + 4, top - 232, (w - 8) / 3, danger=True)
-    mini_button(c, "取消", x + 2 * ((w - 8) / 3 + 4), top - 232, (w - 8) / 3)
-    text(c, "キーボード: 1 命中 / 0 失中 / Enter 次へ", x, top - 254, 4.9, MUTED)
+            round_rect(c, x + col * (cell + 2), top - 111 - row * 22, cell, 18, 4, fill, LINE)
+            text(c, value, x + col * (cell + 2) + cell / 2, top - 105 - row * 22, 7, PURPLE if value == "○" else RED, "center")
+    mini_card(c, "現在  18番  /  Stand 4", "スコア 13  ・  失中 5", x, top - 240, w, 40)
+    mini_button(c, "命中", x, top - 267, (w - 8) / 3, primary=True)
+    mini_button(c, "失中", x + (w - 8) / 3 + 4, top - 267, (w - 8) / 3, danger=True)
+    mini_button(c, "取消", x + 2 * ((w - 8) / 3 + 4), top - 267, (w - 8) / 3)
 
 
 def draw_analysis(c, x, y, w, h):
     top = y + h
-    mini_card(c, "総合スコア", "64 / 100   命中率 64%", x, top - 42, w, 37, "purple")
+    mini_card(c, "今日の練習テーマ", "クレーを見てから動く  ・  一部できた", x, top - 45, w, 40, "purple")
     sw = (w - 8) / 3
-    mini_card(c, "初矢", "52", x, top - 85, sw, 37)
-    mini_card(c, "二の矢", "12", x + sw + 4, top - 85, sw, 37)
-    mini_card(c, "失中", "36", x + 2 * (sw + 4), top - 85, sw, 37)
-    text(c, "ラウンド別", x, top - 104, 5.5, MUTED)
-    vals = [42, 58, 48, 72]
-    for idx, value in enumerate(vals):
-        bx = x + 10 + idx * (w - 20) / 4
-        bh = value * 0.65
-        c.setFillColor(PURPLE)
-        c.roundRect(bx, top - 178, 17, bh, 3, stroke=0, fill=1)
-        text(c, f"R{idx + 1}", bx + 8.5, top - 188, 4.8, MUTED, "center")
-    mini_card(c, "前半・後半の安定度", "前半 56%  →  後半 72%", x, top - 232, w, 39, "green")
-    mini_button(c, "AI分析用データを作成", x, top - 258, w, primary=True)
+    mini_card(c, "総合スコア", "64 / 100", x, top - 91, sw, 41, "purple")
+    mini_card(c, "命中率", "64 %", x + sw + 4, top - 91, sw, 41, "green")
+    mini_card(c, "消費実包", "136 発", x + 2 * (sw + 4), top - 91, sw, 41)
+    bw = (w - 4) / 2
+    mini_card(c, "Round 1", "14 / 25  初矢10  二の矢4", x, top - 138, bw, 41)
+    mini_card(c, "Round 2", "18 / 25  初矢14  二の矢4", x + bw + 4, top - 138, bw, 41)
+    mini_card(c, "Round 3", "15 / 25  初矢11  二の矢4", x, top - 185, bw, 41)
+    mini_card(c, "Round 4", "17 / 25  初矢13  二の矢4", x + bw + 4, top - 185, bw, 41)
+    mini_card(c, "命中内訳", "初矢 48  ・  二の矢 16", x, top - 232, bw, 41)
+    mini_card(c, "失中方向", "← 13    ↑ 10    → 13", x + bw + 4, top - 232, bw, 41)
+    mini_button(c, "AI分析用データを作成", x, top - 259, w)
 
 
 def draw_review_ai(c, x, y, w, h):
     top = y + h
-    mini_field(c, "今日の気づき", "後半は焦らず撃てた", x, top - 36, w, 31)
-    mini_field(c, "うまくいかなかったこと", "右方向で急いでしまう", x, top - 75, w, 31)
-    mini_field(c, "次回試すこと", "クレーを見てから動く", x, top - 114, w, 31)
-    mini_button(c, "振り返りを保存", x, top - 142, w, primary=True)
-    mini_card(c, "OPTIONAL AI ANALYSIS", "本人の振り返りを含む分析用データ", x, top - 192, w, 43, "purple")
-    round_rect(c, x, top - 258, w, 60, 5, SURFACE, LINE)
-    text(c, "種目: TRAP  総合: 64/100", x + 7, top - 213, 5.0, MUTED)
-    text(c, "本人の振り返り: 右方向が不安...", x + 7, top - 226, 5.0, MUTED)
-    text(c, "個人情報は除外", x + 7, top - 244, 5.0, GREEN)
-    mini_button(c, "コピーしてChatGPTを開く", x, top - 285, w, primary=True)
+    text(c, "REVIEW  射撃後の振り返り", x, top - 11, 6.3, INK)
+    mini_field(c, "今日の気づき", "後半は焦らず、クレーを見てから動けた", x, top - 48, w, 32)
+    mini_field(c, "うまくいかなかったこと", "右方向で動き始めが早くなることがあった", x, top - 88, w, 32)
+    mini_field(c, "次回試すこと", "呼吸を整え、クレーを確認してから動く", x, top - 128, w, 32)
+    mini_button(c, "振り返りを保存", x, top - 155, w, primary=True)
+    mini_card(c, "OPTIONAL AI ANALYSIS", "自分のAIで詳しく分析", x, top - 207, w, 45, "purple")
+    round_rect(c, x, top - 275, w, 61, 5, SURFACE, LINE)
+    text(c, "種目：TRAP  総合：64/100", x + 7, top - 230, 5.1, MUTED)
+    text(c, "本人の振り返りを含む分析用データ", x + 7, top - 244, 5.1, MUTED)
+    text(c, "日付・射撃場・銃番号・氏名は除外", x + 7, top - 261, 5.1, GREEN)
+    mini_button(c, "コピーしてChatGPTを開く", x, top - 302, w, primary=True)
 
 
 def draw_theme(c, x, y, w, h):
@@ -274,8 +310,8 @@ def draw_permit(c, x, y, w, h):
     top = y + h
     mini_button(c, "アカウント設定へ戻る", x, top - 22, w)
     mini_card(c, "許可証共通情報", "氏名・住所・生年月日は保存しません", x, top - 69, w, 40, "green")
-    mini_field(c, "許可証番号", "（説明用）123456", x, top - 106, w)
-    mini_card(c, "ミロク Trap AC", "更新申請期間まで 84日", x, top - 153, w, 40, "orange")
+    mini_field(c, "許可証番号", "（説明用データ）", x, top - 106, w)
+    mini_card(c, "サンプル上下二連  DEMO-001", "更新申請期間まで 84日", x, top - 153, w, 40, "orange")
     mini_field(c, "有効期限", "2027-03-31", x, top - 190, w)
     mini_field(c, "更新申請開始日", "2026-10-01", x, top - 225, w)
     mini_field(c, "更新申請期限", "2027-02-28", x, top - 260, w)
@@ -341,12 +377,46 @@ def draw_help(c, x, y, w, h):
     mini_button(c, "問い合わせメールを作成", x, yy - 7, w, primary=True)
 
 
+def actual_score_screen(c: canvas.Canvas, x: float, y: float, w: float, h: float):
+    """Place the user-provided live screen and redraw only the fixed round tabs."""
+    image = ImageReader(str(SCORE_INPUT_SCREENSHOT))
+    image_w, image_h = image.getSize()
+    scale = min(w / image_w, h / image_h)
+    draw_w, draw_h = image_w * scale, image_h * scale
+    draw_x, draw_y = x + (w - draw_w) / 2, y + (h - draw_h) / 2
+    c.drawImage(image, draw_x, draw_y, draw_w, draw_h, preserveAspectRatio=True, mask="auto")
+
+    # The source screenshot shows the reported overflow. Overlay the corrected
+    # four equal-width tabs and the second-row delete button at the same scale.
+    screen_top = draw_y + draw_h
+    c.setFillColor(HexColor("#f5f4f2"))
+    c.rect(draw_x, screen_top - 350 * scale, draw_w, 245 * scale, stroke=0, fill=1)
+    margin = 30 * scale
+    gap = 14 * scale
+    tab_w = (draw_w - margin * 2 - gap * 3) / 4
+    tab_h = 96 * scale
+    tab_y = screen_top - 230 * scale
+    for index in range(4):
+        selected = index == 0
+        round_rect(c, draw_x + margin + index * (tab_w + gap), tab_y, tab_w, tab_h, 6, PURPLE if selected else HexColor("#f5f4f2"), PURPLE if selected else HexColor("#cbc8cc"), 0.8)
+        text(c, f"Round {index + 1}", draw_x + margin + index * (tab_w + gap) + tab_w / 2, tab_y + 8.2, 6.1, white if selected else INK, "center")
+    delete_y = screen_top - 345 * scale
+    round_rect(c, draw_x + margin, delete_y, draw_w - margin * 2, 96 * scale, 6, HexColor("#f5f4f2"), HexColor("#e79a9a"), 0.8)
+    text(c, "Round 1 削除", draw_x + draw_w / 2, delete_y + 8.2, 6.1, RED, "center")
+    c.setStrokeColor(LINE)
+    c.roundRect(draw_x, draw_y, draw_w, draw_h, 10, stroke=1, fill=0)
+    text(c, "実画面（説明用の記録）", x + w / 2, y - 11, 5.2, MUTED, "center")
+
+
 def chapter(c: canvas.Canvas, page_no: int, kicker: str, title_value: str, subtitle: str, bullets: list[str], screen_title: str, drawer, note=None):
     page_header(c, page_no, kicker, title_value, subtitle)
-    y = bullet_list(c, bullets, 40, PAGE_H - 158, 245)
+    has_actual_screen = screen_title == "Round 1" and SCORE_INPUT_SCREENSHOT.exists()
+    content_width = 245 if has_actual_screen else PAGE_W - 80
+    y = bullet_list(c, bullets, 40, PAGE_H - 158, content_width)
     if note:
-        note_box(c, note[0], note[1], 40, max(72, y - 100), 245, 82, note[2] if len(note) > 2 else "purple")
-    phone(c, 328, 115, 220, 520, screen_title, drawer)
+        note_box(c, note[0], note[1], 40, max(72, y - 100), content_width, 82, note[2] if len(note) > 2 else "purple")
+    if has_actual_screen:
+        actual_score_screen(c, 310, 93, 250, 555)
     c.showPage()
 
 
