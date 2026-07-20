@@ -8,6 +8,11 @@ export function createAiAnalysisPrompt(session: StoredSession): string {
   const stands = calculateStandStats(shootingSession).filter((stand) => stand.targets > 0);
   const half = calculateSessionHalfComparison(session.rounds);
   const conditions = formatShootingConditions(session.session);
+  const reviewLines = [
+    ["今日の気づき", session.review.findings.trim()],
+    ["うまくいかなかったこと", session.review.problems.trim()],
+    ["次回試すこと", session.review.nextChallenge.trim()],
+  ].filter((item) => item[1]);
   const hitRate = stats.targets ? stats.score / stats.targets * 100 : 0;
   const firstShotRate = stats.targets ? stats.firstShotHits / stats.targets * 100 : 0;
   const modeSummaries = (["single", "double"] as const).flatMap((mode) => {
@@ -28,6 +33,7 @@ export function createAiAnalysisPrompt(session: StoredSession): string {
     "失中方向は、失中したクレーの飛翔方向です。弾が外れた方向や照準位置ではありません。",
     "クレーの飛翔方向から照準のずれ、銃口位置、上下の失中を推測せず、記録されていない原因は断定しないでください。",
     "1発撃ちでは唯一の発射による命中を初矢命中として記録しています。1発撃ちと2発撃ちを同じ条件として単純比較しないでください。",
+    "本人の振り返りも参考に、不安や悩みに配慮して回答してください。ただし、自由記述の内容を事実や原因として断定しないでください。",
     "",
     `種目：${session.session.discipline.toUpperCase()}`,
     `ラウンド数：${session.rounds.length}`,
@@ -41,8 +47,9 @@ export function createAiAnalysisPrompt(session: StoredSession): string {
     `射台別：${stands.map((stand) => `Stand ${stand.standNo} ${stand.score}/${stand.targets}（初矢${stand.firstShotHits}・二の矢${stand.secondShotHits}・失中${stand.misses}）`).join("、")}`,
     ...(half ? [`前半平均：${half.first.averageScore.toFixed(1)}/25、後半平均：${half.second.averageScore.toFixed(1)}/25、後半の命中率変化：${formatDelta(half.hitRateDelta)}pt`] : []),
     ...(conditions ? [`コンディション：${conditions}`] : []),
+    ...(reviewLines.length > 0 ? ["", "本人の振り返り：", ...reviewLines.map(([label, value]) => `${label}：${value}`)] : []),
     "",
-    "※日付、射撃場、銃番号、氏名、自由記述は含まれていません。",
+    "※日付、射撃場、銃番号、氏名、セッションメモは含まれていません。本人が記入した振り返りは分析のため含まれています。",
   ].join("\n");
 }
 
