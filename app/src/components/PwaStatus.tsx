@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { recoverPwaShell } from "../services/pwaRecovery";
 import { activateServiceWorkerUpdate } from "../services/pwaUpdate";
 import "./PwaStatus.css";
 
@@ -122,11 +123,16 @@ export function PwaStatus() {
       if (!registration) throw new Error("Service Worker registration is unavailable");
       reloadAfterUpdateRef.current = true;
       await activateServiceWorkerUpdate(registration, waitingWorkerRef.current);
-      reloadTimerRef.current = window.setTimeout(() => window.location.reload(), 2500);
+      reloadTimerRef.current = window.setTimeout(() => void recoverPwaShell(), 2500);
     } catch (error) {
       console.error("PWA update failed", error);
       reloadAfterUpdateRef.current = false;
-      setUpdateState("failed");
+      try {
+        await recoverPwaShell();
+      } catch (recoveryError) {
+        console.error("PWA recovery failed", recoveryError);
+        setUpdateState("failed");
+      }
     }
   }
 
@@ -146,9 +152,9 @@ export function PwaStatus() {
     </>}
     {isOnline && notice === "update" && <>
       <span className="pwa-status__message">{updateState === "updating" ? "更新しています…" : updateState === "failed" ? "自動更新できませんでした。画面を再読み込みしてください" : "新しいバージョンがあります"}</span>
-      {updateState !== "failed" && <button className="pwa-status__primary" disabled={updateState === "updating"} onClick={() => void applyUpdate()}>{updateState === "updating" ? "更新中" : "更新する"}</button>}
-      {updateState === "failed" && <button className="pwa-status__primary" onClick={() => window.location.reload()}>再読み込み</button>}
-      <button className="pwa-status__dismiss" aria-label="更新通知を閉じる" onClick={() => { setNotice(null); setUpdateState("idle"); }}>×</button>
+      {updateState !== "failed" && <button type="button" className="pwa-status__primary" disabled={updateState === "updating"} onClick={() => void applyUpdate()}>{updateState === "updating" ? "更新中" : "更新する"}</button>}
+      {updateState === "failed" && <button type="button" className="pwa-status__primary" onClick={() => void recoverPwaShell()}>アプリを安全に復旧</button>}
+      <button type="button" className="pwa-status__dismiss" aria-label="更新通知を閉じる" onClick={() => { setNotice(null); setUpdateState("idle"); }}>×</button>
     </>}
     {isOnline && notice === null && !showIosInstall && installPrompt && <button className="pwa-status__primary" onClick={() => void install()}>この端末にインストール</button>}
     {isOnline && notice === "offline-ready" && <button className="pwa-status__dismiss" aria-label="通知を閉じる" onClick={() => setNotice(null)}>×</button>}

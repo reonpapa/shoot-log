@@ -13,6 +13,13 @@ npm run manual:build
 
 19箇所の画面画像を `docs/manual/screenshots/generated` へ保存し、実画面入りPDFを `app/public/manuals/shoot-log-operation-manual.pdf` へ生成します。
 
+撮影が完了した後にPDF生成だけが停止した場合は、撮影済み画像を使ってPDFだけを生成できます。
+
+```bash
+cd app
+npm run manual:pdf
+```
+
 Chromeを標準以外の場所へインストールしている場合は、`CHROME_PATH` へChrome本体のパスを指定します。
 
 ## 従来のPDF生成

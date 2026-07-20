@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import { shouldUseManualShareSheet } from "./manualSharing";
 import "./OperationManual.css";
 
-const MANUAL_URL = `${import.meta.env.BASE_URL}manuals/shoot-log-operation-manual.pdf`;
-const MANUAL_FILENAME = "shoot-log-v2.19.8-operation-manual.pdf";
+const APP_VERSION = "2.19.9";
+const MANUAL_URL = `${import.meta.env.BASE_URL}manuals/shoot-log-operation-manual.pdf?v=${APP_VERSION}`;
+const MANUAL_FILENAME = `shoot-log-v${APP_VERSION}-operation-manual.pdf`;
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";
 
 export function OperationManual() {
-  const [manualFile, setManualFile] = useState<File | null>(null);
-  const [manualState, setManualState] = useState<ManualState>("loading");
   const usesShareSheet = shouldUseManualShareSheet(navigator);
+  const [manualFile, setManualFile] = useState<File | null>(null);
+  const [manualState, setManualState] = useState<ManualState>(usesShareSheet ? "loading" : "ready");
 
   useEffect(() => {
+    if (!usesShareSheet) return;
     let active = true;
 
     const prepareManual = async () => {
@@ -30,7 +32,7 @@ export function OperationManual() {
 
     void prepareManual();
     return () => { active = false; };
-  }, []);
+  }, [usesShareSheet]);
 
   const saveManual = async () => {
     if (!manualFile) return;
@@ -78,16 +80,19 @@ export function OperationManual() {
       </div>
       <strong>PDF・全18ページ</strong>
     </div>
-    <button
-      className="operation-manual-download"
-      type="button"
-      disabled={!manualFile || manualState === "saving"}
-      onClick={() => void saveManual()}
-    >
-      <span>{buttonLabel}</span>
-      <small>Version 2.19.8対応</small>
-    </button>
-    <p className="operation-manual-note">iPhone・iPadでは共有画面の「ファイルに保存」を選びます。Mac・WindowsではPDFを直接ダウンロードします。</p>
+    {usesShareSheet ? <button
+        className="operation-manual-download"
+        type="button"
+        disabled={!manualFile || manualState === "saving"}
+        onClick={() => void saveManual()}
+      >
+        <span>{buttonLabel}</span>
+        <small>Version {APP_VERSION}対応</small>
+      </button> : <a className="operation-manual-download" href={MANUAL_URL} target="_blank" rel="noopener noreferrer">
+        <span>操作マニュアルを開く</span>
+        <small>Version {APP_VERSION}対応・新しいタブで表示</small>
+      </a>}
+    <p className="operation-manual-note">iPhone・iPadでは共有画面の「ファイルに保存」を選びます。Mac・Windowsでは新しいタブでPDFを開き、PDFビューアから保存できます。</p>
     {manualState === "saved" && <p className="operation-manual-status" role="status">{usesShareSheet ? "保存操作を開始しました。" : "ダウンロードを開始しました。"}</p>}
     {manualState === "error" && <p className="operation-manual-status is-error" role="alert">マニュアルを準備できませんでした。通信状態を確認して、もう一度この画面を開いてください。</p>}
   </section>;

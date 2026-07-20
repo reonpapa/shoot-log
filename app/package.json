@@ -1,13 +1,14 @@
 {
   "name": "app",
   "private": true,
-  "version": "2.19.8",
+  "version": "2.19.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "manual:build": "node scripts/capture-manual.mjs",
+    "manual:pdf": "node scripts/capture-manual.mjs --pdf-only",
     "preview": "vite preview",
     "test": "vitest run"
   },

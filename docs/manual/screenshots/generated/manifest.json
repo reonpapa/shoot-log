@@ -1,5 +1,5 @@
 {
-  "version": "2.19.7",
+  "version": "2.19.9",
   "viewport": {
     "width": 390,
     "height": 844,
@@ -44,12 +44,14 @@
     {
       "name": "08-round-setup",
       "scene": "round",
-      "selector": ".round-navigation"
+      "selector": ".round-navigation",
+      "fallback": "score-input.png"
     },
     {
       "name": "09-current-shot",
       "scene": "round",
-      "selector": ".current-shot"
+      "selector": ".current-shot",
+      "fallback": "score-input.png"
     },
     {
       "name": "10-analysis-summary",

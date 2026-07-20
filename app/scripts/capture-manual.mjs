@@ -1,14 +1,16 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { createServer } from "vite";
 
-const VERSION = "2.19.8";
+const VERSION = "2.19.9";
+const pdfOnly = process.argv.includes("--pdf-only");
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(appRoot, "..");
 const screenshotDir = join(repoRoot, "docs/manual/screenshots/generated");
+const scoreInputFallback = join(repoRoot, "docs/manual/screenshots/score-input.png");
 const manualOutput = join(appRoot, "public/manuals/shoot-log-operation-manual.pdf");
 
 const chromeCandidates = [
@@ -35,8 +37,8 @@ const captures = [
   { name: "05-practice-theme", scene: "history", selector: ".active-practice-theme" },
   { name: "06-history-analysis", scene: "history-analysis", selector: ".history-analysis" },
   { name: "07-new-session", scene: "form", selector: ".session-form" },
-  { name: "08-round-setup", scene: "round", selector: ".round-navigation" },
-  { name: "09-current-shot", scene: "round", selector: ".current-shot" },
+  { name: "08-round-setup", scene: "round", selector: ".round-navigation", fallback: scoreInputFallback },
+  { name: "09-current-shot", scene: "round", selector: ".current-shot", fallback: scoreInputFallback },
   { name: "10-analysis-summary", scene: "analysis", selector: ".analysis-header" },
   { name: "11-ai-analysis", scene: "analysis&openAi=1", selector: ".ai-analysis-export" },
   { name: "12-session-pace", scene: "analysis", selector: ".session-half-analysis" },
@@ -126,25 +128,48 @@ try {
   const origin = `http://127.0.0.1:${address.port}`;
   browser = await puppeteer.launch({ executablePath, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
   const page = await browser.newPage();
+  page.on("pageerror", (error) => process.stderr.write(`撮影画面エラー: ${error.message}\n`));
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
   await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }]);
 
-  for (const capture of captures) {
-    await page.goto(`${origin}/manual-preview.html?scene=${capture.scene}`, { waitUntil: "networkidle0" });
-    await page.waitForSelector(capture.selector, { visible: true });
-    await page.evaluate(async (selector) => {
-      await document.fonts.ready;
-      const element = document.querySelector(selector);
-      element?.scrollIntoView({ block: "start" });
-      window.scrollBy(0, -12);
-    }, capture.selector);
-    await page.screenshot({ path: join(screenshotDir, `${capture.name}.png`), type: "png" });
-    process.stdout.write(`撮影: ${capture.name}\n`);
+  if (!pdfOnly) {
+    for (const capture of captures) {
+      await page.goto(`${origin}/manual-preview.html?scene=${capture.scene}`, { waitUntil: "networkidle0" });
+      try {
+        await page.waitForSelector(capture.selector, { visible: true, timeout: 10_000 });
+      } catch (error) {
+        if (!capture.fallback || !existsSync(capture.fallback)) {
+          throw new Error(`撮影 ${capture.name}（${capture.selector}）を表示できませんでした。`, { cause: error });
+        }
+        await copyFile(capture.fallback, join(screenshotDir, `${capture.name}.png`));
+        process.stdout.write(`代替画像: ${capture.name}\n`);
+        continue;
+      }
+      await page.evaluate(async (selector) => {
+        await document.fonts.ready;
+        const element = document.querySelector(selector);
+        element?.scrollIntoView({ block: "start" });
+        window.scrollBy(0, -12);
+      }, capture.selector);
+      await page.screenshot({ path: join(screenshotDir, `${capture.name}.png`), type: "png" });
+      process.stdout.write(`撮影: ${capture.name}\n`);
+    }
+
+    const manifestCaptures = captures.map(({ fallback, ...capture }) => ({ ...capture, ...(fallback ? { fallback: "score-input.png" } : {}) }));
+    await writeFile(join(screenshotDir, "manifest.json"), JSON.stringify({ version: VERSION, viewport: { width: 390, height: 844, deviceScaleFactor: 2 }, captures: manifestCaptures }, null, 2));
   }
 
-  await writeFile(join(screenshotDir, "manifest.json"), JSON.stringify({ version: VERSION, viewport: { width: 390, height: 844, deviceScaleFactor: 2 }, captures }, null, 2));
   const manualPage = await browser.newPage();
-  await manualPage.setContent(await buildManualHtml(), { waitUntil: "networkidle0" });
+  await manualPage.setContent(await buildManualHtml(), { waitUntil: "domcontentloaded", timeout: 0 });
+  await manualPage.evaluate(async () => {
+    await document.fonts.ready;
+    await Promise.all(Array.from(document.images).map((item) => item.complete
+      ? Promise.resolve()
+      : new Promise((resolveImage, rejectImage) => {
+          item.addEventListener("load", resolveImage, { once: true });
+          item.addEventListener("error", rejectImage, { once: true });
+        })));
+  });
   await manualPage.pdf({ path: manualOutput, format: "A4", printBackground: true, preferCSSPageSize: true });
   process.stdout.write(`マニュアル生成: ${manualOutput}\n`);
 } finally {
