@@ -2,6 +2,11 @@ import type { Shot } from "./shooting";
 
 export type ShotInput = "hit-on-first" | "hit-on-second" | "miss-left" | "miss-center" | "miss-right" | "skip";
 
+export function getNextShotIndex(currentIndex: number, shotCount: number): number {
+  if (shotCount <= 0) return 0;
+  return Math.min(Math.max(0, shotCount - 1), Math.max(0, currentIndex + 1));
+}
+
 export function applyShotInput(shot: Shot, input: ShotInput): Shot {
   if (input === "hit-on-first") return { ...shot, firstShotResult: "hit", secondShotResult: "not-fired", finalResult: input, missDirection: undefined };
   if (input === "hit-on-second") return { ...shot, firstShotResult: "miss", secondShotResult: "hit", finalResult: input, missDirection: undefined };

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FireMode, ShootingRound, StandNo } from "../domain/shooting";
 import { changeRoundStartStand, changeShotStand } from "../domain/shooting";
-import { applyShotInput, getShotInput, type ShotInput } from "../domain/shootingInput";
+import { applyShotInput, getNextShotIndex, getShotInput, type ShotInput } from "../domain/shootingInput";
 import { calculateRoundStats } from "../domain/shootingStats";
 import "./RoundInput.css";
 
@@ -29,10 +29,11 @@ export function RoundInput({ round, onChange }: Props) {
   const activeShot = round.shots[activeIndex] ?? round.shots[0];
   const visibleInputs = round.fireMode === "single" ? inputs.filter((item) => item.value !== "hit-on-second") : inputs;
 
-  useEffect(() => { activeCellRef.current?.scrollIntoView({ block: "nearest", inline: "center" }); }, [activeIndex]);
+  useEffect(() => { activeCellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); }, [activeIndex]);
 
   const updateShot = useCallback((input: ShotInput) => {
     onChange({ ...round, shots: round.shots.map((shot, index) => index === activeIndex ? applyShotInput(shot, input) : shot) });
+    setActiveIndex((current) => getNextShotIndex(current, round.shots.length));
   }, [activeIndex, onChange, round]);
 
   useEffect(() => {
@@ -51,7 +52,6 @@ export function RoundInput({ round, onChange }: Props) {
       if (!input) return;
       event.preventDefault();
       updateShot(input);
-      setActiveIndex((current) => Math.min(24, current + 1));
     }
     window.addEventListener("keydown", keydown);
     return () => window.removeEventListener("keydown", keydown);
@@ -94,7 +94,7 @@ export function RoundInput({ round, onChange }: Props) {
     <section className="current-shot">
       <header><div><span>現在のクレー</span><strong>{activeShot.targetNo}</strong></div><label>射台<select value={activeShot.standNo} onChange={(event) => onChange(changeShotStand(round, activeShot.id, Number(event.target.value) as StandNo))}>{stands.map((stand) => <option key={stand}>{stand}</option>)}</select></label></header>
       <div className={`current-shot-buttons ${round.fireMode}`}>{visibleInputs.map((input) => <button className={getShotInput(activeShot) === input.value ? "selected" : ""} key={input.value} onClick={() => updateShot(input.value)}><strong>{input.label}</strong><span>{input.title}</span><kbd>{input.shortcut}</kbd></button>)}</div>
-      <p>キー入力後は自動で次へ　Enterで次へ　Shift＋Enterで前へ</p>
+      <p>結果入力後は自動で次へ　Enterで次へ　Shift＋Enterで前へ</p>
     </section>
   </section>;
 }
