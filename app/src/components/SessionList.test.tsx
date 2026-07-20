@@ -20,5 +20,7 @@ describe("過去の練習テーマ", () => {
     expect(markup).toContain("できなかった 0");
     expect(markup).toContain("07-18");
     expect(markup).toContain("08-01");
+    expect(markup).toContain("アカウント設定");
+    expect(markup).not.toContain(">アカウント</button>");
   });
 });

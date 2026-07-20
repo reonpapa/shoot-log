@@ -185,7 +185,7 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
     </section> : signedIn ? <>
       <div className="cloud-signed-in">
         <div><small>ログイン中</small><strong>{view.email}</strong><p>{view.message}</p><small>最終同期：{formatSyncedAt(view.lastSyncedAt)}</small></div>
-        <div className="cloud-actions"><button disabled={busy || syncing} className="primary-button" onClick={() => void run(onSync)}>今すぐ同期</button><button disabled={busy || syncing} onClick={() => void run(onSignOut)}>ログアウト</button></div>
+        <div className="cloud-actions"><button disabled={busy || syncing} className="primary-button manual-sync-button" onClick={() => void run(onSync)}>今すぐ同期</button><button disabled={busy || syncing} onClick={() => void run(onSignOut)}>ログアウト</button></div>
       </div>
       <div className="cloud-security-settings">
         <button disabled={busy || syncing} className="settings-link" onClick={() => { setShowPasswordChange((current) => !current); setShowDelete(false); setError(""); setNotice(""); }}>パスワードを変更</button>

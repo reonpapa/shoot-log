@@ -3,7 +3,7 @@ import type { AmmunitionLedgerData, Firearm } from "../domain/ammunition";
 import { getPermitStatus } from "../domain/permit";
 import "./PermitManager.css";
 
-interface Props { data: AmmunitionLedgerData; onChange: (data: AmmunitionLedgerData) => void; onBack: () => void; }
+interface Props { data: AmmunitionLedgerData; onChange: (data: AmmunitionLedgerData) => void; onBack: () => void; backLabel?: string; }
 
 const emptyFirearm = (): Firearm => ({ id: "", name: "", identifier: "", originalPermitDate: "", originalPermitNumber: "", permitDate: "", permitNumber: "", inspectionDate: "", validUntil: "", renewalStartDate: "", renewalDeadline: "", kind: "散弾銃", actionType: "", manufacturer: "", model: "", overallLength: "", barrelLength: "", caliber: "", magazine: "", compatibleAmmo: "", purpose: "標的射撃" });
 
@@ -12,7 +12,7 @@ function Field({ label, field, draft, type = "text", placeholder = "", onChange 
   return <label><span>{label}</span><input placeholder={placeholder} type={type} value={String(draft[field] ?? "")} onChange={(event) => onChange(field, event.target.value)} /></label>;
 }
 
-export function PermitManager({ data, onChange, onBack }: Props) {
+export function PermitManager({ data, onChange, onBack, backLabel = "履歴へ戻る" }: Props) {
   const [selectedId, setSelectedId] = useState(data.firearms[0]?.id ?? "new");
   const [profileDraft, setProfileDraft] = useState(data.permitProfile);
   const selected = data.firearms.find((item) => item.id === selectedId);
@@ -38,7 +38,7 @@ export function PermitManager({ data, onChange, onBack }: Props) {
   function saveProfile() { onChange({ ...data, permitProfile: { certificateNumber: profileDraft.certificateNumber.trim(), originalIssueDate: profileDraft.originalIssueDate, issueDate: profileDraft.issueDate } }); }
 
   return <section className="permit-manager">
-    <header><div><p className="eyebrow">FIREARM PERMIT</p><h2>所持許可・更新管理</h2><p>許可証に記載された更新申請期限を最優先で管理します。</p></div><button onClick={onBack}>履歴へ戻る</button></header>
+    <header><div><p className="eyebrow">FIREARM PERMIT</p><h2>所持許可・更新管理</h2><p>許可証に記載された更新申請期限を最優先で管理します。</p></div><button onClick={onBack}>{backLabel}</button></header>
     <section className="permit-profile"><header><h3>許可証共通情報</h3><span>氏名・住所・生年月日は保存しません</span></header><div className="permit-fields important"><label><span>許可証番号</span><input value={profileDraft.certificateNumber} onChange={(event) => updateProfile("certificateNumber", event.target.value)} /></label><label><span>原交付日</span><input type="date" value={profileDraft.originalIssueDate} onChange={(event) => updateProfile("originalIssueDate", event.target.value)} /></label><label><span>交付日</span><input type="date" value={profileDraft.issueDate} onChange={(event) => updateProfile("issueDate", event.target.value)} /></label></div><button className="profile-save" type="button" onClick={saveProfile}>共通情報を保存</button></section>
     <div className="permit-layout"><aside><button className={selectedId === "new" ? "selected" : ""} onClick={() => select("new")}>＋ 銃を追加</button>{data.firearms.map((firearm) => { const status = getPermitStatus(firearm); return <button className={selectedId === firearm.id ? "selected" : ""} key={firearm.id} onClick={() => select(firearm.id)}><strong>{firearm.name}</strong><span>{firearm.identifier}</span><small className={status.level}>{status.label}</small></button>; })}</aside>
       <form onSubmit={save}>

@@ -177,7 +177,7 @@ function App() {
 
   return <main className="app-shell">
     {displayedScreen === "list" && <PermitChangeAlert firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} />}
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.19.1</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.19.2</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><div className="history-desktop-status"><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} /></div><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
@@ -187,7 +187,7 @@ function App() {
     {displayedScreen === "terms" && <Suspense fallback={<p>利用規約を読み込んでいます…</p>}><TermsOfService onBack={() => setScreen("account")} /></Suspense>}
     {displayedScreen === "contact" && <Suspense fallback={<p>お問い合わせ画面を読み込んでいます…</p>}><ContactSupport onBack={() => setScreen("account")} /></Suspense>}
     {displayedScreen === "ammunition" && <Suspense fallback={<p>実包管理を読み込んでいます…</p>}><AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} /></Suspense>}
-    {displayedScreen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen(permitReturnScreen)} />}
+    {displayedScreen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen(permitReturnScreen)} backLabel={permitReturnScreen === "account" ? "アカウント設定へ戻る" : "履歴へ戻る"} />}
     {displayedScreen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} practiceRecommendation={practiceRecommendation} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}
     {displayedScreen === "edit-session" && activeSession && <SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onCancel={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")} onStart={editSessionDetails} />}
     {displayedScreen === "round" && activeSession && activeRound && <>
