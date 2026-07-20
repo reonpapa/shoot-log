@@ -3,7 +3,7 @@ import { shouldUseManualShareSheet } from "./manualSharing";
 import "./OperationManual.css";
 
 const MANUAL_URL = `${import.meta.env.BASE_URL}manuals/shoot-log-operation-manual.pdf`;
-const MANUAL_FILENAME = "shoot-log-v2.19.7-operation-manual.pdf";
+const MANUAL_FILENAME = "shoot-log-v2.19.8-operation-manual.pdf";
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";
 
@@ -76,7 +76,7 @@ export function OperationManual() {
         <h3>操作マニュアル</h3>
         <p>インストールから射撃入力、分析、実包管理、バックアップまでを画像付きで説明します。</p>
       </div>
-      <strong>PDF・全20ページ</strong>
+      <strong>PDF・全18ページ</strong>
     </div>
     <button
       className="operation-manual-download"
@@ -85,7 +85,7 @@ export function OperationManual() {
       onClick={() => void saveManual()}
     >
       <span>{buttonLabel}</span>
-      <small>Version 2.19.7対応</small>
+      <small>Version 2.19.8対応</small>
     </button>
     <p className="operation-manual-note">iPhone・iPadでは共有画面の「ファイルに保存」を選びます。Mac・WindowsではPDFを直接ダウンロードします。</p>
     {manualState === "saved" && <p className="operation-manual-status" role="status">{usesShareSheet ? "保存操作を開始しました。" : "ダウンロードを開始しました。"}</p>}

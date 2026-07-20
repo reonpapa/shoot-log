@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { createServer } from "vite";
 
-const VERSION = "2.19.7";
+const VERSION = "2.19.8";
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(appRoot, "..");
 const screenshotDir = join(repoRoot, "docs/manual/screenshots/generated");
@@ -90,10 +90,11 @@ async function buildManualHtml() {
     body { margin: 0; color: #242128; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif; }
     .cover, .page { width: 210mm; height: 297mm; break-after: page; overflow: hidden; }
     .cover { position: relative; padding: 28mm 20mm; color: white; background: #17131b; }
-    .cover::after { position: absolute; top: 18mm; right: 18mm; width: 54mm; height: 54mm; border: 12mm solid #6d3bd1; border-radius: 50%; box-shadow: inset 0 0 0 8mm #a880ff; content: ""; }
+    .cover::after { position: absolute; z-index: 0; top: 18mm; right: 18mm; width: 54mm; height: 54mm; border: 12mm solid #6d3bd1; border-radius: 50%; box-shadow: inset 0 0 0 8mm #a880ff; content: ""; }
+    .cover > * { position: relative; z-index: 1; }
     .cover small { color: #bdb5c2; font-weight: 800; letter-spacing: .16em; }
     .cover h1 { margin: 18mm 0 4mm; font-size: 34pt; }
-    .cover h2 { margin: 0; color: #d8d1dd; font-size: 16pt; font-weight: 500; }
+    .cover h2 { width: 112mm; margin: 0; color: #d8d1dd; font-size: 16pt; font-weight: 500; line-height: 1.55; }
     .cover p { position: absolute; bottom: 35mm; left: 20mm; width: 150mm; padding: 10mm; border: 1px solid #403648; border-radius: 5mm; background: #251f2a; font-size: 13pt; line-height: 1.8; }
     .page { padding: 10mm 13mm 9mm; border-top: 2mm solid #6d3bd1; }
     .page > header, .page > footer { display: flex; justify-content: space-between; color: #736d78; font-size: 7pt; }
