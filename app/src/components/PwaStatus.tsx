@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { activateServiceWorkerUpdate } from "../services/pwaUpdate";
 import "./PwaStatus.css";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -11,6 +12,7 @@ interface IosNavigator extends Navigator {
 }
 
 type Notice = "offline-ready" | "update" | null;
+type UpdateState = "idle" | "updating" | "failed";
 
 function shouldSuggestIosInstall() {
   const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -23,8 +25,11 @@ export function PwaStatus() {
   const [notice, setNotice] = useState<Notice>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showIosInstall, setShowIosInstall] = useState(shouldSuggestIosInstall);
+  const [updateState, setUpdateState] = useState<UpdateState>("idle");
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const waitingWorkerRef = useRef<ServiceWorker | null>(null);
   const reloadAfterUpdateRef = useRef(false);
+  const reloadTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -32,7 +37,13 @@ export function PwaStatus() {
     const watchWorker = (worker: ServiceWorker) => {
       worker.addEventListener("statechange", () => {
         if (disposed || worker.state !== "installed") return;
-        setNotice(navigator.serviceWorker.controller ? "update" : "offline-ready");
+        if (navigator.serviceWorker.controller) {
+          waitingWorkerRef.current = worker;
+          setUpdateState("idle");
+          setNotice("update");
+        } else {
+          setNotice("offline-ready");
+        }
       });
     };
 
@@ -47,8 +58,8 @@ export function PwaStatus() {
         if (disposed) return;
         registrationRef.current = registration;
         if (registration.waiting && navigator.serviceWorker.controller) {
-          reloadAfterUpdateRef.current = true;
-          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          waitingWorkerRef.current = registration.waiting;
+          setNotice("update");
         }
         if (registration.installing) watchWorker(registration.installing);
         registration.addEventListener("updatefound", () => {
@@ -80,6 +91,7 @@ export function PwaStatus() {
     return () => {
       disposed = true;
       if (import.meta.env.PROD && "serviceWorker" in navigator) navigator.serviceWorker.removeEventListener("controllerchange", reloadAfterUpdate);
+      if (reloadTimerRef.current !== null) window.clearTimeout(reloadTimerRef.current);
       window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
       window.removeEventListener("appinstalled", clearInstallPrompt);
       window.removeEventListener("online", goOnline);
@@ -102,11 +114,20 @@ export function PwaStatus() {
     setInstallPrompt(null);
   }
 
-  function applyUpdate() {
-    const waitingWorker = registrationRef.current?.waiting;
-    if (!waitingWorker) return;
-    reloadAfterUpdateRef.current = true;
-    waitingWorker.postMessage({ type: "SKIP_WAITING" });
+  async function applyUpdate() {
+    if (updateState === "updating") return;
+    setUpdateState("updating");
+    try {
+      const registration = registrationRef.current;
+      if (!registration) throw new Error("Service Worker registration is unavailable");
+      reloadAfterUpdateRef.current = true;
+      await activateServiceWorkerUpdate(registration, waitingWorkerRef.current);
+      reloadTimerRef.current = window.setTimeout(() => window.location.reload(), 2500);
+    } catch (error) {
+      console.error("PWA update failed", error);
+      reloadAfterUpdateRef.current = false;
+      setUpdateState("failed");
+    }
   }
 
   function dismissIosInstall() {
@@ -124,9 +145,10 @@ export function PwaStatus() {
       <button className="pwa-status__dismiss" aria-label="案内を閉じる" onClick={dismissIosInstall}>×</button>
     </>}
     {isOnline && notice === "update" && <>
-      <span className="pwa-status__message">新しいバージョンがあります</span>
-      <button className="pwa-status__primary" onClick={applyUpdate}>更新する</button>
-      <button className="pwa-status__dismiss" aria-label="更新通知を閉じる" onClick={() => setNotice(null)}>×</button>
+      <span className="pwa-status__message">{updateState === "updating" ? "更新しています…" : updateState === "failed" ? "自動更新できませんでした。画面を再読み込みしてください" : "新しいバージョンがあります"}</span>
+      {updateState !== "failed" && <button className="pwa-status__primary" disabled={updateState === "updating"} onClick={() => void applyUpdate()}>{updateState === "updating" ? "更新中" : "更新する"}</button>}
+      {updateState === "failed" && <button className="pwa-status__primary" onClick={() => window.location.reload()}>再読み込み</button>}
+      <button className="pwa-status__dismiss" aria-label="更新通知を閉じる" onClick={() => { setNotice(null); setUpdateState("idle"); }}>×</button>
     </>}
     {isOnline && notice === null && !showIosInstall && installPrompt && <button className="pwa-status__primary" onClick={() => void install()}>この端末にインストール</button>}
     {isOnline && notice === "offline-ready" && <button className="pwa-status__dismiss" aria-label="通知を閉じる" onClick={() => setNotice(null)}>×</button>}

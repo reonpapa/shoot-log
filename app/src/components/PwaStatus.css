@@ -18,6 +18,7 @@
 .pwa-status__message { font-size: .84rem; font-weight: 700; }
 .pwa-status button { min-height: 36px; border-radius: 8px; color: inherit; font-weight: 800; }
 .pwa-status__primary { padding: 0 12px; border: 0; background: #6d3bd1; white-space: nowrap; }
+.pwa-status__primary:disabled { cursor: wait; opacity: .65; }
 .pwa-status__dismiss { width: 36px; padding: 0; border: 1px solid #ffffff30; background: transparent; }
 
 @media (max-width: 560px) {
