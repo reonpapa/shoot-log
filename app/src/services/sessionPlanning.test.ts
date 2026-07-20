@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createRound, createStoredSession } from "../test/fixtures";
-import { filterSessionsByPracticeTheme, getPracticeRecommendation, getPracticeThemeHistory, getPracticeThemeProgress, getSuggestedPracticeTheme } from "./sessionPlanning";
+import { filterSessionsByPracticeTheme, getPracticeRecommendation, getPracticeThemeHistory, getPracticeThemeProgress, getScoreBasedPracticeRecommendation, getSuggestedPracticeTheme } from "./sessionPlanning";
 
 describe("次回の練習テーマ", () => {
   it("明示した次回課題を最優先する", () => {
@@ -44,6 +44,19 @@ describe("次回の練習テーマ", () => {
     const session = createStoredSession({ rounds: [createRound({ finalResults: Array.from({ length: 25 }, () => "miss" as const) })] });
 
     expect(getPracticeRecommendation([session])).toBeNull();
+  });
+
+  it("スコア分析ではユーザーが書いたテーマや次回課題を流用しない", () => {
+    const results = Array.from({ length: 50 }, () => "miss" as const);
+    const session = createStoredSession({ rounds: [createRound({ finalResults: results })] });
+    session.session.practiceTheme = "ユーザーが書いたテーマ";
+    session.review.nextChallenge = "ユーザーが書いた次回課題";
+    session.review.themeAchievement = "partial";
+
+    const advice = getScoreBasedPracticeRecommendation([session]);
+    expect(advice?.theme).not.toBe(session.session.practiceTheme);
+    expect(advice?.theme).not.toBe(session.review.nextChallenge);
+    expect(advice?.source).toBe("miss-direction");
   });
 });
 

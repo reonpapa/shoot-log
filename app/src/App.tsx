@@ -24,7 +24,7 @@ import { loadAmmunitionLedger, mergeAmmunitionLedger, saveAmmunitionLedger } fro
 import type { AmmunitionLedgerData } from "./domain/ammunition";
 import { useCloudSync } from "./hooks/useCloudSync";
 import type { LocalDataSet } from "./services/cloudSync";
-import { getPracticeRecommendation } from "./services/sessionPlanning";
+import { getPracticeRecommendation, getScoreBasedPracticeRecommendation } from "./services/sessionPlanning";
 
 type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "privacy" | "terms" | "contact" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
@@ -50,7 +50,7 @@ function App() {
   const activeRound = activeSession?.rounds.find((round) => round.id === activeRoundId) ?? activeSession?.rounds[0] ?? null;
   const activeStats = activeSession ? calculateSessionStats({ id: activeSession.id, date: activeSession.session.date, rangeName: activeSession.session.rangeName, ammunitionName: activeSession.session.ammunitionName, weather: activeSession.session.weather, rounds: activeSession.rounds, sessionMemo: activeSession.session.memo }) : null;
   const practiceRecommendation = useMemo(() => getPracticeRecommendation(sessions), [sessions]);
-  const reviewAdvice = useMemo(() => activeSession ? getPracticeRecommendation([activeSession]) : null, [activeSession]);
+  const reviewAdvice = useMemo(() => activeSession ? getScoreBasedPracticeRecommendation([activeSession]) : null, [activeSession]);
   const suggestedPracticeTheme = practiceRecommendation?.theme ?? "";
   const signedIn = cloudSync.view.phase !== "signed-out" && !!cloudSync.view.email;
   const publicScreen = screen === "privacy" || screen === "terms" || screen === "contact";
@@ -170,7 +170,7 @@ function App() {
   }
 
   return <main className="app-shell">
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.17.2</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.17.3</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => setScreen("permit")} /><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}

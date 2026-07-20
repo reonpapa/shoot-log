@@ -42,6 +42,10 @@ export function getPracticeRecommendation(sessions: StoredSession[]): PracticeRe
     if (theme) return { theme, reason: "前回の達成度が「一部できた」または「できなかった」ため、継続を提案します。", source: "continue-theme" };
   }
 
+  return getScoreBasedPracticeRecommendation(sessions);
+}
+
+export function getScoreBasedPracticeRecommendation(sessions: StoredSession[]): PracticeRecommendation | null {
   const recent = [...sessions]
     .filter((item) => item.status === "completed")
     .sort((a, b) => b.session.date.localeCompare(a.session.date) || b.createdAt.localeCompare(a.createdAt))

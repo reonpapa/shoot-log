@@ -4,7 +4,7 @@ interface Props {
   onBack: () => void;
 }
 
-const APP_VERSION = "2.17.2";
+const APP_VERSION = "2.17.3";
 
 function createInquiryHref(): string {
   const subject = "[Shoot Log] お問い合わせ";

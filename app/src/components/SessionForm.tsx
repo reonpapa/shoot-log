@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import type { Firearm } from "../domain/ammunition";
 import type { SessionDetails } from "../domain/shooting";
 import type { PracticeRecommendation } from "../services/sessionPlanning";
+import { validateTemperatureInput } from "../services/temperatureInput";
 import "./SessionForm.css";
 
 export type SessionDraft = SessionDetails;
@@ -53,7 +54,7 @@ export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル"
       <label><span>実包</span>{newAmmunition ? <div className="master-new"><input required placeholder="例：Fiocchi TT TWO" value={form.ammunitionName} onChange={(e) => update("ammunitionName", e.target.value)} />{ammunitionNames.length > 0 && <button type="button" onClick={() => { setNewAmmunition(false); update("ammunitionName", ammunitionNames[0] ?? ""); }}>選択に戻る</button>}</div> : <select required value={form.ammunitionName} onChange={(e) => { if (e.target.value === "__new__") { setNewAmmunition(true); update("ammunitionName", ""); } else update("ammunitionName", e.target.value); }}><option value="" disabled>選択してください</option>{ammunitionNames.map((name) => <option key={name}>{name}</option>)}<option value="__new__">＋ 新しい実包を登録</option></select>}</label>
       <label><span>使用銃</span><select value={form.firearmId ?? ""} onChange={(e) => update("firearmId", e.target.value)}><option value="">未設定</option>{firearms.map((firearm) => <option key={firearm.id} value={firearm.id}>{firearm.name}・{firearm.identifier}</option>)}</select></label>
       <label><span>天候</span><select value={form.weather} onChange={(e) => update("weather", e.target.value)}><option value="">未選択</option>{weatherOptions.map((weather) => <option key={weather}>{weather}</option>)}{form.weather && !weatherOptions.includes(form.weather) && <option>{form.weather}</option>}</select></label>
-      <label><span>気温</span><div className="temperature-input"><input inputMode="decimal" placeholder="例：18" value={form.temperature ?? ""} onChange={(e) => update("temperature", e.target.value)} /><small>℃</small></div></label>
+      <label><span>気温</span><div className="temperature-input"><input inputMode="decimal" maxLength={6} placeholder="例：18" value={form.temperature ?? ""} onChange={(e) => { const value = validateTemperatureInput(e.target.value); if (value !== null) update("temperature", value); }} /><small>℃</small></div><small>半角数字で入力</small></label>
       <label><span>風向</span><select value={form.windDirection ?? ""} onChange={(e) => update("windDirection", e.target.value)}><option value="">未選択</option>{windDirectionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
       <label><span>風の強さ</span><select value={form.windStrength ?? ""} onChange={(e) => update("windStrength", e.target.value)}><option value="">未選択</option>{windStrengthOptions.map((value) => <option key={value}>{value}</option>)}</select></label>
       {showRecommendation && practiceRecommendation && <section className="wide next-practice-navigator" aria-label="次回練習ナビ">
