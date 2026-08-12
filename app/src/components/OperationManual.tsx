@@ -3,7 +3,8 @@ import { shouldUseManualShareSheet } from "./manualSharing";
 import "./OperationManual.css";
 
 const APP_VERSION = "2.20.0";
-const MANUAL_URL = `${import.meta.env.BASE_URL}manuals/shoot-log-operation-manual.pdf?v=${APP_VERSION}`;
+const MANUAL_REVISION = "2";
+const MANUAL_URL = `${import.meta.env.BASE_URL}manuals/shoot-log-operation-manual.pdf?v=${APP_VERSION}-manual${MANUAL_REVISION}`;
 const MANUAL_FILENAME = `shoot-log-v${APP_VERSION}-operation-manual.pdf`;
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";

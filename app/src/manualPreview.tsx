@@ -92,7 +92,14 @@ function createPartiallyEnteredRound(roundNo: number): ShootingRound {
   const entered = createRound(roundNo, ["hit-on-first", "hit-on-second", "hit-on-first", "miss"]);
   return {
     ...entered,
-    shots: entered.shots.map((shot, index) => index < 12 ? shot : {
+    shots: entered.shots.map((shot, index) => index === 10 ? {
+      ...shot,
+      firstShotResult: "hit" as const,
+      secondShotResult: "not-fired" as const,
+      secondShotFiredAfterFirstHit: true,
+      finalResult: "hit-on-first" as const,
+      missDirection: undefined,
+    } : index < 12 ? shot : {
       ...shot,
       firstShotResult: "not-fired" as const,
       secondShotResult: "not-fired" as const,

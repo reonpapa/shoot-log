@@ -68,6 +68,7 @@ const manualPages = [
   { kicker: "FIREARM PERMIT", title: "所持許可・更新管理", bullets: ["許可証原本の記載を最優先で入力します。", "更新申請開始日、期限、有効期限を銃ごとに管理します。", "氏名、住所、生年月日は保存しません。"], images: ["17-firearm-permit"] },
   { kicker: "BACKUP", title: "バックアップと復元", bullets: ["端末内の全データをJSONファイルへ保存します。", "復元は現在のデータを残したまま統合します。", "大きな操作の前に最新バックアップを保存してください。"], images: ["18-backup"] },
   { kicker: "SUPPORT", title: "困ったときの確認表", bullets: ["同期されない場合は通信状態とログイン中のアカウントを確認します。", "画面が古い場合は更新通知または復旧操作を使用します。", "問い合わせへパスワードや許可証番号を記載しないでください。"], images: ["19-support"] },
+  { kicker: "VERSION HISTORY", title: "主要バージョン履歴", bullets: ["Version 2.20.0：初矢命中後に二発目を発射した記録「1＋」を追加。得点と実包消費を分けて集計。", "Version 2.19.14：マニュアルへラウンド準備前・入力中の実画面を分けて掲載。", "Version 2.7.6：iPhoneでアプリを離れずに操作マニュアルを保存できるよう改善。", "Version 2.0.0：Supabaseによるアカウント・クラウド同期を導入。", "Version 1.0.0：PWA、成績PDF、実包管理、所持許可期限管理を統合。"], images: [] },
 ];
 
 function escapeHtml(value) {
@@ -83,7 +84,8 @@ async function buildManualHtml() {
   const pages = [];
   for (const page of manualPages) {
     const images = await Promise.all(page.images.map(async (name) => `<img alt="${escapeHtml(name)}" src="${await imageData(name)}">`));
-    pages.push(`<section class="page"><header><span>SHOOT LOG / OPERATION MANUAL</span><span>Version ${VERSION}</span></header><main class="${images.length > 1 ? "two-images" : "one-image"}"><div class="copy"><p class="kicker">${escapeHtml(page.kicker)}</p><h1>${escapeHtml(page.title)}</h1><ul>${page.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul><aside>画面はマニュアル撮影モードで、実際のReactコンポーネントをスマートフォン幅に表示したものです。データはすべて架空です。</aside></div><div class="visuals">${images.join("")}</div></main><footer><span>https://reonpapa.github.io/shoot-log/</span><span>Shoot Log</span></footer></section>`);
+    const layout = images.length === 0 ? "history-page" : images.length > 1 ? "two-images" : "one-image";
+    pages.push(`<section class="page"><header><span>SHOOT LOG / OPERATION MANUAL</span><span>Version ${VERSION}</span></header><main class="${layout}"><div class="copy"><p class="kicker">${escapeHtml(page.kicker)}</p><h1>${escapeHtml(page.title)}</h1><ul>${page.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>${images.length > 0 ? "<aside>画面はマニュアル撮影モードで、実際のReactコンポーネントをスマートフォン幅に表示したものです。データはすべて架空です。</aside>" : ""}</div><div class="visuals">${images.join("")}</div></main><footer><span>https://reonpapa.github.io/shoot-log/</span><span>Shoot Log</span></footer></section>`);
   }
   return `<!doctype html><html lang="ja"><head><meta charset="UTF-8"><style>
     @page { size: A4; margin: 0; }
@@ -104,6 +106,10 @@ async function buildManualHtml() {
     .page main { height: 267mm; }
     .page main.one-image { display: grid; grid-template-columns: 1fr 82mm; gap: 9mm; align-items: start; }
     .page main.two-images { display: grid; grid-template-rows: auto 1fr; gap: 6mm; }
+    .page main.history-page { display: block; padding: 10mm 8mm; }
+    .history-page .copy { max-width: 155mm; margin: 0 auto; }
+    .history-page ul { display: grid; gap: 4mm; padding: 0; list-style: none; }
+    .history-page li { padding: 6mm 7mm; border-left: 1.5mm solid #6d3bd1; border-radius: 0 3mm 3mm 0; background: #f5f1fb; font-size: 11pt; line-height: 1.7; }
     .kicker { margin: 5mm 0 2mm; color: #6d3bd1; font-size: 8pt; font-weight: 700; }
     h1 { margin: 0 0 6mm; font-size: 22pt; }
     ul { margin: 0; padding-left: 6mm; font-size: 11pt; line-height: 1.8; }
