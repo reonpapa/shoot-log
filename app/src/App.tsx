@@ -15,7 +15,7 @@ import { PermitManager } from "./components/PermitManager";
 import { PwaStatus } from "./components/PwaStatus";
 import { CloudSyncStatus } from "./components/CloudSyncStatus";
 import { PracticeThemeBanner } from "./components/PracticeThemeBanner";
-import { createEmptyRound, type ShootingRound } from "./domain/shooting";
+import { createEmptyRound, createEmptySkeetRound, type ShootingRound } from "./domain/shooting";
 import type { SessionReview } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import { loadSessions, saveSessions, type StoredSession } from "./services/storage";
@@ -68,7 +68,7 @@ function App() {
   }, [displayedScreen]);
   function startSession(details: SessionDraft) {
     const now = new Date().toISOString();
-    const firstRound = createEmptyRound(1);
+    const firstRound = details.discipline === "skeet" ? createEmptySkeetRound(1) : createEmptyRound(1);
     const next: StoredSession = { id: crypto.randomUUID(), session: details, rounds: [firstRound], review: { findings: "", problems: "", nextChallenge: "" }, status: "draft", createdAt: now, updatedAt: now };
     setSessions((current) => [next, ...current]); setActiveSessionId(next.id); setActiveRoundId(firstRound.id); setScreen("round");
     setMasterData((current) => addSessionToMasterData(current, details));
@@ -84,7 +84,7 @@ function App() {
   function updateRound(round: ShootingRound) { updateActive((session) => ({ ...session, rounds: session.rounds.map((item) => item.id === round.id ? round : item) })); }
   function addRound() {
     if (!activeSession || activeSession.rounds.length >= MAX_ROUNDS) return;
-    const round = createEmptyRound(activeSession.rounds.length + 1);
+    const round = activeSession.session.discipline === "skeet" ? createEmptySkeetRound(activeSession.rounds.length + 1) : createEmptyRound(activeSession.rounds.length + 1);
     updateActive((session) => ({ ...session, rounds: [...session.rounds, round] })); setActiveRoundId(round.id);
   }
   function deleteActiveRound() {
@@ -179,7 +179,7 @@ function App() {
 
   return <main className="app-shell">
     {displayedScreen === "list" && <PermitChangeAlert firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} />}
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.21.0</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.22.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><div className="history-desktop-status"><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} /></div><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
@@ -199,7 +199,7 @@ function App() {
         <nav className="round-tabs" aria-label={text("ラウンド選択", "Select round")}>{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}</nav>
         <div className="round-actions">{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}{activeSession.rounds.length > 1 && <button className="delete-round-button" onClick={deleteActiveRound}>Round {activeRound.roundNo} 削除</button>}</div>
       </div>
-      <RoundInput key={activeRound.id} round={activeRound} onChange={updateRound} />
+      <RoundInput key={activeRound.id} round={activeRound} discipline={activeSession.session.discipline} onChange={updateRound} />
     </>}
     {displayedScreen === "analysis" && activeSession && <SessionAnalysis session={activeSession} reviewAdvice={reviewAdvice} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} onSaveReview={saveReview} />}
   </main>;

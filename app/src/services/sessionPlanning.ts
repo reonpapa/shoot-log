@@ -32,7 +32,7 @@ export function getSuggestedPracticeTheme(sessions: StoredSession[]): string {
 
 export function getPracticeRecommendation(sessions: StoredSession[]): PracticeRecommendation | null {
   const previous = [...sessions]
-    .filter((item) => item.status === "completed")
+    .filter((item) => item.status === "completed" && item.session.discipline === "trap")
     .sort((a, b) => b.session.date.localeCompare(a.session.date) || b.createdAt.localeCompare(a.createdAt))[0];
   if (!previous) return null;
   const nextChallenge = previous.review.nextChallenge.trim();
@@ -47,7 +47,7 @@ export function getPracticeRecommendation(sessions: StoredSession[]): PracticeRe
 
 export function getScoreBasedPracticeRecommendation(sessions: StoredSession[]): PracticeRecommendation | null {
   const recent = [...sessions]
-    .filter((item) => item.status === "completed")
+    .filter((item) => item.status === "completed" && item.session.discipline === "trap")
     .sort((a, b) => b.session.date.localeCompare(a.session.date) || b.createdAt.localeCompare(a.createdAt))
     .slice(0, 5);
   const rounds = recent.flatMap((item) => item.rounds);

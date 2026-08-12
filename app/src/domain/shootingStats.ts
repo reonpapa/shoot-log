@@ -82,7 +82,8 @@ export function calculateSessionStats(session: ShootingSession): SessionStats {
 }
 
 export function calculateStandStats(session: ShootingSession): StandStats[] {
-  const result = [1, 2, 3, 4, 5].map((standNo) => ({
+  const standCount = session.rounds.some((round) => round.shots.some((shot) => shot.standNo > 5)) ? 8 : 5;
+  const result = Array.from({ length: standCount }, (_, index) => index + 1).map((standNo) => ({
     standNo,
     targets: 0,
     score: 0,

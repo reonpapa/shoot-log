@@ -19,6 +19,7 @@ import { SessionForm } from "./components/SessionForm";
 import { SessionList } from "./components/SessionList";
 import type { AmmunitionLedgerData, Firearm } from "./domain/ammunition";
 import type { FinalResult, ShootingRound } from "./domain/shooting";
+import { createEmptySkeetRound } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import type { CloudHealthView, CloudSyncView } from "./hooks/useCloudSync";
 import type { StoredSession } from "./services/storage";
@@ -172,7 +173,7 @@ const signedOutCloud: CloudSyncView = { phase: "signed-out", email: "", message:
 const health: CloudHealthView = { status: "healthy", message: sample("クラウドへ接続できます。", "Cloud connection is available."), lastCheckedAt: "2026-07-20T06:30:00.000Z", lastHealthyAt: "2026-07-20T06:30:00.000Z" };
 
 function AppHeader() {
-  return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.21.0</p></header>;
+  return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.22.0</p></header>;
 }
 
 function RoundScene({ state }: { state: "before" | "after" }) {
@@ -203,6 +204,7 @@ function ManualPreview() {
   else if (scene === "form") content = <SessionForm initialValue={session.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={[firearm]} onCancel={noop} onStart={noop} />;
   else if (scene === "round-before") content = <RoundScene state="before" />;
   else if (scene === "round-after") content = <RoundScene state="after" />;
+  else if (scene === "skeet") content = <RoundInput round={createEmptySkeetRound(1)} discipline="skeet" onChange={noop} />;
   else if (scene === "analysis") content = <SessionAnalysis session={session} reviewAdvice={null} aiInitiallyOpen={openAi} onBack={noop} onResume={noop} onEdit={noop} onSaveReview={noop} />;
   else if (scene === "master") content = <MasterDataManager masterData={masterData} onBack={noop} onAdd={noop} onRename={noop} onDelete={noop} />;
   else if (scene === "ledger") content = <AmmunitionLedger data={ledger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setLedger} onBack={noop} />;

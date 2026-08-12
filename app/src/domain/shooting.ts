@@ -1,4 +1,4 @@
-export type StandNo = 1 | 2 | 3 | 4 | 5;
+export type StandNo = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type Discipline = "trap" | "skeet" | "sporting";
 export type FireMode = "single" | "double";
 export type ShotResult = "hit" | "miss" | "not-fired";
@@ -40,6 +40,35 @@ export interface Shot {
   /** 失中したクレーの飛翔方向。散弾が外れた方向ではない。 */
   missDirection?: MissDirection;
   memo?: string;
+  /** Skeet preview: target house and pair grouping in the ISSF qualification sequence. */
+  skeetHouse?: "high" | "low";
+  skeetPairId?: string;
+  skeetPairOrder?: 1 | 2;
+}
+
+const skeetSequence: Array<{ standNo: StandNo; house: "high" | "low"; pair?: string; order?: 1 | 2 }> = [
+  { standNo: 1, house: "high" }, { standNo: 1, house: "high", pair: "1-a", order: 1 }, { standNo: 1, house: "low", pair: "1-a", order: 2 },
+  { standNo: 2, house: "high" }, { standNo: 2, house: "high", pair: "2-a", order: 1 }, { standNo: 2, house: "low", pair: "2-a", order: 2 },
+  { standNo: 3, house: "high" }, { standNo: 3, house: "high", pair: "3-a", order: 1 }, { standNo: 3, house: "low", pair: "3-a", order: 2 },
+  { standNo: 4, house: "high" }, { standNo: 4, house: "low" },
+  { standNo: 5, house: "low" }, { standNo: 5, house: "low", pair: "5-a", order: 1 }, { standNo: 5, house: "high", pair: "5-a", order: 2 },
+  { standNo: 6, house: "low" }, { standNo: 6, house: "low", pair: "6-a", order: 1 }, { standNo: 6, house: "high", pair: "6-a", order: 2 },
+  { standNo: 7, house: "low", pair: "7-a", order: 1 }, { standNo: 7, house: "high", pair: "7-a", order: 2 },
+  { standNo: 4, house: "high", pair: "4-b", order: 1 }, { standNo: 4, house: "low", pair: "4-b", order: 2 },
+  { standNo: 4, house: "low", pair: "4-c", order: 1 }, { standNo: 4, house: "high", pair: "4-c", order: 2 },
+  { standNo: 8, house: "high" }, { standNo: 8, house: "low" },
+];
+
+export function createEmptySkeetRound(roundNo: number): ShootingRound {
+  return {
+    id: crypto.randomUUID(), roundNo, startStandNo: 1, fireMode: "single",
+    shots: skeetSequence.map((target, index) => ({
+      id: crypto.randomUUID(), targetNo: index + 1, standNo: target.standNo,
+      firstShotResult: "not-fired", secondShotResult: "not-fired", finalResult: "skip",
+      skeetHouse: target.house,
+      ...(target.pair ? { skeetPairId: target.pair, skeetPairOrder: target.order } : {}),
+    })),
+  };
 }
 
 export interface ShootingRound {

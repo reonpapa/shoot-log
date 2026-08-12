@@ -29,6 +29,14 @@ export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false
   const halfComparison = calculateSessionHalfComparison(session.rounds);
   const directionScaleMax = Math.max(1, ...standStats.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
   const conditions = formatShootingConditions(session.session, language);
+  const isSkeet = session.session.discipline === "skeet";
+  const skeetHouseStats = session.rounds.flatMap((round) => round.shots).reduce((result, shot) => {
+    if (shot.skeetHouse && shot.finalResult !== "skip") {
+      result[shot.skeetHouse].targets += 1;
+      if (shot.finalResult === "hit-on-first") result[shot.skeetHouse].hits += 1;
+    }
+    return result;
+  }, { high: { hits: 0, targets: 0 }, low: { hits: 0, targets: 0 } });
 
   return <section className="session-analysis">
     <header className="analysis-header">
@@ -43,12 +51,12 @@ export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false
 
     <div className="analysis-rounds">{session.rounds.map((round) => {
       const roundStats = calculateRoundStats(round);
-      return <article key={round.id}><span>Round {round.roundNo}</span><strong>{roundStats.score}<small> / 25</small></strong><p>{text("初矢", "First hits")} {roundStats.firstShotHits}　　{text("二の矢", "Second hits")} {roundStats.secondShotHits}</p><p>{text("命中後2発目", "Extra shots after hit")} {roundStats.secondShotsAfterFirstHit}</p><p>{text("失中", "Misses")} {roundStats.misses}　　{text("実包", "Shells")} {roundStats.cartridgesUsed}</p></article>;
+      return <article key={round.id}><span>Round {round.roundNo}</span><strong>{roundStats.score}<small> / 25</small></strong>{!isSkeet && <><p>{text("初矢", "First hits")} {roundStats.firstShotHits}　　{text("二の矢", "Second hits")} {roundStats.secondShotHits}</p><p>{text("命中後2発目", "Extra shots after hit")} {roundStats.secondShotsAfterFirstHit}</p></>}<p>{text("失中", "Misses")} {roundStats.misses}　　{text("実包", "Shells")} {roundStats.cartridgesUsed}</p></article>;
     })}</div>
 
-    <div className="analysis-details"><article><span>{text("命中内訳", "Hit breakdown")}</span><strong>{text("初矢", "First shot")} {stats.firstShotHits}</strong><strong>{text("二の矢", "Second shot")} {stats.secondShotHits}</strong><strong>{text("命中後2発目", "Extra shot after hit")} {stats.secondShotsAfterFirstHit}</strong></article><article><span>{text("失中方向", "Miss direction")}</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>
+    {isSkeet ? <div className="analysis-details"><article><span>{text("ハイハウス", "High house")}</span><strong>{skeetHouseStats.high.hits} / {skeetHouseStats.high.targets}</strong></article><article><span>{text("ローハウス", "Low house")}</span><strong>{skeetHouseStats.low.hits} / {skeetHouseStats.low.targets}</strong></article></div> : <div className="analysis-details"><article><span>{text("命中内訳", "Hit breakdown")}</span><strong>{text("初矢", "First shot")} {stats.firstShotHits}</strong><strong>{text("二の矢", "Second shot")} {stats.secondShotHits}</strong><strong>{text("命中後2発目", "Extra shot after hit")} {stats.secondShotsAfterFirstHit}</strong></article><article><span>{text("失中方向", "Miss direction")}</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>}
 
-    <AiAnalysisExport session={session} initiallyOpen={aiInitiallyOpen} />
+    {isSkeet ? <aside className="skeet-preview-note"><strong>{text("スキート分析は試作版です", "Skeet analysis is a preview")}</strong><span>{text("現在は総合・ラウンド・射台・ハイ／ローの事実集計のみ表示します。原因分析とAI出力は経験者の意見を反映してから追加します。", "Currently shows factual totals by round, station, and high/low house only. Cause analysis and AI export will follow feedback from experienced skeet shooters.")}</span></aside> : <AiAnalysisExport session={session} initiallyOpen={aiInitiallyOpen} />}
 
     {halfComparison && <section className={`session-half-analysis ${halfComparison.trend}`}>
       <header><div><p className="eyebrow">SESSION PACE</p><h3>{text("前半・後半の安定度", "First-half vs second-half stability")}</h3></div><strong>{halfComparison.trend === "declined" ? text("後半に低下", "Declined") : halfComparison.trend === "improved" ? text("後半に向上", "Improved") : text("安定", "Stable")}</strong></header>
@@ -56,7 +64,7 @@ export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false
       <p className="session-half-advice">{halfComparison.trend === "declined" ? text("後半は構えを急がず、各ラウンドの最初に頬付けと視線を整えましょう。", "In the second half, avoid rushing your setup and reset your mount and vision at the start of each round.") : halfComparison.trend === "improved" ? text("後半に調子を上げています。うまくいった構えや視線を振り返りに残しましょう。", "You improved in the second half. Record what worked in your setup and vision.") : text("前半から後半まで安定しています。現在のルーティンを継続しましょう。", "Performance remained stable. Continue your current routine.")}</p>
     </section>}
 
-    <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>{text("射台別分析", "Analysis by stand")}</h3></div><div className="radial-legend"><span><i className="legend-hit" />{text("総合命中率", "Hit rate")}</span><span><i className="legend-first" />{text("初矢命中率", "First-shot rate")}</span><span><i className="legend-left" />←{text("失中", "Miss")}</span><span><i className="legend-center" />↑{text("失中", "Miss")}</span><span><i className="legend-right" />→{text("失中", "Miss")}</span></div></header><div className="stand-analysis-grid">{standStats.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
+    {isSkeet ? <section className="stand-analysis"><header><div><p className="eyebrow">STATION ANALYSIS</p><h3>{text("射台別の基本集計", "Basic totals by station")}</h3></div></header><div className="analysis-rounds">{standStats.map((stand) => <article key={stand.standNo}><span>{text("射台", "Station")} {stand.standNo}</span><strong>{stand.score}<small> / {stand.targets}</small></strong><p>{text("失中", "Misses")} {stand.misses}</p></article>)}</div></section> : <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>{text("射台別分析", "Analysis by stand")}</h3></div><div className="radial-legend"><span><i className="legend-hit" />{text("総合命中率", "Hit rate")}</span><span><i className="legend-first" />{text("初矢命中率", "First-shot rate")}</span><span><i className="legend-left" />←{text("失中", "Miss")}</span><span><i className="legend-center" />↑{text("失中", "Miss")}</span><span><i className="legend-right" />→{text("失中", "Miss")}</span></div></header><div className="stand-analysis-grid">{standStats.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>}
     <SessionReviewForm review={session.review} advice={reviewAdvice} onSave={onSaveReview} onBack={onBack} />
   </section>;
 }

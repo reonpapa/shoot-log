@@ -14,7 +14,7 @@ export interface StoredSession {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object";
 const isString = (value: unknown): value is string => typeof value === "string";
-const isStand = (value: unknown): value is StandNo => [1, 2, 3, 4, 5].includes(value as number);
+const isStand = (value: unknown): value is StandNo => [1, 2, 3, 4, 5, 6, 7, 8].includes(value as number);
 const shotResults: ShotResult[] = ["hit", "miss", "not-fired"];
 const finalResults: FinalResult[] = ["hit-on-first", "hit-on-second", "miss", "skip"];
 const missDirections: MissDirection[] = ["left", "center", "right", "unknown"];
@@ -27,7 +27,7 @@ function normalizeRound(value: unknown): ShootingRound | null {
     const legacyResult = shot.finalResult === "no-bird" ? "skip" : shot.finalResult;
     if (!finalResults.includes(legacyResult as FinalResult)) return null;
     const direction = missDirections.includes(shot.missDirection as MissDirection) ? shot.missDirection as MissDirection : undefined;
-    return { id: shot.id, targetNo: shot.targetNo, standNo: shot.standNo, firstShotResult: shot.firstShotResult as ShotResult, secondShotResult: shot.secondShotResult as ShotResult, ...(shot.secondShotFiredAfterFirstHit === true ? { secondShotFiredAfterFirstHit: true } : {}), finalResult: legacyResult as FinalResult, ...(direction ? { missDirection: direction } : {}), ...(isString(shot.memo) ? { memo: shot.memo } : {}) };
+    return { id: shot.id, targetNo: shot.targetNo, standNo: shot.standNo, firstShotResult: shot.firstShotResult as ShotResult, secondShotResult: shot.secondShotResult as ShotResult, ...(shot.secondShotFiredAfterFirstHit === true ? { secondShotFiredAfterFirstHit: true } : {}), finalResult: legacyResult as FinalResult, ...(direction ? { missDirection: direction } : {}), ...(isString(shot.memo) ? { memo: shot.memo } : {}), ...(shot.skeetHouse === "high" || shot.skeetHouse === "low" ? { skeetHouse: shot.skeetHouse } : {}), ...(isString(shot.skeetPairId) ? { skeetPairId: shot.skeetPairId } : {}), ...(shot.skeetPairOrder === 1 || shot.skeetPairOrder === 2 ? { skeetPairOrder: shot.skeetPairOrder } : {}) };
   });
   if (shots.some((shot) => shot === null)) return null;
   const actual = typeof value.actualCartridgesUsed === "number" && Number.isFinite(value.actualCartridgesUsed) && value.actualCartridgesUsed >= 0 ? value.actualCartridgesUsed : undefined;

@@ -18,7 +18,7 @@ export function HistoryAnalysis({ sessions }: Props) {
   const [ammunitionName, setAmmunitionName] = useState("all");
   const [fireMode, setFireMode] = useState<"all" | FireMode>("all");
   const [period, setPeriod] = useState<Period>("all");
-  const completed = sessions.filter((item) => item.status === "completed");
+  const completed = sessions.filter((item) => item.status === "completed" && item.session.discipline === "trap");
   const rangeOptions = [...new Set(completed.map((item) => item.session.rangeName))].sort((a, b) => a.localeCompare(b, "ja"));
   const ammunitionOptions = [...new Set(completed.map((item) => item.session.ammunitionName))].sort((a, b) => a.localeCompare(b, "ja"));
 

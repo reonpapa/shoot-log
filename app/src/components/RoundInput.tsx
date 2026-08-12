@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { FireMode, ShootingRound, StandNo } from "../domain/shooting";
+import type { Discipline, FireMode, ShootingRound, StandNo } from "../domain/shooting";
 import { changeRoundStartStand, changeShotStand } from "../domain/shooting";
 import { applyShotInput, getNextShotIndex, getShotInput, type ShotInput } from "../domain/shootingInput";
 import { calculateRoundStats } from "../domain/shootingStats";
 import "./RoundInput.css";
 import { useLanguage } from "../i18n/LanguageContext";
 
-interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; }
+interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; }
 const stands: StandNo[] = [1, 2, 3, 4, 5];
 const inputs: { value: ShotInput; label: string; title: string; shortcut: string }[] = [
   { value: "hit-on-first", label: "1", title: "初矢命中", shortcut: "1" },
@@ -21,7 +21,11 @@ const scoreLabels: Record<ShotInput, string> = {
   "miss-center": "↑", "miss-right": "→", skip: "",
 };
 
-export function RoundInput({ round, onChange }: Props) {
+export function RoundInput({ round, onChange, discipline = "trap" }: Props) {
+  return discipline === "skeet" ? <SkeetRoundInput round={round} onChange={onChange} /> : <TrapRoundInput round={round} onChange={onChange} />;
+}
+
+function TrapRoundInput({ round, onChange }: Props) {
   const { text } = useLanguage();
   const stats = calculateRoundStats(round);
   const [activeIndex, setActiveIndex] = useState(() => {
@@ -102,5 +106,44 @@ export function RoundInput({ round, onChange }: Props) {
       <div className={`current-shot-buttons ${round.fireMode}`}>{visibleInputs.map((input) => <button className={getShotInput(activeShot) === input.value ? "selected" : ""} key={input.value} onClick={() => updateShot(input.value)}><strong>{input.value === "hit-on-first-second-fired" ? text("1＋", "1+") : input.label}</strong><span>{({ "hit-on-first": text("初矢命中", "First-shot hit"), "hit-on-second": text("二の矢命中", "Second-shot hit"), "hit-on-first-second-fired": text("初矢命中＋二発目", "First hit + extra shot"), "miss-left": text("左失中", "Miss left"), "miss-center": text("中央失中", "Miss center"), "miss-right": text("右失中", "Miss right"), skip: "" } as Record<ShotInput, string>)[input.value]}</span><kbd>{input.shortcut}</kbd></button>)}</div>
       <p>{text("結果入力後は自動で次へ　Enterで次へ　Shift＋Enterで前へ", "Moves to the next target after input · Enter: next · Shift + Enter: previous")}</p>
     </section>
+  </section>;
+}
+
+function SkeetRoundInput({ round, onChange }: Props) {
+  const { text } = useLanguage();
+  const stats = calculateRoundStats(round);
+  const [activeIndex, setActiveIndex] = useState(() => {
+    const empty = round.shots.findIndex((shot) => shot.finalResult === "skip");
+    return empty >= 0 ? empty : 0;
+  });
+  const active = round.shots[activeIndex];
+
+  const enter = useCallback((result: "hit" | "miss") => {
+    const shots = round.shots.map((shot, index) => index !== activeIndex ? shot : result === "hit"
+      ? { ...shot, firstShotResult: "hit" as const, secondShotResult: "not-fired" as const, finalResult: "hit-on-first" as const, missDirection: undefined }
+      : { ...shot, firstShotResult: "miss" as const, secondShotResult: "not-fired" as const, finalResult: "miss" as const, missDirection: undefined });
+    onChange({ ...round, shots });
+    setActiveIndex((current) => Math.min(round.shots.length - 1, current + 1));
+  }, [activeIndex, onChange, round]);
+
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement | null)?.matches("input, select, textarea")) return;
+      if (event.key === "1" || event.key.toLowerCase() === "h") { event.preventDefault(); enter("hit"); }
+      if (event.key === "0" || event.key.toLowerCase() === "m") { event.preventDefault(); enter("miss"); }
+    };
+    window.addEventListener("keydown", keydown);
+    return () => window.removeEventListener("keydown", keydown);
+  }, [enter]);
+
+  if (!active) return null;
+  const pairLabel = active.skeetPairId ? text(`ダブル ${active.skeetPairOrder}/2`, `Double ${active.skeetPairOrder}/2`) : text("シングル", "Single");
+  const houseLabel = active.skeetHouse === "high" ? text("ハイハウス", "High house") : text("ローハウス", "Low house");
+  return <section className="round-input skeet-round-input">
+    <header className="round-header"><div><p className="eyebrow">SKEET PREVIEW / ROUND</p><h2>{round.roundNo}</h2></div><div className="round-score"><strong>{stats.score}</strong><span>/ 25</span></div></header>
+    <aside className="skeet-preview-note"><strong>{text("スキート試作版", "Skeet preview")}</strong><span>{text("ISSF資格射撃の25枚順を使用。スキート経験者の意見を募集中です。", "Uses the 25-target ISSF qualification sequence. Feedback from skeet shooters is welcome.")}</span></aside>
+    <div className="skeet-summary"><span>{text("命中", "Hits")} <b>{stats.score}</b></span><span>{text("失中", "Misses")} <b>{stats.misses}</b></span><span>{text("実包", "Shells")} <b>{stats.cartridgesUsed}</b></span></div>
+    <div className="skeet-scorecard" aria-label={text("スキート25枚スコアカード", "25-target skeet scorecard")}>{round.shots.map((shot, index) => <button key={shot.id} className={`${index === activeIndex ? "active " : ""}${shot.finalResult === "hit-on-first" ? "hit" : shot.finalResult === "miss" ? "miss" : ""}`} onClick={() => setActiveIndex(index)}><small>{shot.targetNo}</small><strong>{shot.finalResult === "hit-on-first" ? "○" : shot.finalResult === "miss" ? "×" : "·"}</strong><span>S{shot.standNo} · {shot.skeetHouse === "high" ? "H" : "L"}{shot.skeetPairId ? ` ${shot.skeetPairOrder}/2` : ""}</span></button>)}</div>
+    <section className="skeet-current-target"><p className="eyebrow">CURRENT TARGET</p><div className="skeet-target-heading"><div><span>{text("クレー", "Target")}</span><strong>{active.targetNo}</strong></div><div><span>{text("射台", "Station")}</span><strong>{active.standNo}</strong></div></div><div className="skeet-target-detail"><strong>{houseLabel}</strong><span>{pairLabel}</span></div><div className="skeet-result-buttons"><button className={active.finalResult === "hit-on-first" ? "selected hit" : ""} onClick={() => enter("hit")}><strong>○</strong><span>{text("命中", "Hit")}</span><kbd>1 / H</kbd></button><button className={active.finalResult === "miss" ? "selected miss" : ""} onClick={() => enter("miss")}><strong>×</strong><span>{text("失中", "Miss")}</span><kbd>0 / M</kbd></button></div><p>{text("入力すると自動で次のクレーへ進みます。", "Moves to the next target after entry.")}</p></section>
   </section>;
 }
