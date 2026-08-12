@@ -1,34 +1,27 @@
 import type { CloudSyncView } from "../hooks/useCloudSync";
 import "./CloudSyncStatus.css";
+import { localizeSystemMessage, useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   view: CloudSyncView;
   onSync: () => Promise<void>;
 }
 
-function cloudSyncStatusLabel(view: CloudSyncView): string {
-  if (view.phase === "synced" && view.pendingChanges) return "同期待ち";
-  if (view.phase === "synced") return "同期済み";
-  if (view.phase === "syncing") return "同期中";
-  if (view.phase === "offline") return "オフライン";
-  if (view.phase === "error") return "要確認";
-  if (view.phase === "starting") return "接続中";
-  return "未接続";
-}
-
-function formatCloudSyncTime(value: string): string {
-  if (!value) return "未同期";
-  return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+function formatCloudSyncTime(value: string, locale: string, empty: string): string {
+  if (!value) return empty;
+  return new Intl.DateTimeFormat(locale, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 }
 
 export function CloudSyncStatus({ view, onSync }: Props) {
+  const { language, locale, text } = useLanguage();
   const busy = view.phase === "starting" || view.phase === "syncing";
   const signedIn = view.phase !== "signed-out" && !!view.email;
   if (!signedIn) return null;
-  return <section className={`cloud-sync-status ${view.phase}${view.pendingChanges ? " pending" : ""}`} aria-label="クラウド同期状態" aria-live="polite">
-    <div className="cloud-sync-status__state"><i aria-hidden="true" /><div><span>CLOUD SYNC</span><strong>{cloudSyncStatusLabel(view)}</strong></div></div>
-    <div className="cloud-sync-status__message"><p>{view.message}</p><small>最終同期：{formatCloudSyncTime(view.lastSyncedAt)}</small></div>
-    <div className="cloud-sync-status__pending"><small>同期待ち</small><strong>{view.pendingChanges ? `${view.pendingChanges}件` : "なし"}</strong></div>
-    <button type="button" disabled={busy} onClick={() => void onSync()}>{busy ? "同期中…" : "今すぐ同期"}</button>
+  const status = view.phase === "synced" && view.pendingChanges ? text("同期待ち", "Pending") : ({ synced: text("同期済み", "Synced"), syncing: text("同期中", "Syncing"), offline: text("オフライン", "Offline"), error: text("要確認", "Check required"), starting: text("接続中", "Connecting"), "signed-out": text("未接続", "Not connected") }[view.phase]);
+  return <section className={`cloud-sync-status ${view.phase}${view.pendingChanges ? " pending" : ""}`} aria-label={text("クラウド同期状態", "Cloud sync status")} aria-live="polite">
+    <div className="cloud-sync-status__state"><i aria-hidden="true" /><div><span>CLOUD SYNC</span><strong>{status}</strong></div></div>
+    <div className="cloud-sync-status__message"><p>{localizeSystemMessage(view.message, language)}</p><small>{text("最終同期：", "Last sync: ")}{formatCloudSyncTime(view.lastSyncedAt, locale, text("未同期", "Never"))}</small></div>
+    <div className="cloud-sync-status__pending"><small>{text("同期待ち", "Pending")}</small><strong>{view.pendingChanges ? text(`${view.pendingChanges}件`, `${view.pendingChanges}`) : text("なし", "None")}</strong></div>
+    <button type="button" disabled={busy} onClick={() => void onSync()}>{busy ? text("同期中…", "Syncing…") : text("今すぐ同期", "Sync now")}</button>
   </section>;
 }

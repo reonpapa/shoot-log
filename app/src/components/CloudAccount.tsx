@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { CloudSyncView } from "../hooks/useCloudSync";
 import "./CloudAccount.css";
+import { localizeSystemMessage, useLanguage } from "../i18n/LanguageContext";
 
 type AuthMode = "sign-in" | "sign-up" | "forgot-password";
 
@@ -19,9 +20,9 @@ interface Props {
   onDeleteAccount: () => Promise<void>;
 }
 
-function formatSyncedAt(value: string): string {
-  if (!value) return "未同期";
-  return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+function formatSyncedAt(value: string, locale: string, empty: string): string {
+  if (!value) return empty;
+  return new Intl.DateTimeFormat(locale, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 }
 
 const authErrorMessages: Record<string, string> = {
@@ -71,6 +72,7 @@ function readableError(caught: unknown): string {
 }
 
 export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onDeleteAccount }: Props) {
+  const { language, locale, text } = useLanguage();
   const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,7 +93,7 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
     setError("");
     setNotice("");
     try { await action(); }
-    catch (caught) { setError(readableError(caught)); }
+    catch (caught) { setError(language === "ja" ? readableError(caught) : "Authentication failed. Check your details and connection, then try again."); }
     finally { setBusy(false); }
   }
 
@@ -108,12 +110,12 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
     event.preventDefault();
     if (authMode === "sign-up" && password !== passwordConfirmation) {
       setNotice("");
-      setError("確認用パスワードが一致していません。");
+      setError(text("確認用パスワードが一致していません。", "The confirmation password does not match."));
       return;
     }
     if (authMode === "sign-up" && !acceptedTerms) {
       setNotice("");
-      setError("利用規約とプライバシーポリシーへの同意が必要です。");
+      setError(text("利用規約とプライバシーポリシーへの同意が必要です。", "You must agree to the Terms and Privacy Policy."));
       return;
     }
     void run(async () => {
@@ -130,7 +132,7 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
     event.preventDefault();
     void run(async () => {
       await onSendPasswordReset(email.trim());
-      setNotice("パスワード再設定メールを送信しました。メール内のリンクを開いてください。");
+      setNotice(text("パスワード再設定メールを送信しました。メール内のリンクを開いてください。", "Password reset email sent. Open the link in the email."));
     });
   }
 
@@ -138,7 +140,7 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
     event.preventDefault();
     if (newPassword !== newPasswordConfirmation) {
       setNotice("");
-      setError("新しいパスワードと確認用パスワードが一致していません。");
+      setError(text("新しいパスワードと確認用パスワードが一致していません。", "The new password confirmation does not match."));
       return;
     }
     void run(async () => {
@@ -147,7 +149,7 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
       setNewPassword("");
       setNewPasswordConfirmation("");
       setShowPasswordChange(false);
-      setNotice("パスワードを変更しました。端末のパスワード管理も更新してください。");
+      setNotice(text("パスワードを変更しました。端末のパスワード管理も更新してください。", "Password changed. Update your device password manager as well."));
     });
   }
 
@@ -155,14 +157,14 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
     event.preventDefault();
     if (newPassword !== newPasswordConfirmation) {
       setNotice("");
-      setError("新しいパスワードと確認用パスワードが一致していません。");
+      setError(text("新しいパスワードと確認用パスワードが一致していません。", "The new password confirmation does not match."));
       return;
     }
     void run(async () => {
       await onCompletePasswordRecovery(newPassword);
       setNewPassword("");
       setNewPasswordConfirmation("");
-      setNotice("新しいパスワードを設定しました。");
+      setNotice(text("新しいパスワードを設定しました。", "New password saved."));
     });
   }
 
@@ -171,54 +173,54 @@ export function CloudAccount({ view, passwordRecovery, onPrivacy, onTerms, onSig
 
   return <article className="cloud-account">
     <div className="cloud-account-heading">
-      <div><span>CLOUD SYNC</span><h3>複数端末のデータ同期</h3><p>同じアカウントでログインしたパソコンやスマートフォン間で、記録を自動同期します。圏外でも入力でき、通信復帰後にクラウドへ同期します。</p></div>
-      <i className={`cloud-state ${view.phase}`}>{view.phase === "synced" ? "同期済み" : view.phase === "syncing" ? "同期中" : view.phase === "offline" ? "オフライン" : view.phase === "error" ? "要確認" : signedIn ? "接続中" : "未接続"}</i>
+      <div><span>CLOUD SYNC</span><h3>{text("複数端末のデータ同期", "Sync across devices")}</h3><p>{text("同じアカウントでログインしたパソコンやスマートフォン間で、記録を自動同期します。圏外でも入力でき、通信復帰後にクラウドへ同期します。", "Automatically sync records between signed-in computers and phones. You can enter scores offline and sync when the connection returns.")}</p></div>
+      <i className={`cloud-state ${view.phase}`}>{view.phase === "synced" ? text("同期済み", "Synced") : view.phase === "syncing" ? text("同期中", "Syncing") : view.phase === "offline" ? text("オフライン", "Offline") : view.phase === "error" ? text("要確認", "Check required") : signedIn ? text("接続中", "Connecting") : text("未接続", "Not connected")}</i>
     </div>
 
     {passwordRecovery ? <section className="password-panel password-recovery-panel">
-      <div><strong>新しいパスワードを設定</strong><p>再設定メールの確認が完了しました。新しいパスワードを2回入力してください。</p></div>
+      <div><strong>{text("新しいパスワードを設定", "Set a new password")}</strong><p>{text("再設定メールの確認が完了しました。新しいパスワードを2回入力してください。", "Reset email verified. Enter your new password twice.")}</p></div>
       <form onSubmit={submitPasswordRecovery}>
-        <label>新しいパスワード<input required minLength={8} name="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
-        <label>新しいパスワード（確認）<input required minLength={8} name="new-password-confirmation" type="password" autoComplete="new-password" value={newPasswordConfirmation} onChange={(event) => setNewPasswordConfirmation(event.target.value)} /></label>
-        <div className="password-panel-actions"><button disabled={busy || !signedIn} className="primary-button" type="submit">新しいパスワードを保存</button></div>
+        <label>{text("新しいパスワード", "New password")}<input required minLength={8} name="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
+        <label>{text("新しいパスワード（確認）", "Confirm new password")}<input required minLength={8} name="new-password-confirmation" type="password" autoComplete="new-password" value={newPasswordConfirmation} onChange={(event) => setNewPasswordConfirmation(event.target.value)} /></label>
+        <div className="password-panel-actions"><button disabled={busy || !signedIn} className="primary-button" type="submit">{text("新しいパスワードを保存", "Save new password")}</button></div>
       </form>
     </section> : signedIn ? <>
       <div className="cloud-signed-in">
-        <div><small>ログイン中</small><strong>{view.email}</strong><p>{view.message}</p><small>最終同期：{formatSyncedAt(view.lastSyncedAt)}</small></div>
-        <div className="cloud-actions"><button disabled={busy || syncing} className="primary-button manual-sync-button" onClick={() => void run(onSync)}>今すぐ同期</button><button disabled={busy || syncing} onClick={() => void run(onSignOut)}>ログアウト</button></div>
+        <div><small>{text("ログイン中", "Signed in")}</small><strong>{view.email}</strong><p>{localizeSystemMessage(view.message, language)}</p><small>{text("最終同期：", "Last sync: ")}{formatSyncedAt(view.lastSyncedAt, locale, text("未同期", "Never"))}</small></div>
+        <div className="cloud-actions"><button disabled={busy || syncing} className="primary-button manual-sync-button" onClick={() => void run(onSync)}>{text("今すぐ同期", "Sync now")}</button><button disabled={busy || syncing} onClick={() => void run(onSignOut)}>{text("ログアウト", "Sign out")}</button></div>
       </div>
       <div className="cloud-security-settings">
-        <button disabled={busy || syncing} className="settings-link" onClick={() => { setShowPasswordChange((current) => !current); setShowDelete(false); setError(""); setNotice(""); }}>パスワードを変更</button>
+        <button disabled={busy || syncing} className="settings-link" onClick={() => { setShowPasswordChange((current) => !current); setShowDelete(false); setError(""); setNotice(""); }}>{text("パスワードを変更", "Change password")}</button>
         {showPasswordChange && <section className="password-panel">
-          <div><strong>パスワードを変更</strong><p>現在のパスワードを確認して、新しいパスワードへ変更します。</p></div>
+          <div><strong>{text("パスワードを変更", "Change password")}</strong><p>{text("現在のパスワードを確認して、新しいパスワードへ変更します。", "Verify your current password, then set a new one.")}</p></div>
           <form onSubmit={submitPasswordChange}>
-            <label>現在のパスワード<input required minLength={8} name="current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
-            <label>新しいパスワード<input required minLength={8} name="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
-            <label>新しいパスワード（確認）<input required minLength={8} name="new-password-confirmation" type="password" autoComplete="new-password" value={newPasswordConfirmation} onChange={(event) => setNewPasswordConfirmation(event.target.value)} /></label>
-            <div className="password-panel-actions"><button disabled={busy} className="primary-button" type="submit">パスワードを変更</button><button type="button" onClick={() => setShowPasswordChange(false)}>キャンセル</button></div>
+            <label>{text("現在のパスワード", "Current password")}<input required minLength={8} name="current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
+            <label>{text("新しいパスワード", "New password")}<input required minLength={8} name="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
+            <label>{text("新しいパスワード（確認）", "Confirm new password")}<input required minLength={8} name="new-password-confirmation" type="password" autoComplete="new-password" value={newPasswordConfirmation} onChange={(event) => setNewPasswordConfirmation(event.target.value)} /></label>
+            <div className="password-panel-actions"><button disabled={busy} className="primary-button" type="submit">{text("パスワードを変更", "Change password")}</button><button type="button" onClick={() => setShowPasswordChange(false)}>{text("キャンセル", "Cancel")}</button></div>
           </form>
         </section>}
       </div>
       <div className="cloud-account-delete">
-        <button disabled={busy || syncing} className="delete-link" onClick={() => { setShowDelete((current) => !current); setShowPasswordChange(false); setDeleteConfirmation(""); }}>アカウントを削除</button>
-        {showDelete && <div className="delete-confirmation"><strong>クラウドアカウントを完全に削除</strong><p>クラウド上のデータとログイン資格が削除され、元に戻せません。端末内の記録は残ります。</p><label>確認のためメールアドレスを入力<input type="email" autoComplete="off" value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} /></label><button disabled={busy || syncing || deleteConfirmation.trim() !== view.email} className="danger-button" onClick={() => void run(async () => { await onDeleteAccount(); setShowDelete(false); setDeleteConfirmation(""); setNotice("アカウントを削除しました。端末内の記録は残っています。"); })}>完全に削除する</button></div>}
+        <button disabled={busy || syncing} className="delete-link" onClick={() => { setShowDelete((current) => !current); setShowPasswordChange(false); setDeleteConfirmation(""); }}>{text("アカウントを削除", "Delete account")}</button>
+        {showDelete && <div className="delete-confirmation"><strong>{text("クラウドアカウントを完全に削除", "Permanently delete cloud account")}</strong><p>{text("クラウド上のデータとログイン資格が削除され、元に戻せません。端末内の記録は残ります。", "Cloud data and sign-in credentials will be deleted permanently. Records on this device remain.")}</p><label>{text("確認のためメールアドレスを入力", "Enter your email to confirm")}<input type="email" autoComplete="off" value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} /></label><button disabled={busy || syncing || deleteConfirmation.trim() !== view.email} className="danger-button" onClick={() => void run(async () => { await onDeleteAccount(); setShowDelete(false); setDeleteConfirmation(""); setNotice(text("アカウントを削除しました。端末内の記録は残っています。", "Account deleted. Records on this device remain.")); })}>{text("完全に削除する", "Delete permanently")}</button></div>}
       </div>
     </> : authMode === "forgot-password" ? <section className="password-panel forgot-password-panel">
-      <div><strong>パスワードを再設定</strong><p>登録済みのメールアドレスへ再設定リンクを送信します。</p></div>
+      <div><strong>{text("パスワードを再設定", "Reset password")}</strong><p>{text("登録済みのメールアドレスへ再設定リンクを送信します。", "Send a reset link to your registered email address.")}</p></div>
       <form onSubmit={submitPasswordResetRequest}>
-        <label>メールアドレス<input required name="username" type="email" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-        <div className="password-panel-actions"><button disabled={busy} className="primary-button" type="submit">再設定メールを送信</button><button type="button" onClick={() => changeAuthMode("sign-in")}>ログインへ戻る</button></div>
+        <label>{text("メールアドレス", "Email address")}<input required name="username" type="email" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+        <div className="password-panel-actions"><button disabled={busy} className="primary-button" type="submit">{text("再設定メールを送信", "Send reset email")}</button><button type="button" onClick={() => changeAuthMode("sign-in")}>{text("ログインへ戻る", "Back to sign in")}</button></div>
       </form>
     </section> : <>
-      <div className="cloud-auth-tabs" role="group" aria-label="認証方法"><button type="button" className={authMode === "sign-in" ? "selected" : ""} aria-pressed={authMode === "sign-in"} onClick={() => changeAuthMode("sign-in")}>ログイン</button><button type="button" className={authMode === "sign-up" ? "selected" : ""} aria-pressed={authMode === "sign-up"} onClick={() => changeAuthMode("sign-up")}>新規登録</button></div>
+      <div className="cloud-auth-tabs" role="group" aria-label={text("認証方法", "Authentication method")}><button type="button" className={authMode === "sign-in" ? "selected" : ""} aria-pressed={authMode === "sign-in"} onClick={() => changeAuthMode("sign-in")}>{text("ログイン", "Sign in")}</button><button type="button" className={authMode === "sign-up" ? "selected" : ""} aria-pressed={authMode === "sign-up"} onClick={() => changeAuthMode("sign-up")}>{text("新規登録", "Create account")}</button></div>
       <form className={authMode === "sign-up" ? "sign-up-form" : "sign-in-form"} onSubmit={submitAuth}>
-        <label className={authMode === "sign-up" ? "email-field" : ""}>メールアドレス<input required name="username" type="email" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-        <label>パスワード<input required name="password" minLength={8} type="password" autoComplete={authMode === "sign-in" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-        {authMode === "sign-up" && <label>パスワード（確認）<input required name="password-confirmation" minLength={8} type="password" autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} /></label>}
-        {authMode === "sign-up" && <div className="auth-legal-consent"><label><input required type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} /><span>内容を確認し、同意します。</span></label><nav aria-label="登録条件"><button type="button" onClick={onTerms}>利用規約・免責事項を読む</button><button type="button" onClick={onPrivacy}>プライバシーポリシーを読む</button></nav></div>}
-        <div className="cloud-auth-submit"><button disabled={busy || (authMode === "sign-up" && !acceptedTerms)} className="primary-button" type="submit">{authMode === "sign-in" ? "ログイン" : "アカウントを作成"}</button><small>パスワードは端末やブラウザーのパスワード管理に保存できます。</small></div>
+        <label className={authMode === "sign-up" ? "email-field" : ""}>{text("メールアドレス", "Email address")}<input required name="username" type="email" inputMode="email" autoCapitalize="none" spellCheck={false} autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+        <label>{text("パスワード", "Password")}<input required name="password" minLength={8} type="password" autoComplete={authMode === "sign-in" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+        {authMode === "sign-up" && <label>{text("パスワード（確認）", "Confirm password")}<input required name="password-confirmation" minLength={8} type="password" autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} /></label>}
+        {authMode === "sign-up" && <div className="auth-legal-consent"><label><input required type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} /><span>{text("内容を確認し、同意します。", "I have reviewed and agree.")}</span></label><nav aria-label={text("登録条件", "Registration terms")}><button type="button" onClick={onTerms}>{text("利用規約・免責事項を読む", "Read Terms & Disclaimer")}</button><button type="button" onClick={onPrivacy}>{text("プライバシーポリシーを読む", "Read Privacy Policy")}</button></nav></div>}
+        <div className="cloud-auth-submit"><button disabled={busy || (authMode === "sign-up" && !acceptedTerms)} className="primary-button" type="submit">{authMode === "sign-in" ? text("ログイン", "Sign in") : text("アカウントを作成", "Create account")}</button><small>{text("パスワードは端末やブラウザーのパスワード管理に保存できます。", "You can save the password in your device or browser password manager.")}</small></div>
       </form>
-      {authMode === "sign-in" && <button type="button" className="forgot-password-link" onClick={() => changeAuthMode("forgot-password")}>パスワードを忘れた場合</button>}
+      {authMode === "sign-in" && <button type="button" className="forgot-password-link" onClick={() => changeAuthMode("forgot-password")}>{text("パスワードを忘れた場合", "Forgot password?")}</button>}
     </>}
 
     {notice && <p className="cloud-notice">{notice}</p>}

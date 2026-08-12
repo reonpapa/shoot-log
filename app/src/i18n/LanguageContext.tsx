@@ -2,6 +2,21 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 export type Language = "ja" | "en";
 
+const systemMessages: Record<string, string> = {
+  "Supabaseは正常に応答しています。": "Supabase is responding normally.",
+  "Supabaseへの接続を確認しています…": "Checking the Supabase connection…",
+  "クラウドと同期済み": "Synced with cloud",
+  "クラウドの最新データを確認中…": "Checking the latest cloud data…",
+  "クラウドへ保存中…": "Saving to cloud…",
+  "クラウド同期を利用するにはログインしてください。": "Sign in to use cloud sync.",
+  "初回データを確認中…": "Checking initial data…",
+};
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function localizeSystemMessage(message: string, language: Language): string {
+  return language === "en" ? systemMessages[message] ?? message : message;
+}
+
 interface LanguageContextValue {
   language: Language;
   locale: "ja-JP" | "en-US";

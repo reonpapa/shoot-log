@@ -14,7 +14,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 interface Props { session: StoredSession; reviewAdvice: PracticeRecommendation | null; aiInitiallyOpen?: boolean; onBack: () => void; onResume: () => void; onEdit: () => void; onSaveReview: (review: SessionReview) => void; }
 
 export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false, onBack, onResume, onEdit, onSaveReview }: Props) {
-  const { text } = useLanguage();
+  const { language, text } = useLanguage();
   const stats = calculateSessionStats({
     id: session.id,
     date: session.session.date,
@@ -28,11 +28,11 @@ export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false
   const standStats = calculateStandStats(shootingSession);
   const halfComparison = calculateSessionHalfComparison(session.rounds);
   const directionScaleMax = Math.max(1, ...standStats.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
-  const conditions = formatShootingConditions(session.session);
+  const conditions = formatShootingConditions(session.session, language);
 
   return <section className="session-analysis">
     <header className="analysis-header">
-      <div><p className="eyebrow">SESSION COMPLETE</p><h2>{session.session.date}　{session.session.rangeName}</h2><p>{session.session.discipline.toUpperCase()} ・ {session.session.ammunitionName}</p>{conditions && <p className="analysis-conditions">コンディション：{conditions}</p>}</div>
+      <div><p className="eyebrow">SESSION COMPLETE</p><h2>{session.session.date}　{session.session.rangeName}</h2><p>{session.session.discipline.toUpperCase()} ・ {session.session.ammunitionName}</p>{conditions && <p className="analysis-conditions">{text("コンディション：", "Conditions: ")}{conditions}</p>}</div>
       <div className="analysis-actions"><button onClick={onBack}>{text("履歴へ戻る", "Back to history")}</button><button onClick={onEdit}>{text("基本情報を編集", "Edit details")}</button><button className="primary-button" onClick={onResume}>{text("スコア編集を再開", "Edit scores")}</button></div>
     </header>
 
@@ -51,9 +51,9 @@ export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false
     <AiAnalysisExport session={session} initiallyOpen={aiInitiallyOpen} />
 
     {halfComparison && <section className={`session-half-analysis ${halfComparison.trend}`}>
-      <header><div><p className="eyebrow">SESSION PACE</p><h3>前半・後半の安定度</h3></div><strong>{halfComparison.trend === "declined" ? "後半に低下" : halfComparison.trend === "improved" ? "後半に向上" : "安定"}</strong></header>
-      <div className="session-half-grid"><article><span>前半 {halfComparison.first.rounds}R</span><strong>{halfComparison.first.averageScore.toFixed(1)}<small> / 25</small></strong><p>命中率 {Math.round(halfComparison.first.hitRate)}%　初矢 {Math.round(halfComparison.first.firstShotHitRate)}%</p></article><article><span>後半 {halfComparison.second.rounds}R</span><strong>{halfComparison.second.averageScore.toFixed(1)}<small> / 25</small></strong><p>命中率 {Math.round(halfComparison.second.hitRate)}%　初矢 {Math.round(halfComparison.second.firstShotHitRate)}%</p></article><article className="session-half-delta"><span>後半の変化</span><strong>{formatPointDelta(halfComparison.hitRateDelta)}<small>pt</small></strong><p>初矢 {formatPointDelta(halfComparison.firstShotHitRateDelta)}pt</p></article></div>
-      <p className="session-half-advice">{halfComparison.trend === "declined" ? "後半は構えを急がず、各ラウンドの最初に頬付けと視線を整えましょう。" : halfComparison.trend === "improved" ? "後半に調子を上げています。うまくいった構えや視線を振り返りに残しましょう。" : "前半から後半まで安定しています。現在のルーティンを継続しましょう。"}</p>
+      <header><div><p className="eyebrow">SESSION PACE</p><h3>{text("前半・後半の安定度", "First-half vs second-half stability")}</h3></div><strong>{halfComparison.trend === "declined" ? text("後半に低下", "Declined") : halfComparison.trend === "improved" ? text("後半に向上", "Improved") : text("安定", "Stable")}</strong></header>
+      <div className="session-half-grid"><article><span>{text("前半", "First half")} {halfComparison.first.rounds}R</span><strong>{halfComparison.first.averageScore.toFixed(1)}<small> / 25</small></strong><p>{text("命中率", "Hit rate")} {Math.round(halfComparison.first.hitRate)}%　{text("初矢", "First shot")} {Math.round(halfComparison.first.firstShotHitRate)}%</p></article><article><span>{text("後半", "Second half")} {halfComparison.second.rounds}R</span><strong>{halfComparison.second.averageScore.toFixed(1)}<small> / 25</small></strong><p>{text("命中率", "Hit rate")} {Math.round(halfComparison.second.hitRate)}%　{text("初矢", "First shot")} {Math.round(halfComparison.second.firstShotHitRate)}%</p></article><article className="session-half-delta"><span>{text("後半の変化", "Second-half change")}</span><strong>{formatPointDelta(halfComparison.hitRateDelta)}<small>pt</small></strong><p>{text("初矢", "First shot")} {formatPointDelta(halfComparison.firstShotHitRateDelta)}pt</p></article></div>
+      <p className="session-half-advice">{halfComparison.trend === "declined" ? text("後半は構えを急がず、各ラウンドの最初に頬付けと視線を整えましょう。", "In the second half, avoid rushing your setup and reset your mount and vision at the start of each round.") : halfComparison.trend === "improved" ? text("後半に調子を上げています。うまくいった構えや視線を振り返りに残しましょう。", "You improved in the second half. Record what worked in your setup and vision.") : text("前半から後半まで安定しています。現在のルーティンを継続しましょう。", "Performance remained stable. Continue your current routine.")}</p>
     </section>}
 
     <section className="stand-analysis"><header><div><p className="eyebrow">STAND ANALYSIS</p><h3>{text("射台別分析", "Analysis by stand")}</h3></div><div className="radial-legend"><span><i className="legend-hit" />{text("総合命中率", "Hit rate")}</span><span><i className="legend-first" />{text("初矢命中率", "First-shot rate")}</span><span><i className="legend-left" />←{text("失中", "Miss")}</span><span><i className="legend-center" />↑{text("失中", "Miss")}</span><span><i className="legend-right" />→{text("失中", "Miss")}</span></div></header><div className="stand-analysis-grid">{standStats.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>

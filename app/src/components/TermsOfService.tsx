@@ -1,10 +1,32 @@
 import "./TermsOfService.css";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   onBack: () => void;
 }
 
 export default function TermsOfService({ onBack }: Props) {
+  const { language } = useLanguage();
+  if (language === "en") return <article className="terms-of-service">
+    <header><div><p className="eyebrow">TERMS OF SERVICE</p><h2>Terms of Service & Disclaimer</h2><p>Effective: July 19, 2026</p></div><button onClick={onBack}>Back to account</button></header>
+    <div className="terms-of-service-body">
+      <p>These Terms govern use of Shoot Log (the “Service”), a clay shooting analysis app provided by the administrator of the downhill62 blog (the “Operator”).</p>
+      <section><h3>1. Agreement</h3><p>Use the Service only after reviewing and agreeing to these Terms and the Privacy Policy. Minors require consent from a parent or legal guardian.</p></section>
+      <section><h3>2. Purpose</h3><p>The Service supports improvement through clay shooting records, reviews, and analysis. Score, ammunition, permit, and firearm management features assist the user’s own recordkeeping and verification.</p></section>
+      <section><h3>3. Account management</h3><ul><li>Register an accurate, usable email address.</li><li>Keep passwords and sessions secure and do not allow third-party use.</li><li>If misuse is suspected, change the password promptly and contact the Operator.</li></ul></section>
+      <section><h3>4. User responsibility</h3><ul><li>Follow applicable firearm and explosives laws, range rules, and safety instructions.</li><li>Verify permit deadlines, applications, ammunition transfers, use, and balances against official information from police, authorities, ranges, and dealers.</li><li>Check the accuracy of entries, analysis, ledgers, and exported PDFs.</li><li>Save regular JSON backups against device failure, mistakes, or browser-data deletion.</li></ul></section>
+      <section><h3>5. Prohibited conduct</h3><ul><li>Illegal, criminal, unsafe, or public-policy violations.</li><li>Infringement of another person’s rights, privacy, or interests.</li><li>Impersonation, false registration, unauthorized account use, or account sharing.</li><li>Unauthorized access to the Service, providers, or networks.</li><li>Excessive automated access, interference, tampering, or disruption.</li><li>Saving another person’s sensitive information without consent.</li></ul></section>
+      <section><h3>6. User data</h3><p>Users retain rights in their entries and authorize processing only as needed for storage, sync, backup, and analysis. See the Privacy Policy for details.</p></section>
+      <section><h3>7. Changes and suspension</h3><p>The Operator may change or suspend all or part of the Service for improvements, maintenance, security, provider incidents, disasters, or other unavoidable reasons. Advance notice will be given when practical.</p></section>
+      <section><h3>8. Account suspension and deletion</h3><p>Users may delete their account and synced cloud data in Account settings. Material violations, misuse, or threats to service security may result in restriction or suspension without prior notice.</p></section>
+      <section><h3>9. Disclaimer</h3><ul><li>The Service does not guarantee skill improvement, competition results, analysis accuracy, completeness, or fitness for a purpose.</li><li>Permit deadlines, ammunition balances, ledgers, totals, and notices are reference information, not legal, administrative, safety, medical, or other professional advice.</li><li>Cloud sync, offline use, storage, email, and external services are not guaranteed to be uninterrupted or free from error or loss.</li><li>External links and services are governed by their own terms.</li></ul></section>
+      <section><h3>10. Liability</h3><p>The Operator is liable under applicable law where loss is attributable to the Operator. To the extent permitted by law, except for intent or gross negligence, liability is limited to ordinary and direct loss actually incurred. This does not exclude liability that cannot be limited under mandatory law, including the Consumer Contract Act.</p></section>
+      <section><h3>11. Intellectual property</h3><p>Rights in the program, screens, text, name, and other content belong to the Operator or lawful rights holders. Use beyond applicable law and software licenses is prohibited.</p></section>
+      <section><h3>12. Changes to these Terms</h3><p>These Terms may be revised reasonably as the Service or laws change. Material changes will be announced before taking effect. Users who disagree should stop using the Service and delete their account if necessary.</p></section>
+      <section><h3>13. Governing law</h3><p>These Terms are governed by Japanese law. The user and Operator will seek good-faith resolution of disputes. If any provision is invalid, the remaining provisions continue in effect.</p></section>
+      <section className="terms-contact"><h3>14. Operator and contact</h3><dl><div><dt>Operator</dt><dd><a href="https://downhill62.hatenablog.com/" target="_blank" rel="noreferrer">Administrator of the downhill62 blog</a></dd></div><div><dt>Contact</dt><dd>Use Contact support in this app.</dd></div></dl></section>
+    </div>
+  </article>;
   return <article className="terms-of-service">
     <header>
       <div><p className="eyebrow">TERMS OF SERVICE</p><h2>利用規約・免責事項</h2><p>制定日：2026年7月19日</p></div>

@@ -7,6 +7,7 @@ import {
   shouldShowPermitNotification,
 } from "../services/permitNotification";
 import "./PermitChangeAlert.css";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   firearms: Firearm[];
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function PermitChangeAlert({ firearms, onOpen }: Props) {
+  const { text } = useLanguage();
   const nearest = nearestPermit(firearms);
   const currentKey = nearest ? createPermitStatusKey(nearest.firearm.id, nearest.status.level) : "none";
   const [previousKey, setPreviousKey] = useState<string>(() => {
@@ -33,6 +35,6 @@ export function PermitChangeAlert({ firearms, onOpen }: Props) {
 
   return <button className={`permit-change-alert ${nearest.status.level}`} onClick={confirmAndOpen}>
     <span aria-hidden="true">!</span>
-    <div><strong>所持許可の期限状況が変わりました</strong><small>{nearest.firearm.name} ・ {nearest.status.label}　確認する →</small></div>
+    <div><strong>{text("所持許可の期限状況が変わりました", "Firearm permit deadline status changed")}</strong><small>{nearest.firearm.name} ・ {text(nearest.status.label, ({ incomplete: "Schedule not set", expired: "Permit expired", "deadline-missed": "Deadline passed", "application-open": "Applications open", "two-months": "Within 2 months", "three-months": "Document review period", "six-months": "Preparation period", safe: "Time remaining" } as Record<string, string>)[nearest.status.level] ?? nearest.status.label)}　{text("確認する →", "Review →")}</small></div>
   </button>;
 }

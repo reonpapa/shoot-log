@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { recoverPwaShell } from "../services/pwaRecovery";
 import { activateServiceWorkerUpdate } from "../services/pwaUpdate";
 import "./PwaStatus.css";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -22,6 +23,7 @@ function shouldSuggestIosInstall() {
 }
 
 export function PwaStatus() {
+  const { text } = useLanguage();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -144,19 +146,19 @@ export function PwaStatus() {
   if (!installPrompt && !notice && !showIosInstall && isOnline) return null;
 
   return <aside className="pwa-status" aria-live="polite">
-    {!isOnline && <span className="pwa-status__message">オフラインで使用中</span>}
-    {isOnline && notice === "offline-ready" && <span className="pwa-status__message">オフライン利用の準備ができました</span>}
+    {!isOnline && <span className="pwa-status__message">{text("オフラインで使用中", "Using offline")}</span>}
+    {isOnline && notice === "offline-ready" && <span className="pwa-status__message">{text("オフライン利用の準備ができました", "Ready for offline use")}</span>}
     {isOnline && notice === null && showIosInstall && <>
-      <span className="pwa-status__message">iPhone：Safariの共有から「ホーム画面に追加」</span>
-      <button className="pwa-status__dismiss" aria-label="案内を閉じる" onClick={dismissIosInstall}>×</button>
+      <span className="pwa-status__message">{text("iPhone：Safariの共有から「ホーム画面に追加」", "iPhone: In Safari Share, choose Add to Home Screen")}</span>
+      <button className="pwa-status__dismiss" aria-label={text("案内を閉じる", "Dismiss guidance")} onClick={dismissIosInstall}>×</button>
     </>}
     {isOnline && notice === "update" && <>
-      <span className="pwa-status__message">{updateState === "updating" ? "更新しています…" : updateState === "failed" ? "自動更新できませんでした。画面を再読み込みしてください" : "新しいバージョンがあります"}</span>
-      {updateState !== "failed" && <button type="button" className="pwa-status__primary" disabled={updateState === "updating"} onClick={() => void applyUpdate()}>{updateState === "updating" ? "更新中" : "更新する"}</button>}
-      {updateState === "failed" && <button type="button" className="pwa-status__primary" onClick={() => void recoverPwaShell()}>アプリを安全に復旧</button>}
-      <button type="button" className="pwa-status__dismiss" aria-label="更新通知を閉じる" onClick={() => { setNotice(null); setUpdateState("idle"); }}>×</button>
+      <span className="pwa-status__message">{updateState === "updating" ? text("更新しています…", "Updating…") : updateState === "failed" ? text("自動更新できませんでした。画面を再読み込みしてください", "Automatic update failed. Reload the page.") : text("新しいバージョンがあります", "A new version is available")}</span>
+      {updateState !== "failed" && <button type="button" className="pwa-status__primary" disabled={updateState === "updating"} onClick={() => void applyUpdate()}>{updateState === "updating" ? text("更新中", "Updating") : text("更新する", "Update")}</button>}
+      {updateState === "failed" && <button type="button" className="pwa-status__primary" onClick={() => void recoverPwaShell()}>{text("アプリを安全に復旧", "Recover app safely")}</button>}
+      <button type="button" className="pwa-status__dismiss" aria-label={text("更新通知を閉じる", "Dismiss update")} onClick={() => { setNotice(null); setUpdateState("idle"); }}>×</button>
     </>}
-    {isOnline && notice === null && !showIosInstall && installPrompt && <button className="pwa-status__primary" onClick={() => void install()}>この端末にインストール</button>}
-    {isOnline && notice === "offline-ready" && <button className="pwa-status__dismiss" aria-label="通知を閉じる" onClick={() => setNotice(null)}>×</button>}
+    {isOnline && notice === null && !showIosInstall && installPrompt && <button className="pwa-status__primary" onClick={() => void install()}>{text("この端末にインストール", "Install on this device")}</button>}
+    {isOnline && notice === "offline-ready" && <button className="pwa-status__dismiss" aria-label={text("通知を閉じる", "Dismiss notification")} onClick={() => setNotice(null)}>×</button>}
   </aside>;
 }

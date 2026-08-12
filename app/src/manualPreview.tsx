@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- Vite-only manual capture entry renders its scenes directly. */
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
+import { LanguageProvider } from "./i18n/LanguageContext";
 import "./index.css";
 import "./App.css";
 import "./components/AppShell.css";
@@ -210,4 +211,6 @@ function ManualPreview() {
   return <main className="app-shell manual-preview"><AppHeader />{content}</main>;
 }
 
-createRoot(document.getElementById("root")!).render(<ManualPreview />);
+const previewLanguage = new URLSearchParams(window.location.search).get("lang");
+if (previewLanguage === "ja" || previewLanguage === "en") localStorage.setItem("shoot-log-language", previewLanguage);
+createRoot(document.getElementById("root")!).render(<LanguageProvider><ManualPreview /></LanguageProvider>);
