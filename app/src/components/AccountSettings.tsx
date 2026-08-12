@@ -40,7 +40,7 @@ export function AccountSettings({ cloud, health, passwordRecovery, firearms, onB
     </header>
     <section className="language-settings">
       <div><p className="eyebrow">LANGUAGE</p><strong>{text("表示言語", "Display language")}</strong><small>{text("端末ごとに保存され、記録データには影響しません。", "Saved on this device. Your shooting data is not changed.")}</small></div>
-      <div role="group" aria-label={text("表示言語", "Display language")}><button lang="ja" className={language === "ja" ? "selected" : ""} aria-pressed={language === "ja"} onClick={() => setLanguage("ja")}>{"\u65e5\u672c\u8a9e"}</button><button lang="en" className={language === "en" ? "selected" : ""} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>English</button></div>
+      <div role="group" aria-label={text("表示言語", "Display language")}><button lang={language === "ja" ? "ja" : "en"} className={language === "ja" ? "selected" : ""} aria-pressed={language === "ja"} onClick={() => setLanguage("ja")}>{text("日本語", "Japanese")}</button><button lang="en" className={language === "en" ? "selected" : ""} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>English</button></div>
     </section>
     {signedIn && <div className="account-mobile-status"><CloudSyncStatus view={cloud} onSync={onSync} /><PermitCountdown firearms={firearms} onOpen={onPermit} /></div>}
     <InstallGuide initiallyOpen={!signedIn} />
