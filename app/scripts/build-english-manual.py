@@ -3,9 +3,10 @@ from reportlab.lib.colors import HexColor, white
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, KeepTogether, Image, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, KeepTogether, Table, TableStyle, Flowable
 
 VERSION = "2.21.0"
 OUT = Path(__file__).resolve().parents[1] / "public/manuals/shoot-log-operation-manual-en.pdf"
@@ -42,6 +43,30 @@ body = ParagraphStyle("body", fontName="Manual", fontSize=10.5, leading=16, text
 note = ParagraphStyle("note", fontName="Manual", fontSize=7.5, leading=11, textColor=HexColor("#706a74"), spaceBefore=4*mm)
 cover_title = ParagraphStyle("cover", fontName="ManualBold", fontSize=34, leading=42, textColor=white, spaceAfter=7*mm)
 cover_sub = ParagraphStyle("cover_sub", fontName="Manual", fontSize=17, leading=25, textColor=HexColor("#ddd5e4"))
+cover_note = ParagraphStyle("cover_note", fontName="Manual", fontSize=11, leading=17, textColor=HexColor("#cfc7d4"), spaceBefore=10*mm)
+
+class RoundedImage(Flowable):
+    def __init__(self, filename, width, height, radius=5*mm, border=HexColor("#d5d1d7")):
+        super().__init__()
+        self.filename = str(filename)
+        self.width = width
+        self.height = height
+        self.radius = radius
+        self.border = border
+
+    def draw(self):
+        canvas = self.canv
+        canvas.saveState()
+        clip = canvas.beginPath()
+        clip.roundRect(0, 0, self.width, self.height, self.radius)
+        canvas.clipPath(clip, stroke=0, fill=0)
+        canvas.drawImage(ImageReader(self.filename), 0, 0, self.width, self.height, preserveAspectRatio=False, mask="auto")
+        canvas.restoreState()
+        canvas.saveState()
+        canvas.setStrokeColor(self.border)
+        canvas.setLineWidth(.6)
+        canvas.roundRect(0, 0, self.width, self.height, self.radius, stroke=1, fill=0)
+        canvas.restoreState()
 
 def decorate(canvas, doc):
     canvas.saveState()
@@ -53,11 +78,10 @@ def decorate(canvas, doc):
     canvas.restoreState()
 
 story = []
-story.append(Spacer(1, 38*mm))
-story.append(Paragraph("SHOOT LOG", cover_title))
-story.append(Paragraph(f"Operation Manual<br/>Version {VERSION}", cover_sub))
-story.append(Spacer(1, 90*mm))
-story.append(Paragraph("Clay shooting records, analysis, ammunition, permits, sync, and backup - explained in one concise guide.", cover_sub))
+story.append(Spacer(1, 24*mm))
+cover_copy = [Paragraph("SHOOT LOG", cover_title), Paragraph(f"Operation Manual<br/>Version {VERSION}", cover_sub), Paragraph("Clay shooting records, analysis, ammunition, permits, sync, and backup - explained with actual app screens.", cover_note)]
+cover_image = RoundedImage(SCREENSHOTS / "04-history.png", 70*mm, 152*mm, radius=7*mm, border=HexColor("#766680"))
+story.append(Table([[cover_copy, cover_image]], colWidths=[91*mm, 70*mm], hAlign="LEFT", style=TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("LEFTPADDING", (0,0), (-1,-1), 0), ("RIGHTPADDING", (0,0), (0,0), 10*mm), ("LEFTPADDING", (1,0), (1,0), 0)])))
 story.append(PageBreak())
 for index, (key, heading, bullets, screenshot) in enumerate(pages):
     story.append(Spacer(1, 13*mm))
@@ -69,8 +93,8 @@ for index, (key, heading, bullets, screenshot) in enumerate(pages):
         if not path.exists():
             raise FileNotFoundError(f"Screenshot not found: {path}")
         copy.append(Paragraph("The screenshot uses fictional sample data. Interface wording follows the selected display language in the app.", note))
-        visual = Image(str(path), width=72*mm, height=156*mm, kind="proportional")
-        layout = Table([[copy, visual]], colWidths=[91*mm, 72*mm], hAlign="LEFT", style=TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("LEFTPADDING", (0,0), (-1,-1), 0), ("RIGHTPADDING", (0,0), (0,0), 8*mm), ("LEFTPADDING", (1,0), (1,0), 0), ("BOX", (1,0), (1,0), .5, HexColor("#d5d1d7"))]))
+        visual = RoundedImage(path, 72*mm, 156*mm, radius=5*mm)
+        layout = Table([[copy, visual]], colWidths=[91*mm, 72*mm], hAlign="LEFT", style=TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("LEFTPADDING", (0,0), (-1,-1), 0), ("RIGHTPADDING", (0,0), (0,0), 8*mm), ("LEFTPADDING", (1,0), (1,0), 0)]))
         story.append(layout)
     else:
         for item in copy:

@@ -4,7 +4,7 @@ import "./OperationManual.css";
 import { useLanguage } from "../i18n/LanguageContext";
 
 const APP_VERSION = "2.21.0";
-const MANUAL_REVISION = "5";
+const MANUAL_REVISION = "6";
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";
 
