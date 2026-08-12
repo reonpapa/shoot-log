@@ -5,11 +5,11 @@ import "./AiAnalysisExport.css";
 import { useLanguage } from "../i18n/LanguageContext";
 
 export function AiAnalysisExport({ session, initiallyOpen = false }: { session: StoredSession; initiallyOpen?: boolean }) {
-  const { text } = useLanguage();
+  const { language, text } = useLanguage();
   const [open, setOpen] = useState(initiallyOpen);
   const [copyFeedback, setCopyFeedback] = useState<"chatgpt" | "copy" | null>(null);
   const feedbackTimer = useRef<number | undefined>(undefined);
-  const prompt = createAiAnalysisPrompt(session);
+  const prompt = createAiAnalysisPrompt(session, language);
 
   useEffect(() => () => window.clearTimeout(feedbackTimer.current), []);
 

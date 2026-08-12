@@ -7,10 +7,11 @@ import { createServer } from "vite";
 
 const VERSION = "2.21.0";
 const pdfOnly = process.argv.includes("--pdf-only");
+const english = process.argv.includes("--english");
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(appRoot, "..");
-const screenshotDir = join(repoRoot, "docs/manual/screenshots/generated");
-const manualOutput = join(appRoot, "public/manuals/shoot-log-operation-manual.pdf");
+const screenshotDir = join(repoRoot, `docs/manual/screenshots/${english ? "generated-en" : "generated"}`);
+const manualOutput = join(appRoot, `public/manuals/shoot-log-operation-manual${english ? "-en" : ""}.pdf`);
 
 const chromeCandidates = [
   process.env.CHROME_PATH,
@@ -71,6 +72,27 @@ const manualPages = [
   { kicker: "VERSION HISTORY", title: "主要バージョン履歴", bullets: ["Version 2.21.0：日本語・英語を全画面で切替。履歴、分析、アカウント、実包、所持許可、バックアップ、法的文書、英語版マニュアルに対応。", "Version 2.20.0：初矢命中後に二発目を発射した記録「1＋」を追加。得点と実包消費を分けて集計。", "Version 2.19.14：マニュアルへラウンド準備前・入力中の実画面を分けて掲載。", "Version 2.7.6：iPhoneでアプリを離れずに操作マニュアルを保存できるよう改善。", "Version 2.0.0：Supabaseによるアカウント・クラウド同期を導入。", "Version 1.0.0：PWA、成績PDF、実包管理、所持許可期限管理を統合。"], images: [] },
 ];
 
+const englishManualPages = [
+  { kicker: "QUICK START", title: "What to know first", bullets: ["Every change is saved immediately on this device.", "While signed in, records sync to the cloud automatically.", "Save a JSON backup regularly as an independent copy."], images: ["04-history", "08-round-setup"] },
+  { kicker: "INSTALL / LOGIN", title: "Install and sign in", bullets: ["Add Shoot Log to the Home Screen or Dock from Safari, Chrome, or Edge.", "Sign in with your email address and password.", "Never share authentication or password-reset links."], images: ["01-install", "02-login"] },
+  { kicker: "ACCOUNT / SYNC", title: "Account settings and sync", bullets: ["Display language, sync status, and firearm permits are managed from Account settings.", "Use Sync now to fetch changes made on another device.", "Normal changes sync automatically."], images: ["03-account"] },
+  { kicker: "SESSIONS", title: "History and practice focus", bullets: ["Major actions appear directly below the Shooting history heading.", "Open a history card to continue entry or view analysis.", "Review the current focus and previous achievement results."], images: ["04-history", "05-practice-theme"] },
+  { kicker: "NEW SESSION", title: "Create a session", bullets: ["Select date, range, discipline, ammunition, and firearm.", "Weather, temperature, and wind are used for trend analysis.", "Choose one concrete practice focus for the day."], images: ["07-new-session"] },
+  { kicker: "ROUND INPUT", title: "Prepare a round", bullets: ["Use the upper tabs to switch between Rounds 1 to 4.", "Add and delete controls for later rounds are separated below.", "New rounds begin in two-shot mode."], images: ["08-round-setup"] },
+  { kicker: "SCORING", title: "Enter each target", bullets: ["1 records a first-shot hit and 2 records a second-shot hit.", "1+ records a first-shot hit followed by an extra second shot: one point and two shells.", "Miss direction means the target's flight direction. Entry advances automatically."], images: ["09-current-shot"] },
+  { kicker: "SESSION COMPLETE", title: "Review the result", bullets: ["Review totals, rounds, first- and second-shot hits, and miss directions.", "Use the figures for reflection without inferring causes that were not recorded."], images: ["10-analysis-summary"] },
+  { kicker: "OPTIONAL AI ANALYSIS", title: "Analyze with your own AI", bullets: ["The export includes scores, conditions, and your written review.", "Dates, range names, firearm identifiers, and personal identity are excluded.", "Review the copied content and send it yourself."], images: ["11-ai-analysis"] },
+  { kicker: "SESSION PACE", title: "Pace and stand analysis", bullets: ["Compare hit rates between the first and second halves.", "Compare hit rate and missed target-flight direction by stand."], images: ["12-session-pace", "13-stand-analysis"] },
+  { kicker: "REVIEW", title: "Post-session review", bullets: ["Record what you noticed, what did not work, and what to try next.", "Keeping concerns in the record provides context when asking an AI for help."], images: ["14-review"] },
+  { kicker: "HISTORY ANALYSIS", title: "Condition and ammunition trends", bullets: ["Filter history by range, ammunition, fire mode, and period.", "Check both condition differences and sample size; treat small samples as indicative."], images: ["06-history-analysis"] },
+  { kicker: "MASTER DATA", title: "Manage saved items", bullets: ["Add or rename shooting ranges and ammunition products.", "Renaming is reflected in past history."], images: ["15-master-data"] },
+  { kicker: "AMMUNITION LEDGER", title: "Manage ammunition", bullets: ["Record ammunition received, used, and remaining; completed sessions are added automatically.", "Confirm category, firearm, and date range before output."], images: ["16-ammunition-ledger"] },
+  { kicker: "FIREARM PERMIT", title: "Permit and renewal", bullets: ["Always copy information from the original permit.", "Manage application start, deadline, and expiry for each firearm.", "Name, address, and date of birth are not stored."], images: ["17-firearm-permit"] },
+  { kicker: "BACKUP", title: "Backup and restore", bullets: ["Export all device data to a JSON file.", "Restore merges with current data instead of deleting it.", "Save a fresh backup before major data operations."], images: ["18-backup"] },
+  { kicker: "SUPPORT", title: "If something goes wrong", bullets: ["If data does not sync, check the connection and signed-in account.", "If the screen is outdated, use the update notice or safe recovery.", "Never include passwords or firearm permit numbers in support email."], images: ["19-support"] },
+  { kicker: "VERSION HISTORY", title: "Major versions", bullets: ["Version 2.21.0: Added Japanese and English throughout the app and an English operation manual.", "Version 2.20.0: Added 1+ to record an extra second shot after a first-shot hit.", "Version 2.19.14: Added separate actual screens for round preparation and score entry.", "Version 2.7.6: Improved manual saving on iPhone without leaving the app.", "Version 2.0.0: Added Supabase accounts and cloud sync.", "Version 1.0.0: Integrated PWA, score PDF, ammunition, and permit deadlines."], images: [] },
+];
+
 function escapeHtml(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
@@ -81,20 +103,25 @@ async function imageData(name) {
 }
 
 async function buildManualHtml() {
+  const selectedPages = english ? englishManualPages : manualPages;
+  const noteText = english
+    ? "Screens are actual React components displayed at smartphone width in manual capture mode. All data is fictional."
+    : "画面はマニュアル撮影モードで、実際のReactコンポーネントをスマートフォン幅に表示したものです。データはすべて架空です。";
   const pages = [];
-  for (const page of manualPages) {
+  for (const page of selectedPages) {
     const images = await Promise.all(page.images.map(async (name) => `<img alt="${escapeHtml(name)}" src="${await imageData(name)}">`));
     const layout = images.length === 0 ? "history-page" : images.length > 1 ? "two-images" : "one-image";
-    pages.push(`<section class="page"><header><span>SHOOT LOG / OPERATION MANUAL</span><span>Version ${VERSION}</span></header><main class="${layout}"><div class="copy"><p class="kicker">${escapeHtml(page.kicker)}</p><h1>${escapeHtml(page.title)}</h1><ul>${page.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>${images.length > 0 ? "<aside>画面はマニュアル撮影モードで、実際のReactコンポーネントをスマートフォン幅に表示したものです。データはすべて架空です。</aside>" : ""}</div><div class="visuals">${images.join("")}</div></main><footer><span>https://reonpapa.github.io/shoot-log/</span><span>Shoot Log</span></footer></section>`);
+    pages.push(`<section class="page"><header><span>SHOOT LOG / OPERATION MANUAL</span><span>Version ${VERSION}</span></header><main class="${layout}"><div class="copy"><p class="kicker">${escapeHtml(page.kicker)}</p><h1>${escapeHtml(page.title)}</h1><ul>${page.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>${images.length > 0 ? `<aside>${escapeHtml(noteText)}</aside>` : ""}</div><div class="visuals">${images.join("")}</div></main><footer><span>https://reonpapa.github.io/shoot-log/</span><span>Shoot Log</span></footer></section>`);
   }
-  return `<!doctype html><html lang="ja"><head><meta charset="UTF-8"><style>
+  return `<!doctype html><html lang="${english ? "en" : "ja"}"><head><meta charset="UTF-8"><style>
     @page { size: A4; margin: 0; }
     * { box-sizing: border-box; }
     body { margin: 0; color: #242128; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif; }
     .cover, .page { width: 210mm; height: 297mm; break-after: page; overflow: hidden; }
     .cover { position: relative; padding: 28mm 20mm; color: white; background: #17131b; }
-    .cover::after { position: absolute; z-index: 0; top: 18mm; right: 18mm; width: 54mm; height: 54mm; border: 12mm solid #6d3bd1; border-radius: 50%; box-shadow: inset 0 0 0 8mm #a880ff; content: ""; }
-    .cover > * { position: relative; z-index: 1; }
+    .cover-mark { position: absolute; z-index: 0; top: 18mm; right: 18mm; width: 54mm; height: 54mm; border: 12mm solid #6d3bd1; border-radius: 50%; box-shadow: inset 0 0 0 8mm #a880ff; }
+    .cover-mark::after { position: absolute; left: -14mm; bottom: -14mm; width: 43mm; height: 25mm; background: #17131b; content: ""; }
+    .cover small, .cover h1, .cover h2, .cover p { position: relative; z-index: 1; }
     .cover small { color: #bdb5c2; font-weight: 800; letter-spacing: .16em; }
     .cover h1 { margin: 18mm 0 4mm; font-size: 34pt; }
     .cover h2 { width: 112mm; margin: 0; color: #d8d1dd; font-size: 16pt; font-weight: 500; line-height: 1.55; }
@@ -120,7 +147,7 @@ async function buildManualHtml() {
     .visuals img { object-fit: cover; object-position: top; border: .35mm solid #d5d1d7; border-radius: 5mm; box-shadow: 0 2mm 5mm #0002; }
     .one-image .visuals img { width: 78mm; height: 169mm; }
     .two-images .visuals img { width: 69mm; height: 149mm; }
-  </style></head><body><section class="cover"><small>CLAY SHOOTING ANALYSIS</small><h1>Shoot Log</h1><h2>スマートフォン操作マニュアル　Version ${VERSION}</h2><p>実際の画面を、操作ごとに読みやすい大きさで掲載しています。長い画面は必要な位置へ自動スクロールして分割撮影しています。</p></section>${pages.join("")}</body></html>`;
+  </style></head><body><section class="cover"><i class="cover-mark" aria-hidden="true"></i><small>CLAY SHOOTING ANALYSIS</small><h1>Shoot Log</h1><h2>${english ? "Smartphone Operation Manual" : "スマートフォン操作マニュアル"}　Version ${VERSION}</h2><p>${english ? "Actual app screens are shown at a readable size for each task. Long screens are automatically scrolled to the relevant section and captured separately." : "実際の画面を、操作ごとに読みやすい大きさで掲載しています。長い画面は必要な位置へ自動スクロールして分割撮影しています。"}</p></section>${pages.join("")}</body></html>`;
 }
 
 await mkdir(screenshotDir, { recursive: true });
@@ -139,7 +166,7 @@ try {
 
   if (!pdfOnly) {
     for (const capture of captures) {
-      await page.goto(`${origin}/manual-preview.html?scene=${capture.scene}`, { waitUntil: "networkidle0" });
+      await page.goto(`${origin}/manual-preview.html?scene=${capture.scene}${english ? "&lang=en" : ""}`, { waitUntil: "networkidle0" });
       try {
         await page.waitForSelector(capture.selector, { visible: true, timeout: 10_000 });
       } catch (error) {
@@ -162,19 +189,22 @@ try {
     await writeFile(join(screenshotDir, "manifest.json"), JSON.stringify({ version: VERSION, viewport: { width: 390, height: 844, deviceScaleFactor: 2 }, captures }, null, 2));
   }
 
-  const manualPage = await browser.newPage();
-  await manualPage.setContent(await buildManualHtml(), { waitUntil: "domcontentloaded", timeout: 0 });
-  await manualPage.evaluate(async () => {
-    await document.fonts.ready;
-    await Promise.all(Array.from(document.images).map((item) => item.complete
-      ? Promise.resolve()
-      : new Promise((resolveImage, rejectImage) => {
-          item.addEventListener("load", resolveImage, { once: true });
-          item.addEventListener("error", rejectImage, { once: true });
-        })));
-  });
-  await manualPage.pdf({ path: manualOutput, format: "A4", printBackground: true, preferCSSPageSize: true });
-  process.stdout.write(`マニュアル生成: ${manualOutput}\n`);
+  if (english) process.stdout.write(`英語画面の撮影完了: ${screenshotDir}\n`);
+  {
+    const manualPage = await browser.newPage();
+    await manualPage.setContent(await buildManualHtml(), { waitUntil: "domcontentloaded", timeout: 0 });
+    await manualPage.evaluate(async () => {
+      await document.fonts.ready;
+      await Promise.all(Array.from(document.images).map((item) => item.complete
+        ? Promise.resolve()
+        : new Promise((resolveImage, rejectImage) => {
+            item.addEventListener("load", resolveImage, { once: true });
+            item.addEventListener("error", rejectImage, { once: true });
+          })));
+    });
+    await manualPage.pdf({ path: manualOutput, format: "A4", printBackground: true, preferCSSPageSize: true });
+    process.stdout.write(`マニュアル生成: ${manualOutput}\n`);
+  }
 } finally {
   if (browser) await browser.close();
   await vite.close();

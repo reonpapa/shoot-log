@@ -25,30 +25,32 @@ import type { StoredSession } from "./services/storage";
 
 const noop = () => undefined;
 const asyncNoop = async () => undefined;
-const masterData = { rangeNames: ["大井射撃場", "県立射撃場"], ammunitionNames: ["Sample 7.5", "Practice 24g"] };
+const previewEnglish = new URLSearchParams(window.location.search).get("lang") === "en";
+const sample = (ja: string, en: string) => previewEnglish ? en : ja;
+const masterData = { rangeNames: [sample("大井射撃場", "Sample Clay Range"), sample("県立射撃場", "Regional Shooting Range")], ammunitionNames: ["Sample 7.5", "Practice 24g"] };
 
 const firearm: Firearm = {
   id: "demo-firearm",
-  name: "サンプル上下二連",
+  name: sample("サンプル上下二連", "Sample Over-and-Under"),
   identifier: "DEMO-001",
   originalPermitDate: "2024-04-01",
-  originalPermitNumber: "説明用",
+  originalPermitNumber: sample("説明用", "DEMO"),
   permitDate: "2024-04-01",
-  permitNumber: "説明用",
+  permitNumber: sample("説明用", "DEMO"),
   inspectionDate: "2024-04-01",
   validUntil: "2027-03-31",
   renewalStartDate: "2026-10-01",
   renewalDeadline: "2027-02-28",
-  kind: "散弾銃",
-  actionType: "上下二連",
-  manufacturer: "サンプル",
+  kind: sample("散弾銃", "Shotgun"),
+  actionType: sample("上下二連", "Over-and-under"),
+  manufacturer: sample("サンプル", "Sample"),
   model: "Trap AC",
   overallLength: "116.0",
   barrelLength: "76.0",
-  caliber: "12番",
-  magazine: "2発",
-  compatibleAmmo: "12番散弾実包",
-  purpose: "標的射撃",
+  caliber: sample("12番", "12 gauge"),
+  magazine: sample("2発", "2 shells"),
+  compatibleAmmo: sample("12番散弾実包", "12-gauge shotshell"),
+  purpose: sample("標的射撃", "Target shooting"),
 };
 
 function createRound(roundNo: number, results: FinalResult[]): ShootingRound {
@@ -121,22 +123,22 @@ const session: StoredSession = {
   id: "demo-session",
   session: {
     date: "2026-07-20",
-    rangeName: "大井射撃場",
+    rangeName: sample("大井射撃場", "Sample Clay Range"),
     discipline: "trap",
     ammunitionName: "Sample 7.5",
     firearmId: firearm.id,
-    practiceTheme: "クレーを見てから動く",
-    weather: "薄曇り",
+    practiceTheme: sample("クレーを見てから動く", "See the target before moving"),
+    weather: sample("薄曇り", "Partly cloudy"),
     temperature: "24",
-    windDirection: "左から",
-    windStrength: "弱い",
-    memo: "説明用データ",
+    windDirection: sample("左から", "From left"),
+    windStrength: sample("弱い", "Light"),
+    memo: sample("説明用データ", "Fictional sample data"),
   },
   rounds,
   review: {
-    findings: "後半は焦らず、クレーを見てから動けた。",
-    problems: "右方向のクレーで動き始めが早くなることがあった。",
-    nextChallenge: "呼吸を整え、クレーを確認してから動く。",
+    findings: sample("後半は焦らず、クレーを見てから動けた。", "In the second half, I stayed calm and saw the target before moving."),
+    problems: sample("右方向のクレーで動き始めが早くなることがあった。", "I sometimes moved too early on right-going targets."),
+    nextChallenge: sample("呼吸を整え、クレーを確認してから動く。", "Settle my breathing and confirm the target before moving."),
     themeAchievement: "partial",
   },
   status: "completed",
@@ -155,19 +157,19 @@ const sessions = [session, ...earlierSessions];
 
 const initialLedger: AmmunitionLedgerData = {
   trackingStartDate: "2026-07-01",
-  permitProfile: { certificateNumber: "（説明用）", originalIssueDate: "2024-04-01", issueDate: "2024-04-01" },
-  categories: [{ id: "trap-shell", name: "12番・散", family: "shot-shell" }],
+  permitProfile: { certificateNumber: sample("（説明用）", "DEMO"), originalIssueDate: "2024-04-01", issueDate: "2024-04-01" },
+  categories: [{ id: "trap-shell", name: sample("12番・散", "12 gauge / shot"), family: "shot-shell" }],
   firearms: [firearm],
   productLinks: [{ ammunitionName: "Sample 7.5", categoryId: "trap-shell" }],
   entries: [
-    { id: "opening", date: "2026-07-01", type: "opening", categoryId: "trap-shell", quantity: 500, application: "開始残弾（説明用）", createdAt: "2026-07-01T00:00:00.000Z" },
-    { id: "purchase", date: "2026-07-10", type: "acquisition", categoryId: "trap-shell", quantity: 250, firearmId: firearm.id, application: "サンプル銃砲店", createdAt: "2026-07-10T00:00:00.000Z" },
+    { id: "opening", date: "2026-07-01", type: "opening", categoryId: "trap-shell", quantity: 500, application: sample("開始残弾（説明用）", "Opening balance (sample)"), createdAt: "2026-07-01T00:00:00.000Z" },
+    { id: "purchase", date: "2026-07-10", type: "acquisition", categoryId: "trap-shell", quantity: 250, firearmId: firearm.id, application: sample("サンプル銃砲店", "Sample Gun Shop"), createdAt: "2026-07-10T00:00:00.000Z" },
   ],
 };
 
-const cloud: CloudSyncView = { phase: "synced", email: "demo@example.com", message: "クラウドと同期されています。", lastSyncedAt: "2026-07-20T06:30:00.000Z", pendingChanges: 0 };
+const cloud: CloudSyncView = { phase: "synced", email: "demo@example.com", message: sample("クラウドと同期されています。", "Synced with cloud."), lastSyncedAt: "2026-07-20T06:30:00.000Z", pendingChanges: 0 };
 const signedOutCloud: CloudSyncView = { phase: "signed-out", email: "", message: "", lastSyncedAt: "", pendingChanges: 0 };
-const health: CloudHealthView = { status: "healthy", message: "クラウドへ接続できます。", lastCheckedAt: "2026-07-20T06:30:00.000Z", lastHealthyAt: "2026-07-20T06:30:00.000Z" };
+const health: CloudHealthView = { status: "healthy", message: sample("クラウドへ接続できます。", "Cloud connection is available."), lastCheckedAt: "2026-07-20T06:30:00.000Z", lastHealthyAt: "2026-07-20T06:30:00.000Z" };
 
 function AppHeader() {
   return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.21.0</p></header>;
@@ -180,9 +182,9 @@ function RoundScene({ state }: { state: "before" | "after" }) {
   const [activeRound, setActiveRound] = useState(sceneRounds[0]);
   const stats = calculateSessionStats({ id: session.id, date: session.session.date, rangeName: session.session.rangeName, ammunitionName: session.session.ammunitionName, weather: session.session.weather, rounds: sceneRounds, sessionMemo: session.session.memo });
   return <>
-    <section className="session-summary"><div><strong>{session.session.date}</strong><span>{session.session.rangeName}</span></div><div><span>TRAP ・ 4ラウンド</span><strong>{stats.score} / {stats.targets}　実包 {stats.cartridgesUsed}発</strong><span>{session.session.ammunitionName}</span></div><div className="session-actions"><button>基本情報を編集</button><button>履歴へ戻る</button><button className="complete-button">セッション完了</button></div></section>
+    <section className="session-summary"><div><strong>{session.session.date}</strong><span>{session.session.rangeName}</span></div><div><span>{sample("TRAP ・ 4ラウンド", "TRAP · 4 rounds")}</span><strong>{stats.score} / {stats.targets} {sample(`実包 ${stats.cartridgesUsed}発`, `${stats.cartridgesUsed} shells`)}</strong><span>{session.session.ammunitionName}</span></div><div className="session-actions"><button>{sample("基本情報を編集", "Edit details")}</button><button>{sample("履歴へ戻る", "Back to history")}</button><button className="complete-button">{sample("セッション完了", "Complete session")}</button></div></section>
     <PracticeThemeBanner theme={session.session.practiceTheme ?? ""} />
-    <div className="round-navigation round-navigation-stacked"><nav className="round-tabs" aria-label="ラウンド選択">{sceneRounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRound(round)}>Round {round.roundNo}</button>)}</nav><div className="round-actions"><button className="delete-round-button">Round {activeRound.roundNo} 削除</button></div></div>
+    <div className="round-navigation round-navigation-stacked"><nav className="round-tabs" aria-label={sample("ラウンド選択", "Round selection")}>{sceneRounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRound(round)}>Round {round.roundNo}</button>)}</nav><div className="round-actions"><button className="delete-round-button">{sample(`Round ${activeRound.roundNo} 削除`, `Delete Round ${activeRound.roundNo}`)}</button></div></div>
     <RoundInput key={activeRound.id} round={activeRound} onChange={setActiveRound} />
   </>;
 }
@@ -196,7 +198,7 @@ function ManualPreview() {
 
   if (scene === "login") content = <AccountSettings cloud={signedOutCloud} health={health} passwordRecovery={false} firearms={[]} onBack={noop} onPrivacy={noop} onTerms={noop} onContact={noop} onSignIn={asyncNoop} onSignUp={async () => ""} onSignOut={asyncNoop} onSendPasswordReset={asyncNoop} onChangePassword={asyncNoop} onCompletePasswordRecovery={asyncNoop} onSync={asyncNoop} onCheckHealth={asyncNoop} onDeleteAccount={asyncNoop} onPermit={noop} />;
   else if (scene === "account") content = <AccountSettings cloud={cloud} health={health} passwordRecovery={false} firearms={[firearm]} onBack={noop} onPrivacy={noop} onTerms={noop} onContact={noop} onSignIn={asyncNoop} onSignUp={async () => ""} onSignOut={asyncNoop} onSendPasswordReset={asyncNoop} onChangePassword={asyncNoop} onCompletePasswordRecovery={asyncNoop} onSync={asyncNoop} onCheckHealth={asyncNoop} onDeleteAccount={asyncNoop} onPermit={noop} />;
-  else if (scene === "history") content = <SessionList sessions={sessions} firearms={[firearm]} suggestedPracticeTheme="クレーを見てから動く" onCreate={noop} onManage={noop} onData={noop} onAccount={noop} onAmmunition={noop} onOpen={noop} onDelete={noop} />;
+  else if (scene === "history") content = <SessionList sessions={sessions} firearms={[firearm]} suggestedPracticeTheme={sample("クレーを見てから動く", "See the target before moving")} onCreate={noop} onManage={noop} onData={noop} onAccount={noop} onAmmunition={noop} onOpen={noop} onDelete={noop} />;
   else if (scene === "history-analysis") content = <HistoryAnalysis sessions={sessions} />;
   else if (scene === "form") content = <SessionForm initialValue={session.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={[firearm]} onCancel={noop} onStart={noop} />;
   else if (scene === "round-before") content = <RoundScene state="before" />;
@@ -204,7 +206,7 @@ function ManualPreview() {
   else if (scene === "analysis") content = <SessionAnalysis session={session} reviewAdvice={null} aiInitiallyOpen={openAi} onBack={noop} onResume={noop} onEdit={noop} onSaveReview={noop} />;
   else if (scene === "master") content = <MasterDataManager masterData={masterData} onBack={noop} onAdd={noop} onRename={noop} onDelete={noop} />;
   else if (scene === "ledger") content = <AmmunitionLedger data={ledger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setLedger} onBack={noop} />;
-  else if (scene === "permit") content = <PermitManager data={ledger} onChange={setLedger} onBack={noop} backLabel="アカウント設定へ戻る" />;
+  else if (scene === "permit") content = <PermitManager data={ledger} onChange={setLedger} onBack={noop} backLabel={sample("アカウント設定へ戻る", "Back to account settings")} />;
   else if (scene === "support") content = <ContactSupport onBack={noop} />;
   else content = <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ledger} onBack={noop} onImport={noop} />;
 

@@ -1,17 +1,18 @@
 import { calculateRoundStats, calculateSessionHalfComparison, calculateSessionStats, calculateStandStats } from "../domain/shootingStats";
 import type { StoredSession } from "./storage";
 import { formatShootingConditions } from "./sessionConditions";
+import type { Language } from "../i18n/LanguageContext";
 
-export function createAiAnalysisPrompt(session: StoredSession): string {
+export function createAiAnalysisPrompt(session: StoredSession, language: Language = "ja"): string {
   const shootingSession = { id: session.id, date: "", rangeName: "", ammunitionName: session.session.ammunitionName, rounds: session.rounds };
   const stats = calculateSessionStats(shootingSession);
   const stands = calculateStandStats(shootingSession).filter((stand) => stand.targets > 0);
   const half = calculateSessionHalfComparison(session.rounds);
-  const conditions = formatShootingConditions(session.session);
+  const conditions = formatShootingConditions(session.session, language);
   const reviewLines = [
-    ["今日の気づき", session.review.findings.trim()],
-    ["うまくいかなかったこと", session.review.problems.trim()],
-    ["次回試すこと", session.review.nextChallenge.trim()],
+    [language === "en" ? "What I noticed" : "今日の気づき", session.review.findings.trim()],
+    [language === "en" ? "What did not work" : "うまくいかなかったこと", session.review.problems.trim()],
+    [language === "en" ? "Next attempt" : "次回試すこと", session.review.nextChallenge.trim()],
   ].filter((item) => item[1]);
   const hitRate = stats.targets ? stats.score / stats.targets * 100 : 0;
   const firstShotRate = stats.targets ? stats.firstShotHits / stats.targets * 100 : 0;
@@ -24,8 +25,38 @@ export function createAiAnalysisPrompt(session: StoredSession): string {
     const firstShotHits = results.reduce((sum, item) => sum + item.firstShotHits, 0);
     const secondShotHits = results.reduce((sum, item) => sum + item.secondShotHits, 0);
     const secondShotsAfterFirstHit = results.reduce((sum, item) => sum + item.secondShotsAfterFirstHit, 0);
-    return [`${mode === "single" ? "1発撃ち" : "2発撃ち"}：${matching.length}R、${score}/${targets}（命中率 ${formatRate(score, targets)}%、初矢 ${firstShotHits}${mode === "double" ? `、二の矢 ${secondShotHits}、初矢命中後の二発目 ${secondShotsAfterFirstHit}` : ""}）`];
+    return [language === "en"
+      ? `${mode === "single" ? "Single shot" : "Two shots"}: ${matching.length} rounds, ${score}/${targets} (hit rate ${formatRate(score, targets)}%, first-shot hits ${firstShotHits}${mode === "double" ? `, second-shot hits ${secondShotHits}, extra shots after hit ${secondShotsAfterFirstHit}` : ""})`
+      : `${mode === "single" ? "1発撃ち" : "2発撃ち"}：${matching.length}R、${score}/${targets}（命中率 ${formatRate(score, targets)}%、初矢 ${firstShotHits}${mode === "double" ? `、二の矢 ${secondShotHits}、初矢命中後の二発目 ${secondShotsAfterFirstHit}` : ""}）`];
   });
+
+  if (language === "en") return [
+    "Analyze the following clay shooting record.",
+    "Briefly explain trends supported by the figures, then suggest one practice focus and three concrete checkpoints for the next session.",
+    "Answer in English. Avoid overstatement and put safety first.",
+    "Miss direction is the flight direction of the missed target, not the direction of the shot or aiming point.",
+    "Do not infer aiming error, muzzle position, or vertical miss direction from target flight direction, and do not assert causes that were not recorded.",
+    "In single-shot mode, a hit from the only shot is recorded as a first-shot hit. Do not directly compare single-shot and two-shot records as identical conditions.",
+    "An extra second shot after a first-shot hit is an actual discharge after the target was already hit. Do not count it as a second-shot hit or miss.",
+    "Consider the shooter's review and concerns, but do not treat free text as proven fact or cause.",
+    "",
+    `Discipline: ${session.session.discipline.toUpperCase()}`,
+    `Rounds: ${session.rounds.length}`,
+    `Overall score: ${stats.score}/${stats.targets} (hit rate ${hitRate.toFixed(1)}%)`,
+    `First-shot hits: ${stats.firstShotHits} (${firstShotRate.toFixed(1)}%)`,
+    `Second-shot hits: ${stats.secondShotHits}`,
+    `Extra second shots after first-shot hits: ${stats.secondShotsAfterFirstHit}`,
+    `Misses: ${stats.misses}`,
+    `Flight direction of missed targets: left ${stats.missDirections.left}, straight ${stats.missDirections.center}, right ${stats.missDirections.right}, unknown ${stats.missDirections.unknown}`,
+    `By round: ${session.rounds.map((round) => { const item = calculateRoundStats(round); return `R${round.roundNo} ${round.fireMode === "single" ? "single shot" : "two shots"} ${item.score}/${item.targets} (extra shots after hit ${item.secondShotsAfterFirstHit})`; }).join(", ")}`,
+    `By fire mode: ${modeSummaries.join("; ")}`,
+    `By stand: ${stands.map((stand) => `Stand ${stand.standNo} ${stand.score}/${stand.targets} (first ${stand.firstShotHits}, second ${stand.secondShotHits}, extra after hit ${stand.secondShotsAfterFirstHit}, misses ${stand.misses})`).join(", ")}`,
+    ...(half ? [`First-half average: ${half.first.averageScore.toFixed(1)}/25, second-half average: ${half.second.averageScore.toFixed(1)}/25, second-half hit-rate change: ${formatDelta(half.hitRateDelta)} pt`] : []),
+    ...(conditions ? [`Conditions: ${conditions}`] : []),
+    ...(reviewLines.length > 0 ? ["", "Shooter review:", ...reviewLines.map(([label, value]) => `${label}: ${value}`)] : []),
+    "",
+    "Dates, range names, firearm identifiers, names, and session notes are excluded. The shooter's review is included for analysis.",
+  ].join("\n");
 
   return [
     "以下のクレー射撃記録を分析してください。",

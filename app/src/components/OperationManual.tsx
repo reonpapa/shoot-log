@@ -4,7 +4,7 @@ import "./OperationManual.css";
 import { useLanguage } from "../i18n/LanguageContext";
 
 const APP_VERSION = "2.21.0";
-const MANUAL_REVISION = "6";
+const MANUAL_REVISION = "8";
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";
 
@@ -105,10 +105,10 @@ export function OperationManual() {
         onClick={() => void saveManual()}
       >
         <span>{buttonLabel}</span>
-        <small>Version {APP_VERSION}対応</small>
+        <small>{text(`Version ${APP_VERSION}対応`, `For Version ${APP_VERSION}`)}</small>
       </button> : <button className="operation-manual-download" type="button" onClick={() => setViewerOpen(true)}>
         <span>{text("操作マニュアルを開く", "Open operation manual")}</span>
-        <small>Version {APP_VERSION}対応・アプリ内で表示</small>
+        <small>{text(`Version ${APP_VERSION}対応・アプリ内で表示`, `For Version ${APP_VERSION} · Opens in app`)}</small>
       </button>}
     <p className="operation-manual-note">{text("iPhone・iPadでは共有画面の「ファイルに保存」を選びます。Mac・Windowsではアプリ内でPDFを開き、上部のボタンでアカウント設定へ戻れます。", "On iPhone or iPad, choose Save to Files in the share sheet. On Mac or Windows, the PDF opens inside the app.")}</p>
     {manualState === "saved" && <p className="operation-manual-status" role="status">{usesShareSheet ? text("保存操作を開始しました。", "Save operation started.") : text("ダウンロードを開始しました。", "Download started.")}</p>}

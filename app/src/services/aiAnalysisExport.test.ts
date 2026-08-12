@@ -49,4 +49,16 @@ describe("AI分析用データ", () => {
     expect(prompt).toContain("初矢命中後の二発目発射：1");
     expect(prompt).toContain("二の矢命中や失中には数えないでください");
   });
+
+  it("英語表示ではAIへの質問文と集計を英語で出力する", () => {
+    const session = createStoredSession({ rounds: [createRound({ finalResults: ["hit-on-first", "miss"] })] });
+    session.review.findings = "Stayed calm";
+    const prompt = createAiAnalysisPrompt(session, "en");
+
+    expect(prompt).toContain("Analyze the following clay shooting record.");
+    expect(prompt).toContain("Overall score: 1/2");
+    expect(prompt).toContain("Shooter review:");
+    expect(prompt).toContain("What I noticed: Stayed calm");
+    expect(prompt).not.toContain("以下のクレー射撃記録");
+  });
 });

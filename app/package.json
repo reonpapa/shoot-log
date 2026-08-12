@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "manual:build": "node scripts/capture-manual.mjs",
     "manual:pdf": "node scripts/capture-manual.mjs --pdf-only",
-    "manual:en": "python3 scripts/build-english-manual.py",
+    "manual:en": "node scripts/capture-manual.mjs --english",
     "preview": "vite preview",
     "test": "vitest run"
   },
