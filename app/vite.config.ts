@@ -22,7 +22,7 @@ function offlineServiceWorker(baseUrl: string): Plugin {
       ];
       const precache = [...new Set(files)];
       const source = `
-const CACHE_NAME = "shoot-log-v2.22.0-manual1";
+const CACHE_NAME = "shoot-log-v2.22.1-manual1";
 const BASE_URL = ${JSON.stringify(baseUrl)};
 const PRECACHE = ${JSON.stringify(precache)};
 
