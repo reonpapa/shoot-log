@@ -34,6 +34,8 @@ export interface Shot {
   standNo: StandNo;
   firstShotResult: ShotResult;
   secondShotResult: ShotResult;
+  /** 初矢命中後に、二発目も発射した場合の実発射記録。 */
+  secondShotFiredAfterFirstHit?: boolean;
   finalResult: FinalResult;
   /** 失中したクレーの飛翔方向。散弾が外れた方向ではない。 */
   missDirection?: MissDirection;

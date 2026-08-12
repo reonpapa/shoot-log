@@ -38,6 +38,15 @@ describe("AI分析用データ", () => {
 
     const prompt = createAiAnalysisPrompt(session);
     expect(prompt).toContain("R1 2発撃ち 2/3");
-    expect(prompt).toContain("2発撃ち：1R、2/3（命中率 66.7%、初矢 1、二の矢 1）");
+    expect(prompt).toContain("2発撃ち：1R、2/3（命中率 66.7%、初矢 1、二の矢 1、初矢命中後の二発目 0）");
+  });
+
+  it("初矢命中後の二発目発射を命中・失中と分けて出力する", () => {
+    const round = createRound({ fireMode: "double", finalResults: ["hit-on-first"] });
+    round.shots[0].secondShotFiredAfterFirstHit = true;
+    const prompt = createAiAnalysisPrompt(createStoredSession({ rounds: [round] }));
+
+    expect(prompt).toContain("初矢命中後の二発目発射：1");
+    expect(prompt).toContain("二の矢命中や失中には数えないでください");
   });
 });

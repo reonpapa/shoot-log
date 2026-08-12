@@ -44,4 +44,13 @@ describe("射撃履歴の互換性", () => {
     expect(normalized?.session.windDirection).toBe("向かい風");
     expect(normalized?.session.windStrength).toBe("普通");
   });
+
+  it("初矢命中後の二発目発射を保存データから復元する", () => {
+    const session = createStoredSession({ rounds: [completeRound()] });
+    session.rounds[0].shots[0].secondShotFiredAfterFirstHit = true;
+
+    const normalized = normalizeStoredSession(session);
+
+    expect(normalized?.rounds[0].shots[0].secondShotFiredAfterFirstHit).toBe(true);
+  });
 });

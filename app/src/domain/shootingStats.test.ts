@@ -31,6 +31,19 @@ describe("射撃集計", () => {
     expect(stats.expectedCartridgesUsed).toBe(5);
   });
 
+  it("初矢命中後の二発目発射を得点と分けて集計する", () => {
+    const round = createRound({ fireMode: "double", finalResults: ["hit-on-first"] });
+    round.shots[0].secondShotFiredAfterFirstHit = true;
+
+    const stats = calculateRoundStats(round);
+
+    expect(stats.score).toBe(1);
+    expect(stats.firstShotHits).toBe(1);
+    expect(stats.secondShotHits).toBe(0);
+    expect(stats.secondShotsAfterFirstHit).toBe(1);
+    expect(stats.expectedCartridgesUsed).toBe(2);
+  });
+
   it("実包使用数の実数補正をセッション合計へ採用する", () => {
     const session = {
       id: "session-1",

@@ -23,7 +23,8 @@ export function createAiAnalysisPrompt(session: StoredSession): string {
     const targets = results.reduce((sum, item) => sum + item.targets, 0);
     const firstShotHits = results.reduce((sum, item) => sum + item.firstShotHits, 0);
     const secondShotHits = results.reduce((sum, item) => sum + item.secondShotHits, 0);
-    return [`${mode === "single" ? "1発撃ち" : "2発撃ち"}：${matching.length}R、${score}/${targets}（命中率 ${formatRate(score, targets)}%、初矢 ${firstShotHits}${mode === "double" ? `、二の矢 ${secondShotHits}` : ""}）`];
+    const secondShotsAfterFirstHit = results.reduce((sum, item) => sum + item.secondShotsAfterFirstHit, 0);
+    return [`${mode === "single" ? "1発撃ち" : "2発撃ち"}：${matching.length}R、${score}/${targets}（命中率 ${formatRate(score, targets)}%、初矢 ${firstShotHits}${mode === "double" ? `、二の矢 ${secondShotHits}、初矢命中後の二発目 ${secondShotsAfterFirstHit}` : ""}）`];
   });
 
   return [
@@ -33,6 +34,7 @@ export function createAiAnalysisPrompt(session: StoredSession): string {
     "失中方向は、失中したクレーの飛翔方向です。弾が外れた方向や照準位置ではありません。",
     "クレーの飛翔方向から照準のずれ、銃口位置、上下の失中を推測せず、記録されていない原因は断定しないでください。",
     "1発撃ちでは唯一の発射による命中を初矢命中として記録しています。1発撃ちと2発撃ちを同じ条件として単純比較しないでください。",
+    "初矢命中後の二発目発射は、初矢で命中した後にも二発目を発射した実発射記録です。二の矢命中や失中には数えないでください。",
     "本人の振り返りも参考に、不安や悩みに配慮して回答してください。ただし、自由記述の内容を事実や原因として断定しないでください。",
     "",
     `種目：${session.session.discipline.toUpperCase()}`,
@@ -40,11 +42,12 @@ export function createAiAnalysisPrompt(session: StoredSession): string {
     `総合スコア：${stats.score}/${stats.targets}（命中率 ${hitRate.toFixed(1)}%）`,
     `初矢命中：${stats.firstShotHits}（${firstShotRate.toFixed(1)}%）`,
     `二の矢命中：${stats.secondShotHits}`,
+    `初矢命中後の二発目発射：${stats.secondShotsAfterFirstHit}`,
     `失中：${stats.misses}`,
     `失中したクレーの飛翔方向：左 ${stats.missDirections.left}、ストレート ${stats.missDirections.center}、右 ${stats.missDirections.right}、不明 ${stats.missDirections.unknown}`,
-    `ラウンド別：${session.rounds.map((round) => { const item = calculateRoundStats(round); return `R${round.roundNo} ${round.fireMode === "single" ? "1発撃ち" : "2発撃ち"} ${item.score}/${item.targets}`; }).join("、")}`,
+    `ラウンド別：${session.rounds.map((round) => { const item = calculateRoundStats(round); return `R${round.roundNo} ${round.fireMode === "single" ? "1発撃ち" : "2発撃ち"} ${item.score}/${item.targets}（命中後2発目 ${item.secondShotsAfterFirstHit}）`; }).join("、")}`,
     `発射方式別：${modeSummaries.join("、")}`,
-    `射台別：${stands.map((stand) => `Stand ${stand.standNo} ${stand.score}/${stand.targets}（初矢${stand.firstShotHits}・二の矢${stand.secondShotHits}・失中${stand.misses}）`).join("、")}`,
+    `射台別：${stands.map((stand) => `Stand ${stand.standNo} ${stand.score}/${stand.targets}（初矢${stand.firstShotHits}・二の矢${stand.secondShotHits}・命中後2発目${stand.secondShotsAfterFirstHit}・失中${stand.misses}）`).join("、")}`,
     ...(half ? [`前半平均：${half.first.averageScore.toFixed(1)}/25、後半平均：${half.second.averageScore.toFixed(1)}/25、後半の命中率変化：${formatDelta(half.hitRateDelta)}pt`] : []),
     ...(conditions ? [`コンディション：${conditions}`] : []),
     ...(reviewLines.length > 0 ? ["", "本人の振り返り：", ...reviewLines.map(([label, value]) => `${label}：${value}`)] : []),

@@ -10,12 +10,13 @@ const stands: StandNo[] = [1, 2, 3, 4, 5];
 const inputs: { value: ShotInput; label: string; title: string; shortcut: string }[] = [
   { value: "hit-on-first", label: "1", title: "初矢命中", shortcut: "1" },
   { value: "hit-on-second", label: "2", title: "二の矢命中", shortcut: "2" },
+  { value: "hit-on-first-second-fired", label: "1＋", title: "初矢命中＋二発目", shortcut: "3" },
   { value: "miss-left", label: "←", title: "左失中", shortcut: "←" },
   { value: "miss-center", label: "↑", title: "中央失中", shortcut: "↑" },
   { value: "miss-right", label: "→", title: "右失中", shortcut: "→" },
 ];
 const scoreLabels: Record<ShotInput, string> = {
-  "hit-on-first": "1", "hit-on-second": "2", "miss-left": "←",
+  "hit-on-first": "1", "hit-on-second": "2", "hit-on-first-second-fired": "1＋", "miss-left": "←",
   "miss-center": "↑", "miss-right": "→", skip: "",
 };
 
@@ -27,7 +28,7 @@ export function RoundInput({ round, onChange }: Props) {
   });
   const activeCellRef = useRef<HTMLButtonElement>(null);
   const activeShot = round.shots[activeIndex] ?? round.shots[0];
-  const visibleInputs = round.fireMode === "single" ? inputs.filter((item) => item.value !== "hit-on-second") : inputs;
+  const visibleInputs = round.fireMode === "single" ? inputs.filter((item) => item.value !== "hit-on-second" && item.value !== "hit-on-first-second-fired") : inputs;
 
   useEffect(() => { activeCellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); }, [activeIndex]);
 
@@ -46,6 +47,7 @@ export function RoundInput({ round, onChange }: Props) {
       }
       const shortcut: Record<string, ShotInput | undefined> = {
         "1": "hit-on-first", "2": round.fireMode === "double" ? "hit-on-second" : undefined,
+        "3": round.fireMode === "double" ? "hit-on-first-second-fired" : undefined,
         ArrowLeft: "miss-left", ArrowUp: "miss-center", ArrowRight: "miss-right",
       };
       const input = shortcut[event.key];
@@ -60,9 +62,11 @@ export function RoundInput({ round, onChange }: Props) {
   function changeFireMode(fireMode: FireMode) {
     if (fireMode === round.fireMode) return;
     let shots = round.shots;
-    if (fireMode === "single" && shots.some((shot) => shot.finalResult === "hit-on-second")) {
-      if (!window.confirm("二の矢命中を未入力へ戻して、1発撃ちに変更しますか？")) return;
-      shots = shots.map((shot) => shot.finalResult === "hit-on-second" ? applyShotInput(shot, "skip") : shot);
+    if (fireMode === "single" && shots.some((shot) => shot.finalResult === "hit-on-second" || shot.secondShotFiredAfterFirstHit === true)) {
+      if (!window.confirm("二発目の記録を調整して、1発撃ちに変更しますか？\n二の矢命中は未入力へ戻り、初矢命中後の二発目発射は初矢命中として残ります。")) return;
+      shots = shots.map((shot) => shot.finalResult === "hit-on-second"
+        ? applyShotInput(shot, "skip")
+        : shot.secondShotFiredAfterFirstHit === true ? applyShotInput(shot, "hit-on-first") : shot);
     }
     onChange({ ...round, fireMode, shots });
   }
@@ -80,7 +84,7 @@ export function RoundInput({ round, onChange }: Props) {
       <div className="round-score"><strong>{stats.score}</strong><span>/ 25</span></div>
     </header>
     <div className="round-settings"><span>開始射台</span><div>{stands.map((stand) => <button className={round.startStandNo === stand ? "selected" : ""} key={stand} onClick={() => onChange(changeRoundStartStand(round, stand))}>{stand}</button>)}</div></div>
-    <div className="round-summary"><span>初矢 {stats.firstShotHits}</span><span>二の矢 {stats.secondShotHits}</span><span>失中 {stats.misses}</span><span>実包 {stats.cartridgesUsed}発</span></div>
+    <div className="round-summary"><span>初矢 {stats.firstShotHits}</span><span>二の矢 {stats.secondShotHits}</span><span>命中後2発目 {stats.secondShotsAfterFirstHit}</span><span>失中 {stats.misses}</span><span>実包 {stats.cartridgesUsed}発</span></div>
     <div className="cartridge-adjust"><span>実包消費</span><small>自動計算 {stats.expectedCartridgesUsed}発</small><label>実数<input min="0" inputMode="numeric" placeholder={String(stats.expectedCartridgesUsed)} type="number" value={round.actualCartridgesUsed ?? ""} onChange={(event) => updateActualCartridges(event.target.value)} /></label>{round.actualCartridgesUsed !== undefined && <button onClick={() => updateActualCartridges("")}>自動に戻す</button>}</div>
 
     <div className="scorecard-wrap">

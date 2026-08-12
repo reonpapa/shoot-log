@@ -41,10 +41,10 @@ export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false
 
     <div className="analysis-rounds">{session.rounds.map((round) => {
       const roundStats = calculateRoundStats(round);
-      return <article key={round.id}><span>Round {round.roundNo}</span><strong>{roundStats.score}<small> / 25</small></strong><p>初矢 {roundStats.firstShotHits}　　二の矢 {roundStats.secondShotHits}</p><p>失中 {roundStats.misses}　　実包 {roundStats.cartridgesUsed}発</p></article>;
+      return <article key={round.id}><span>Round {round.roundNo}</span><strong>{roundStats.score}<small> / 25</small></strong><p>初矢 {roundStats.firstShotHits}　　二の矢 {roundStats.secondShotHits}</p><p>命中後2発目 {roundStats.secondShotsAfterFirstHit}</p><p>失中 {roundStats.misses}　　実包 {roundStats.cartridgesUsed}発</p></article>;
     })}</div>
 
-    <div className="analysis-details"><article><span>命中内訳</span><strong>初矢 {stats.firstShotHits}</strong><strong>二の矢 {stats.secondShotHits}</strong></article><article><span>失中方向</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>
+    <div className="analysis-details"><article><span>命中内訳</span><strong>初矢 {stats.firstShotHits}</strong><strong>二の矢 {stats.secondShotHits}</strong><strong>命中後2発目 {stats.secondShotsAfterFirstHit}</strong></article><article><span>失中方向</span><strong>← {stats.missDirections.left}</strong><strong>↑ {stats.missDirections.center}</strong><strong>→ {stats.missDirections.right}</strong></article></div>
 
     <AiAnalysisExport session={session} initiallyOpen={aiInitiallyOpen} />
 

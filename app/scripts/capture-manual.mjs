@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { createServer } from "vite";
 
-const VERSION = "2.19.14";
+const VERSION = "2.20.0";
 const pdfOnly = process.argv.includes("--pdf-only");
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(appRoot, "..");
@@ -57,7 +57,7 @@ const manualPages = [
   { kicker: "SESSIONS", title: "射撃履歴と練習テーマ", bullets: ["主要操作は射撃履歴のタイトル直下に表示します。", "履歴カードから入力再開または成績分析を開きます。", "継続中のテーマと過去の達成状況を確認できます。"], images: ["04-history", "05-practice-theme"] },
   { kicker: "NEW SESSION", title: "新しいセッションを作る", bullets: ["日付、射撃場、種目、実包、使用銃を選択します。", "天候、気温、風向、風の強さは傾向分析に使用します。", "今日の練習テーマを1つ決めます。"], images: ["07-new-session"] },
   { kicker: "ROUND INPUT", title: "ラウンドの準備", bullets: ["Round 1〜4を上段で切り替えます。", "Round 3以降は追加・削除操作を下段へ分けます。", "新規ラウンドは2発撃ちが初期選択です。"], images: ["08-round-setup"] },
-  { kicker: "SCORING", title: "クレーごとの結果を入力", bullets: ["25枚の入力状況と現在のクレーを確認します。", "失中方向はクレーの飛翔方向を記録します。", "入力後は自動で次のクレーへ進みます。"], images: ["09-current-shot"] },
+  { kicker: "SCORING", title: "クレーごとの結果を入力", bullets: ["「1」は初矢命中、「2」は二の矢命中を記録します。", "「1＋」は初矢命中後にも二発目を撃った場合に使い、命中は初矢の1点、実包は2発として記録します。", "失中方向はクレーの飛翔方向を記録し、入力後は自動で次へ進みます。"], images: ["09-current-shot"] },
   { kicker: "SESSION COMPLETE", title: "成績分析を見る", bullets: ["総合、ラウンド別、初矢・二の矢、失中方向を確認します。", "数値だけで原因を断定せず、練習の振り返りに利用します。"], images: ["10-analysis-summary"] },
   { kicker: "OPTIONAL AI ANALYSIS", title: "自分のAIで分析する", bullets: ["成績、条件、本人の振り返りを分析用データへ含めます。", "日付、射撃場、銃番号、氏名などは除外します。", "コピー内容を確認し、送信は自分で行います。"], images: ["11-ai-analysis"] },
   { kicker: "SESSION PACE", title: "前半・後半と射台別分析", bullets: ["前半と後半の命中率変化を確認します。", "射台別の命中率と失中したクレーの方向を比較します。"], images: ["12-session-pace", "13-stand-analysis"] },
