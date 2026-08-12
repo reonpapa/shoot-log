@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import { LanguageProvider } from "./i18n/LanguageContext";
 
-createRoot(document.getElementById("root")!).render(<StrictMode><AppErrorBoundary><App /></AppErrorBoundary></StrictMode>);
+createRoot(document.getElementById("root")!).render(<StrictMode><AppErrorBoundary><LanguageProvider><App /></LanguageProvider></AppErrorBoundary></StrictMode>);
 (window as Window & { __SHOOT_LOG_READY__?: boolean }).__SHOOT_LOG_READY__ = true;

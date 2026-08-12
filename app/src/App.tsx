@@ -26,6 +26,7 @@ import type { AmmunitionLedgerData } from "./domain/ammunition";
 import { useCloudSync } from "./hooks/useCloudSync";
 import type { LocalDataSet } from "./services/cloudSync";
 import { getPracticeRecommendation, getScoreBasedPracticeRecommendation } from "./services/sessionPlanning";
+import { useLanguage } from "./i18n/LanguageContext";
 
 type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "privacy" | "terms" | "contact" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
@@ -35,6 +36,7 @@ const ContactSupport = lazy(() => import("./components/ContactSupport"));
 const AmmunitionLedger = lazy(() => import("./components/AmmunitionLedger").then((module) => ({ default: module.AmmunitionLedger })));
 
 function App() {
+  const { text } = useLanguage();
   const [sessions, setSessions] = useState<StoredSession[]>(loadSessions);
   const [masterData, setMasterData] = useState<MasterData>(() => loadSessions().reduce((result, item) => addSessionToMasterData(result, item.session), loadMasterData()));
   const [ammunitionLedger, setAmmunitionLedger] = useState<AmmunitionLedgerData>(loadAmmunitionLedger);
@@ -87,7 +89,7 @@ function App() {
   }
   function deleteActiveRound() {
     if (!activeSession || !activeRound || activeSession.rounds.length <= 1) return;
-    if (!window.confirm(`Round ${activeRound.roundNo} を削除しますか？\nこのラウンドの入力内容は元に戻せません。`)) return;
+    if (!window.confirm(text(`Round ${activeRound.roundNo} を削除しますか？\nこのラウンドの入力内容は元に戻せません。`, `Delete Round ${activeRound.roundNo}?\nThe entries in this round cannot be restored.`))) return;
     const deletedIndex = activeSession.rounds.findIndex((round) => round.id === activeRound.id);
     const nextRounds = activeSession.rounds
       .filter((round) => round.id !== activeRound.id)
@@ -100,12 +102,12 @@ function App() {
     if (!activeSessionId || !activeSession) return;
     const enteredRounds = activeSession.rounds.filter((round) => round.shots.some((shot) => shot.finalResult !== "skip"));
     if (enteredRounds.length === 0) {
-      window.alert("完了できるラウンドがありません。");
+      window.alert(text("完了できるラウンドがありません。", "There are no rounds ready to complete."));
       return;
     }
     const incompleteRound = enteredRounds.find((round) => round.shots.some((shot) => shot.finalResult === "skip"));
     if (incompleteRound) {
-      window.alert(`Round ${incompleteRound.roundNo} に未入力があります。`);
+      window.alert(text(`Round ${incompleteRound.roundNo} に未入力があります。`, `Round ${incompleteRound.roundNo} has unanswered targets.`));
       setActiveRoundId(incompleteRound.id);
       return;
     }
@@ -140,7 +142,7 @@ function App() {
     if (kind === "ammunition") setAmmunitionLedger((current) => ({ ...current, productLinks: current.productLinks.map((item) => item.ammunitionName === oldValue ? { ...item, ammunitionName: newValue } : item) }));
   }
   function deleteMasterValue(kind: MasterKind, value: string) {
-    if (!window.confirm(`${value}を今後の選択肢から削除しますか？\n過去の履歴は変更されません。`)) return;
+    if (!window.confirm(text(`${value}を今後の選択肢から削除しますか？\n過去の履歴は変更されません。`, `Remove ${value} from future selections?\nPast records will not be changed.`))) return;
     setMasterData((current) => kind === "range"
       ? { ...current, rangeNames: current.rangeNames.filter((item) => item !== value) }
       : { ...current, ammunitionNames: current.ammunitionNames.filter((item) => item !== value) });
@@ -156,7 +158,7 @@ function App() {
   }
   function deleteSession(id: string) {
     const item = sessions.find((session) => session.id === id);
-    if (item && window.confirm(`${item.session.date}の記録を削除しますか？${item.status === "completed" ? "\n実包台帳の自動消費行も削除され、残弾が再計算されます。" : ""}`)) {
+    if (item && window.confirm(text(`${item.session.date}の記録を削除しますか？${item.status === "completed" ? "\n実包台帳の自動消費行も削除され、残弾が再計算されます。" : ""}`, `Delete the record for ${item.session.date}?${item.status === "completed" ? "\nIts automatic ammunition usage entry will also be deleted and stock recalculated." : ""}`))) {
       cloudSync.recordSessionDeletion(id);
       setSessions((current) => current.filter((session) => session.id !== id));
     }
@@ -177,24 +179,24 @@ function App() {
 
   return <main className="app-shell">
     {displayedScreen === "list" && <PermitChangeAlert firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} />}
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.20.0</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.21.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><div className="history-desktop-status"><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} /></div><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {displayedScreen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
     {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} health={cloudSync.health} passwordRecovery={cloudSync.passwordRecovery} firearms={ammunitionLedger.firearms} onBack={() => setScreen("list")} onPrivacy={() => setScreen("privacy")} onTerms={() => setScreen("terms")} onContact={() => setScreen("contact")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onCheckHealth={cloudSync.checkHealth} onDeleteAccount={cloudSync.deleteAccount} onPermit={() => openPermit("account")} />}
-    {displayedScreen === "privacy" && <Suspense fallback={<p>プライバシーポリシーを読み込んでいます…</p>}><PrivacyPolicy onBack={() => setScreen("account")} /></Suspense>}
-    {displayedScreen === "terms" && <Suspense fallback={<p>利用規約を読み込んでいます…</p>}><TermsOfService onBack={() => setScreen("account")} /></Suspense>}
-    {displayedScreen === "contact" && <Suspense fallback={<p>お問い合わせ画面を読み込んでいます…</p>}><ContactSupport onBack={() => setScreen("account")} /></Suspense>}
-    {displayedScreen === "ammunition" && <Suspense fallback={<p>実包管理を読み込んでいます…</p>}><AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} /></Suspense>}
-    {displayedScreen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen(permitReturnScreen)} backLabel={permitReturnScreen === "account" ? "アカウント設定へ戻る" : "履歴へ戻る"} />}
-    {displayedScreen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} practiceRecommendation={practiceRecommendation} cancelLabel="履歴へ戻る" onCancel={() => setScreen("list")} onStart={startSession} />}
+    {displayedScreen === "privacy" && <Suspense fallback={<p>{text("プライバシーポリシーを読み込んでいます…", "Loading privacy policy…")}</p>}><PrivacyPolicy onBack={() => setScreen("account")} /></Suspense>}
+    {displayedScreen === "terms" && <Suspense fallback={<p>{text("利用規約を読み込んでいます…", "Loading terms…")}</p>}><TermsOfService onBack={() => setScreen("account")} /></Suspense>}
+    {displayedScreen === "contact" && <Suspense fallback={<p>{text("お問い合わせ画面を読み込んでいます…", "Loading contact form…")}</p>}><ContactSupport onBack={() => setScreen("account")} /></Suspense>}
+    {displayedScreen === "ammunition" && <Suspense fallback={<p>{text("実包管理を読み込んでいます…", "Loading ammunition management…")}</p>}><AmmunitionLedger data={ammunitionLedger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setAmmunitionLedger} onBack={() => setScreen("list")} /></Suspense>}
+    {displayedScreen === "permit" && <PermitManager data={ammunitionLedger} onChange={setAmmunitionLedger} onBack={() => setScreen(permitReturnScreen)} backLabel={permitReturnScreen === "account" ? text("アカウント設定へ戻る", "Back to account") : text("履歴へ戻る", "Back to history")} />}
+    {displayedScreen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} practiceRecommendation={practiceRecommendation} cancelLabel={text("履歴へ戻る", "Back to history")} onCancel={() => setScreen("list")} onStart={startSession} />}
     {displayedScreen === "edit-session" && activeSession && <SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onCancel={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")} onStart={editSessionDetails} />}
     {displayedScreen === "round" && activeSession && activeRound && <>
-      <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length}ラウンド</span><strong>{activeStats?.score} / {activeStats?.targets}　実包 {activeStats?.cartridgesUsed}発</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>基本情報を編集</button><button onClick={returnToList}>履歴へ戻る</button><button className="complete-button" onClick={completeSession}>セッション完了</button></div></section>
+      <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length} {text("ラウンド", "rounds")}</span><strong>{activeStats?.score} / {activeStats?.targets}　{text("実包", "shells")} {activeStats?.cartridgesUsed}</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>{text("基本情報を編集", "Edit details")}</button><button onClick={returnToList}>{text("履歴へ戻る", "Back to history")}</button><button className="complete-button" onClick={completeSession}>{text("セッション完了", "Complete session")}</button></div></section>
       <PracticeThemeBanner theme={activeSession.session.practiceTheme ?? ""} />
       <div className={`round-navigation${activeSession.rounds.length >= 3 ? " round-navigation-stacked" : ""}`}>
-        <nav className="round-tabs" aria-label="ラウンド選択">{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}</nav>
+        <nav className="round-tabs" aria-label={text("ラウンド選択", "Select round")}>{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}</nav>
         <div className="round-actions">{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}{activeSession.rounds.length > 1 && <button className="delete-round-button" onClick={deleteActiveRound}>Round {activeRound.roundNo} 削除</button>}</div>
       </div>
       <RoundInput key={activeRound.id} round={activeRound} onChange={updateRound} />

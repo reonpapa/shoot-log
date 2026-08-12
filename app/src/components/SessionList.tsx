@@ -6,9 +6,11 @@ import type { ThemeAchievement } from "../domain/shooting";
 import { filterSessionsByPracticeTheme, getPracticeThemeHistory, getPracticeThemeProgress, isSamePracticeTheme } from "../services/sessionPlanning";
 import { formatShootingConditions } from "../services/sessionConditions";
 import "./SessionList.css";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props { sessions: StoredSession[]; firearms: Firearm[]; suggestedPracticeTheme: string; onCreate: () => void; onManage: () => void; onData: () => void; onAccount: () => void; onAmmunition: () => void; onOpen: (id: string) => void; onDelete: (id: string) => void; }
 export function SessionList({ sessions, firearms, suggestedPracticeTheme, onCreate, onManage, onData, onAccount, onAmmunition, onOpen, onDelete }: Props) {
+  const { text } = useLanguage();
   const [page, setPage] = useState(1);
   const [selectedTheme, setSelectedTheme] = useState("");
   const [showAllThemeHistory, setShowAllThemeHistory] = useState(false);
@@ -36,7 +38,7 @@ export function SessionList({ sessions, firearms, suggestedPracticeTheme, onCrea
     setPage(1);
   }
   return <section className="session-list">
-    <header className="session-list-header"><div><p className="eyebrow">SESSIONS</p><h2>射撃履歴</h2></div><div className="session-list-actions"><button className="account-button" onClick={onAccount}>アカウント設定</button><button onClick={onData}>バックアップ</button><button onClick={onManage}>登録内容を管理</button><button className="ammo-ledger-button" onClick={onAmmunition}>実包管理</button><button className="primary-button" onClick={onCreate}>＋ 新しいセッション</button></div></header>
+    <header className="session-list-header"><div><p className="eyebrow">SESSIONS</p><h2>{text("射撃履歴", "Shooting history")}</h2></div><div className="session-list-actions"><button className="account-button" onClick={onAccount}>{text("アカウント設定", "Account")}</button><button onClick={onData}>{text("バックアップ", "Backup")}</button><button onClick={onManage}>{text("登録内容を管理", "Saved items")}</button><button className="ammo-ledger-button" onClick={onAmmunition}>{text("実包管理", "Ammunition")}</button><button className="primary-button" onClick={onCreate}>{text("＋ 新しいセッション", "+ New session")}</button></div></header>
     {currentTheme && <section className={`active-practice-theme${currentThemeSelected ? " filtering" : ""}`} aria-label="継続中の練習テーマ">
       <header><div><p className="eyebrow">CURRENT FOCUS</p><strong>継続中の練習テーマ</strong><h3>{currentTheme}</h3></div><button type="button" aria-pressed={currentThemeSelected} onClick={() => toggleThemeFilter(currentTheme)}>{currentThemeSelected ? "すべての履歴を表示" : `関連履歴 ${themeSessions.length}件を表示`}</button></header>
       <div className="practice-theme-kpis"><article><span>実施回数</span><strong>{themeProgress.sessionCount}<small>回</small></strong></article><article><span>現在の連続</span><strong>{themeProgress.consecutiveCount}<small>回</small></strong></article><article><span>できた</span><strong>{themeProgress.achievedCount}<small>回</small></strong></article></div>
@@ -64,23 +66,23 @@ export function SessionList({ sessions, firearms, suggestedPracticeTheme, onCrea
       })}</div>
       {themeHistory.length > 4 && <button type="button" className="practice-theme-history-toggle" onClick={() => setShowAllThemeHistory((current) => !current)}>{showAllThemeHistory ? "表示を閉じる" : `すべてのテーマを表示（残り${themeHistory.length - 4}件）`}</button>}
     </section>}
-    {drafts.length > 0 && <button className="unfinished-alert" onClick={() => onOpen(drafts[0].id)}><strong>未完了セッション {drafts.length}件</strong><span>入力を続ける →</span></button>}
-    {sessions.length === 0 ? <div className="empty-session"><p>まだ射撃記録がありません。</p><button onClick={onCreate}>最初のセッションを作成</button></div> :
-      orderedSessions.length === 0 ? <div className="empty-session"><p>このテーマに関連する履歴はありません。</p><button onClick={() => { setSelectedTheme(""); setPage(1); }}>すべての履歴を表示</button></div> : <div className="session-card-list">{visibleSessions.map((item) => {
+    {drafts.length > 0 && <button className="unfinished-alert" onClick={() => onOpen(drafts[0].id)}><strong>{text("未完了セッション", "Incomplete sessions")} {drafts.length}</strong><span>{text("入力を続ける →", "Continue entry →")}</span></button>}
+    {sessions.length === 0 ? <div className="empty-session"><p>{text("まだ射撃記録がありません。", "No shooting records yet.")}</p><button onClick={onCreate}>{text("最初のセッションを作成", "Create your first session")}</button></div> :
+      orderedSessions.length === 0 ? <div className="empty-session"><p>{text("このテーマに関連する履歴はありません。", "No history matches this practice focus.")}</p><button onClick={() => { setSelectedTheme(""); setPage(1); }}>{text("すべての履歴を表示", "Show all history")}</button></div> : <div className="session-card-list">{visibleSessions.map((item) => {
         const stats = calculateSessionStats({ id: item.id, date: item.session.date, rangeName: item.session.rangeName, ammunitionName: item.session.ammunitionName, weather: item.session.weather, rounds: item.rounds, sessionMemo: item.session.memo });
         const firearm = firearms.find((candidate) => candidate.id === item.session.firearmId);
         return <article className={`session-card${item.status === "draft" ? " unfinished" : ""}`} key={item.id}>
           <button className="session-card-main" onClick={() => onOpen(item.id)}>
-            <div className="session-card-info"><strong>{item.session.date}</strong><span>{item.session.rangeName}</span><small>{item.session.discipline.toUpperCase()} ・ {firearm ? `${firearm.name}（${firearm.identifier}）` : "使用銃未設定"} ・ {item.session.ammunitionName}</small><div className="session-card-meta">{formatShootingConditions(item.session) && <span>コンディション：{formatShootingConditions(item.session)}</span>}{item.session.memo && <span className="session-card-memo">メモ：{item.session.memo}</span>}{item.session.practiceTheme && <span className="session-card-theme">テーマ：{item.session.practiceTheme}{item.review.themeAchievement && <b className={`session-theme-result ${item.review.themeAchievement}`}>{achievementLabel(item.review.themeAchievement)}</b>}</span>}{item.review?.nextChallenge && <span className="session-card-challenge">次回：{item.review.nextChallenge}</span>}</div></div>
-            <div className="session-card-score"><strong>{stats.score}</strong><span>/ {stats.targets}</span><small>{item.rounds.length}R ・ 実包{stats.cartridgesUsed}発</small>{item.status === "draft" && <b>未完了・入力を続ける</b>}{item.status === "completed" && <small>完了</small>}</div>
+            <div className="session-card-info"><strong>{item.session.date}</strong><span>{item.session.rangeName}</span><small>{item.session.discipline.toUpperCase()} ・ {firearm ? `${firearm.name}（${firearm.identifier}）` : text("使用銃未設定", "Firearm not set")} ・ {item.session.ammunitionName}</small><div className="session-card-meta">{formatShootingConditions(item.session) && <span>{text("コンディション：", "Conditions: ")}{formatShootingConditions(item.session)}</span>}{item.session.memo && <span className="session-card-memo">{text("メモ：", "Notes: ")}{item.session.memo}</span>}{item.session.practiceTheme && <span className="session-card-theme">{text("テーマ：", "Focus: ")}{item.session.practiceTheme}{item.review.themeAchievement && <b className={`session-theme-result ${item.review.themeAchievement}`}>{achievementLabel(item.review.themeAchievement, text)}</b>}</span>}{item.review?.nextChallenge && <span className="session-card-challenge">{text("次回：", "Next: ")}{item.review.nextChallenge}</span>}</div></div>
+            <div className="session-card-score"><strong>{stats.score}</strong><span>/ {stats.targets}</span><small>{item.rounds.length}R ・ {text("実包", "shells ")}{stats.cartridgesUsed}</small>{item.status === "draft" && <b>{text("未完了・入力を続ける", "Incomplete · Continue")}</b>}{item.status === "completed" && <small>{text("完了", "Complete")}</small>}</div>
           </button>
-          <button className="session-delete-button" aria-label={`${item.session.date}の記録を削除`} onClick={() => onDelete(item.id)}>削除</button>
+          <button className="session-delete-button" aria-label={text(`${item.session.date}の記録を削除`, `Delete record for ${item.session.date}`)} onClick={() => onDelete(item.id)}>{text("削除", "Delete")}</button>
         </article>;
       })}</div>}
     {totalPages > 1 && <nav className="session-pagination" aria-label="射撃履歴のページ"><button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>← 前へ</button><span><strong>{currentPage}</strong> / {totalPages}</span><button disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>次へ →</button></nav>}
   </section>;
 }
 
-function achievementLabel(value: ThemeAchievement): string {
-  return { achieved: "できた", partial: "一部できた", "not-achieved": "できなかった" }[value];
+function achievementLabel(value: ThemeAchievement, text: (ja: string, en: string) => string): string {
+  return { achieved: text("できた", "Achieved"), partial: text("一部できた", "Partly achieved"), "not-achieved": text("できなかった", "Not achieved") }[value];
 }
