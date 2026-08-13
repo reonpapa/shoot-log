@@ -3,7 +3,7 @@ import { shouldUseManualShareSheet } from "./manualSharing";
 import "./OperationManual.css";
 import { useLanguage } from "../i18n/LanguageContext";
 
-const APP_VERSION = "2.22.1";
+const APP_VERSION = "2.23.0";
 const MANUAL_REVISION = "8";
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";
