@@ -36,4 +36,5 @@
 .trap-setting-fields label > div { display: flex; align-items: center; gap: 6px; }
 .trap-setting-fields label > div small { flex: none; font-size: .65rem; opacity: .62; }
 .trap-setting-fields .trap-setting-note { grid-column: span 2; }
-@media (max-width: 700px) { .trap-setting-panel { padding: 14px 12px; }.trap-setting-panel > header { align-items: flex-start; flex-direction: column; gap: 3px; }.trap-setting-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }.trap-setting-fields .trap-setting-note { grid-column: 1 / -1; } }
+.trap-setting-fields .trap-setting-range { grid-column: span 2; }
+@media (max-width: 700px) { .trap-setting-panel { padding: 14px 12px; }.trap-setting-panel > header { align-items: flex-start; flex-direction: column; gap: 3px; }.trap-setting-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }.trap-setting-fields .trap-setting-note, .trap-setting-fields .trap-setting-range { grid-column: 1 / -1; } }

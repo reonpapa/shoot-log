@@ -33,6 +33,7 @@ function normalizeRound(value: unknown): ShootingRound | null {
   const actual = typeof value.actualCartridgesUsed === "number" && Number.isFinite(value.actualCartridgesUsed) && value.actualCartridgesUsed >= 0 ? value.actualCartridgesUsed : undefined;
   const rawSetting = isRecord(value.trapSetting) ? value.trapSetting : null;
   const trapSetting: TrapSetting | undefined = rawSetting && isString(rawSetting.face) && rawSetting.face.trim() ? {
+    rangeName: isString(rawSetting.rangeName) ? rawSetting.rangeName : "",
     face: rawSetting.face,
     setType: isString(rawSetting.setType) ? rawSetting.setType : "",
     ...(typeof rawSetting.distanceMeters === "number" && Number.isFinite(rawSetting.distanceMeters) ? { distanceMeters: rawSetting.distanceMeters } : {}),

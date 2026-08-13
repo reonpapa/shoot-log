@@ -6,6 +6,7 @@ export type FinalResult = "hit-on-first" | "hit-on-second" | "miss" | "skip";
 export type MissDirection = "left" | "center" | "right" | "unknown";
 
 export interface TrapSetting {
+  rangeName: string;
   face: string;
   setType: string;
   distanceMeters?: number;
