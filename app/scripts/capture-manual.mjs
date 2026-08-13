@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { createServer } from "vite";
 
-const VERSION = "2.24.1";
+const VERSION = "2.24.2";
 const pdfOnly = process.argv.includes("--pdf-only");
 const english = process.argv.includes("--english");
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
