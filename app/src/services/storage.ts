@@ -54,7 +54,9 @@ export function normalizeStoredSession(value: unknown): StoredSession | null {
   return {
     id: value.id,
     session: { date: details.date, rangeName: details.rangeName, discipline: details.discipline as SessionDetails["discipline"], ammunitionName: details.ammunitionName, ...(isString(details.firearmId) ? { firearmId: details.firearmId } : {}), practiceTheme: isString(details.practiceTheme) ? details.practiceTheme : "", weather: isString(details.weather) ? details.weather : "", temperature: isString(details.temperature) ? details.temperature : "", windDirection: isString(details.windDirection) ? details.windDirection : "", windStrength: isString(details.windStrength) ? details.windStrength : "", memo: isString(details.memo) ? details.memo : "" },
-    rounds: rounds as ShootingRound[],
+    rounds: (rounds as ShootingRound[]).map((round) => round.trapSetting && !round.trapSetting.rangeName.trim()
+      ? { ...round, trapSetting: { ...round.trapSetting, rangeName: details.rangeName as string } }
+      : round),
     review: { findings: isString(review.findings) ? review.findings : "", problems: isString(review.problems) ? review.problems : "", nextChallenge: isString(review.nextChallenge) ? review.nextChallenge : "", ...(themeAchievements.includes(review.themeAchievement as typeof themeAchievements[number]) ? { themeAchievement: review.themeAchievement as typeof themeAchievements[number] } : {}) },
     status: value.status === "completed" ? "completed" : "draft",
     createdAt: value.createdAt,
