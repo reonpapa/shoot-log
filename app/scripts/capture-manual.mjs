@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { createServer } from "vite";
 
-const VERSION = "2.26.0";
+const VERSION = "2.26.1";
 const pdfOnly = process.argv.includes("--pdf-only");
 const english = process.argv.includes("--english");
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -70,7 +70,7 @@ const manualPages = [
   { kicker: "FIREARM PERMIT", title: "所持許可・更新管理", bullets: ["許可証原本の記載を最優先で入力します。", "更新申請開始日、期限、有効期限を銃ごとに管理します。", "氏名、住所、生年月日は保存しません。"], images: ["17-firearm-permit"] },
   { kicker: "BACKUP", title: "バックアップと復元", bullets: ["端末内の全データをJSONファイルへ保存します。", "復元は現在のデータを残したまま統合します。", "大きな操作の前に最新バックアップを保存してください。"], images: ["18-backup"] },
   { kicker: "SUPPORT", title: "困ったときの確認表", bullets: ["同期されない場合は通信状態とログイン中のアカウントを確認します。", "画面が古い場合は更新通知または復旧操作を使用します。", "問い合わせへパスワードや許可証番号を記載しないでください。"], images: ["19-support"] },
-  { kicker: "VERSION HISTORY", title: "主要バージョン履歴", bullets: ["Version 2.26.0：射撃場マスター配下に射面設定の追加・編集・削除を統合。過去ラウンドは選択時点の設定を保持。", "Version 2.25.1：ラウンド単位の射面・クレー設定管理を追加。伊勢原・大井の設定候補、手動入力、設定別分析に対応。", "Version 2.24.0：個人の射撃記録を含まない管理者専用の匿名利用統計を追加。", "Version 2.23.0：Trap・Skeetの履歴判別、種目別成長分析、標準表示の種目設定を追加。", "Version 2.21.0：日本語・英語を全画面で切替。履歴、分析、アカウント、実包、所持許可、バックアップ、法的文書、英語版マニュアルに対応。", "Version 2.20.0：初矢命中後に二発目を発射した記録「1＋」を追加。得点と実包消費を分けて集計。", "Version 2.0.0：Supabaseによるアカウント・クラウド同期を導入。", "Version 1.0.0：PWA、成績PDF、実包管理、所持許可期限管理を統合。"], images: [] },
+  { kicker: "VERSION HISTORY", title: "主要バージョン履歴", bullets: ["Version 2.26.1：射撃場マスター配下に射面設定の追加・編集・削除を統合。過去ラウンドは選択時点の設定を保持。", "Version 2.25.1：ラウンド単位の射面・クレー設定管理を追加。伊勢原・大井の設定候補、手動入力、設定別分析に対応。", "Version 2.24.0：個人の射撃記録を含まない管理者専用の匿名利用統計を追加。", "Version 2.23.0：Trap・Skeetの履歴判別、種目別成長分析、標準表示の種目設定を追加。", "Version 2.21.0：日本語・英語を全画面で切替。履歴、分析、アカウント、実包、所持許可、バックアップ、法的文書、英語版マニュアルに対応。", "Version 2.20.0：初矢命中後に二発目を発射した記録「1＋」を追加。得点と実包消費を分けて集計。", "Version 2.0.0：Supabaseによるアカウント・クラウド同期を導入。", "Version 1.0.0：PWA、成績PDF、実包管理、所持許可期限管理を統合。"], images: [] },
 ];
 
 const englishManualPages = [
@@ -91,7 +91,7 @@ const englishManualPages = [
   { kicker: "FIREARM PERMIT", title: "Permit and renewal", bullets: ["Always copy information from the original permit.", "Manage application start, deadline, and expiry for each firearm.", "Name, address, and date of birth are not stored."], images: ["17-firearm-permit"] },
   { kicker: "BACKUP", title: "Backup and restore", bullets: ["Export all device data to a JSON file.", "Restore merges with current data instead of deleting it.", "Save a fresh backup before major data operations."], images: ["18-backup"] },
   { kicker: "SUPPORT", title: "If something goes wrong", bullets: ["If data does not sync, check the connection and signed-in account.", "If the screen is outdated, use the update notice or safe recovery.", "Never include passwords or firearm permit numbers in support email."], images: ["19-support"] },
-  { kicker: "VERSION HISTORY", title: "Major versions", bullets: ["Version 2.26.0: Integrated target-setting add, edit, and delete controls under the range master while preserving past-round snapshots.", "Version 2.25.1: Added per-round field and target settings, Isehara and Ooi presets, manual entry, and setting-based analysis.", "Version 2.24.0: Added private administrator analytics without individual shooting records.", "Version 2.23.0: Added distinct Trap and Skeet history, discipline-specific growth analysis, and a default discipline setting.", "Version 2.21.0: Added Japanese and English throughout the app and an English operation manual.", "Version 2.20.0: Added 1+ to record an extra second shot after a first-shot hit.", "Version 2.0.0: Added Supabase accounts and cloud sync.", "Version 1.0.0: Integrated PWA, score PDF, ammunition, and permit deadlines."], images: [] },
+  { kicker: "VERSION HISTORY", title: "Major versions", bullets: ["Version 2.26.1: Integrated target-setting add, edit, and delete controls under the range master while preserving past-round snapshots.", "Version 2.25.1: Added per-round field and target settings, Isehara and Ooi presets, manual entry, and setting-based analysis.", "Version 2.24.0: Added private administrator analytics without individual shooting records.", "Version 2.23.0: Added distinct Trap and Skeet history, discipline-specific growth analysis, and a default discipline setting.", "Version 2.21.0: Added Japanese and English throughout the app and an English operation manual.", "Version 2.20.0: Added 1+ to record an extra second shot after a first-shot hit.", "Version 2.0.0: Added Supabase accounts and cloud sync.", "Version 1.0.0: Integrated PWA, score PDF, ammunition, and permit deadlines."], images: [] },
 ];
 
 function escapeHtml(value) {
