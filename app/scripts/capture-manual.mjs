@@ -12,6 +12,7 @@ const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(appRoot, "..");
 const screenshotDir = join(repoRoot, `docs/manual/screenshots/${english ? "generated-en" : "generated"}`);
 const manualOutput = join(appRoot, `public/manuals/shoot-log-operation-manual${english ? "-en" : ""}.pdf`);
+const japaneseFontDir = join(appRoot, "node_modules/@fontsource/noto-sans-jp/files");
 
 const chromeCandidates = [
   process.env.CHROME_PATH,
@@ -102,11 +103,18 @@ async function imageData(name) {
   return `data:image/png;base64,${bytes.toString("base64")}`;
 }
 
+async function fontData(weight) {
+  const bytes = await readFile(join(japaneseFontDir, `noto-sans-jp-japanese-${weight}-normal.woff2`));
+  return `data:font/woff2;base64,${bytes.toString("base64")}`;
+}
+
 async function buildManualHtml() {
   const selectedPages = english ? englishManualPages : manualPages;
   const noteText = english
     ? "Screens are actual React components displayed at smartphone width in manual capture mode. All data is fictional."
     : "画面はマニュアル撮影モードで、実際のReactコンポーネントをスマートフォン幅に表示したものです。データはすべて架空です。";
+  const regularFont = await fontData(400);
+  const boldFont = await fontData(700);
   const pages = [];
   for (const page of selectedPages) {
     const images = await Promise.all(page.images.map(async (name) => `<img alt="${escapeHtml(name)}" src="${await imageData(name)}">`));
@@ -114,9 +122,11 @@ async function buildManualHtml() {
     pages.push(`<section class="page"><header><span>SHOOT LOG / OPERATION MANUAL</span><span>Version ${VERSION}</span></header><main class="${layout}"><div class="copy"><p class="kicker">${escapeHtml(page.kicker)}</p><h1>${escapeHtml(page.title)}</h1><ul>${page.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>${images.length > 0 ? `<aside>${escapeHtml(noteText)}</aside>` : ""}</div><div class="visuals">${images.join("")}</div></main><footer><span>https://reonpapa.github.io/shoot-log/</span><span>Shoot Log</span></footer></section>`);
   }
   return `<!doctype html><html lang="${english ? "en" : "ja"}"><head><meta charset="UTF-8"><style>
+    @font-face { font-family: "Noto Sans JP Manual"; src: url("${regularFont}") format("woff2"); font-style: normal; font-weight: 400; }
+    @font-face { font-family: "Noto Sans JP Manual"; src: url("${boldFont}") format("woff2"); font-style: normal; font-weight: 700 900; }
     @page { size: A4; margin: 0; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #242128; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif; }
+    body { margin: 0; color: #242128; font-family: "Noto Sans JP Manual", sans-serif; }
     .cover, .page { width: 210mm; height: 297mm; break-after: page; overflow: hidden; }
     .cover { position: relative; padding: 28mm 20mm; color: white; background: #17131b; }
     .cover-mark { position: absolute; z-index: 0; top: 18mm; right: 18mm; width: 54mm; height: 54mm; border: 12mm solid #6d3bd1; border-radius: 50%; box-shadow: inset 0 0 0 8mm #a880ff; }
