@@ -28,9 +28,11 @@ interface Props {
   onCheckHealth: () => Promise<void>;
   onDeleteAccount: () => Promise<void>;
   onPermit: () => void;
+  isAdmin: boolean;
+  onAdmin: () => void;
 }
 
-export function AccountSettings({ cloud, health, passwordRecovery, firearms, onBack, onPrivacy, onTerms, onContact, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onCheckHealth, onDeleteAccount, onPermit }: Props) {
+export function AccountSettings({ cloud, health, passwordRecovery, firearms, onBack, onPrivacy, onTerms, onContact, onSignIn, onSignUp, onSignOut, onSendPasswordReset, onChangePassword, onCompletePasswordRecovery, onSync, onCheckHealth, onDeleteAccount, onPermit, isAdmin, onAdmin }: Props) {
   const { language, setLanguage, text } = useLanguage();
   const signedIn = cloud.phase !== "signed-out" && !!cloud.email;
   return <section className="account-settings">
@@ -45,6 +47,7 @@ export function AccountSettings({ cloud, health, passwordRecovery, firearms, onB
     {signedIn && <div className="account-mobile-status"><CloudSyncStatus view={cloud} onSync={onSync} /><PermitCountdown firearms={firearms} onOpen={onPermit} /></div>}
     <InstallGuide initiallyOpen={!signedIn} />
     <OperationManual />
+    {isAdmin && <section className="account-admin-link"><div><p className="eyebrow">ADMIN</p><strong>{text("管理者専用画面", "Admin dashboard")}</strong><small>{text("匿名の利用状況とバージョン分布を確認します。", "View anonymous usage and version statistics.")}</small></div><button onClick={onAdmin}>{text("集計を開く", "Open analytics")}</button></section>}
     <CloudAccount view={cloud} passwordRecovery={passwordRecovery} onPrivacy={onPrivacy} onTerms={onTerms} onSignIn={onSignIn} onSignUp={onSignUp} onSignOut={onSignOut} onSendPasswordReset={onSendPasswordReset} onChangePassword={onChangePassword} onCompletePasswordRecovery={onCompletePasswordRecovery} onSync={onSync} onDeleteAccount={onDeleteAccount} />
     <CloudHealthStatus health={health} onCheck={onCheckHealth} />
     <aside><strong>{text("端末内データについて", "Data on this device")}</strong><p>{text("射撃記録は端末内へ即時保存され、ログイン中はクラウドへ自動同期されます。JSONファイルの保存・復元は「バックアップ」画面で行います。", "Records are saved immediately on this device and synced to the cloud while signed in. Use Backup to save or restore a JSON file.")}</p></aside>

@@ -27,8 +27,10 @@ import { useCloudSync } from "./hooks/useCloudSync";
 import type { LocalDataSet } from "./services/cloudSync";
 import { getPracticeRecommendation, getScoreBasedPracticeRecommendation } from "./services/sessionPlanning";
 import { useLanguage } from "./i18n/LanguageContext";
+import { AdminDashboard } from "./components/AdminDashboard";
+import { checkAdmin, recordUsage } from "./services/adminAnalytics";
 
-type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "privacy" | "terms" | "contact" | "ammunition" | "permit";
+type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "admin" | "privacy" | "terms" | "contact" | "ammunition" | "permit";
 const MAX_ROUNDS = 4;
 const PrivacyPolicy = lazy(() => import("./components/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./components/TermsOfService"));
@@ -36,7 +38,7 @@ const ContactSupport = lazy(() => import("./components/ContactSupport"));
 const AmmunitionLedger = lazy(() => import("./components/AmmunitionLedger").then((module) => ({ default: module.AmmunitionLedger })));
 
 function App() {
-  const { text } = useLanguage();
+  const { language, text } = useLanguage();
   const [sessions, setSessions] = useState<StoredSession[]>(loadSessions);
   const [masterData, setMasterData] = useState<MasterData>(() => loadSessions().reduce((result, item) => addSessionToMasterData(result, item.session), loadMasterData()));
   const [ammunitionLedger, setAmmunitionLedger] = useState<AmmunitionLedgerData>(loadAmmunitionLedger);
@@ -57,12 +59,26 @@ function App() {
   const reviewAdvice = useMemo(() => activeSession ? getScoreBasedPracticeRecommendation([activeSession]) : null, [activeSession]);
   const suggestedPracticeTheme = practiceRecommendation?.theme ?? "";
   const signedIn = cloudSync.view.phase !== "signed-out" && !!cloudSync.view.email;
+  const [isAdmin, setIsAdmin] = useState(false);
   const publicScreen = screen === "privacy" || screen === "terms" || screen === "contact";
   const displayedScreen: Screen = cloudSync.passwordRecovery || (!signedIn && !publicScreen) ? "account" : screen;
 
   useEffect(() => saveSessions(sessions), [sessions]);
   useEffect(() => saveMasterData(masterData), [masterData]);
   useEffect(() => saveAmmunitionLedger(ammunitionLedger), [ammunitionLedger]);
+  useEffect(() => {
+    if (!signedIn) {
+      queueMicrotask(() => setIsAdmin(false));
+      return;
+    }
+    let active = true;
+    const usageKey = "shoot-log-usage-recorded-2.24.0";
+    const usage = sessionStorage.getItem(usageKey) ? Promise.resolve() : recordUsage(language).then(() => sessionStorage.setItem(usageKey, "1"));
+    void Promise.allSettled([usage, checkAdmin()]).then((results) => {
+      if (active && results[1].status === "fulfilled") setIsAdmin(results[1].value);
+    });
+    return () => { active = false; };
+  }, [signedIn, language]);
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [displayedScreen]);
@@ -179,12 +195,13 @@ function App() {
 
   return <main className="app-shell">
     {displayedScreen === "list" && <PermitChangeAlert firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} />}
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.23.2</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.24.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><div className="history-desktop-status"><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} /></div><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
     {displayedScreen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
-    {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} health={cloudSync.health} passwordRecovery={cloudSync.passwordRecovery} firearms={ammunitionLedger.firearms} onBack={() => setScreen("list")} onPrivacy={() => setScreen("privacy")} onTerms={() => setScreen("terms")} onContact={() => setScreen("contact")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onCheckHealth={cloudSync.checkHealth} onDeleteAccount={cloudSync.deleteAccount} onPermit={() => openPermit("account")} />}
+    {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} health={cloudSync.health} passwordRecovery={cloudSync.passwordRecovery} firearms={ammunitionLedger.firearms} isAdmin={isAdmin} onAdmin={() => setScreen("admin")} onBack={() => setScreen("list")} onPrivacy={() => setScreen("privacy")} onTerms={() => setScreen("terms")} onContact={() => setScreen("contact")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onCheckHealth={cloudSync.checkHealth} onDeleteAccount={cloudSync.deleteAccount} onPermit={() => openPermit("account")} />}
+    {displayedScreen === "admin" && isAdmin && <AdminDashboard onBack={() => setScreen("account")} />}
     {displayedScreen === "privacy" && <Suspense fallback={<p>{text("プライバシーポリシーを読み込んでいます…", "Loading privacy policy…")}</p>}><PrivacyPolicy onBack={() => setScreen("account")} /></Suspense>}
     {displayedScreen === "terms" && <Suspense fallback={<p>{text("利用規約を読み込んでいます…", "Loading terms…")}</p>}><TermsOfService onBack={() => setScreen("account")} /></Suspense>}
     {displayedScreen === "contact" && <Suspense fallback={<p>{text("お問い合わせ画面を読み込んでいます…", "Loading contact form…")}</p>}><ContactSupport onBack={() => setScreen("account")} /></Suspense>}

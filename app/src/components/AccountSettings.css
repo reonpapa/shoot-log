@@ -15,3 +15,7 @@
 .account-legal-links { display: flex; justify-content: center; gap: 12px; padding: 5px 0; }
 .account-legal-links button { padding: 0; border: 0; background: transparent; color: var(--accent-text); font-size: .72rem; text-decoration: underline; }
 @media (max-width: 700px) { .account-settings, .account-settings > * { width: 100%; min-width: 0; }.account-settings > header { flex-direction: column; padding: 18px 16px; }.account-mobile-status { display: grid; gap: 12px; }.account-mobile-status > * { margin-bottom: 0; }.language-settings { align-items: stretch; flex-direction: column; }.language-settings > div:last-child button { flex: 1; } }
+.account-admin-link { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px; border: 1px solid #bfa6ed; border-radius: 14px; background: #f5f0ff; }
+.account-admin-link div { display: grid; gap: 4px; }
+.account-admin-link p, .account-admin-link small { margin: 0; }
+@media (max-width: 600px) { .account-admin-link { align-items: stretch; flex-direction: column; } }
