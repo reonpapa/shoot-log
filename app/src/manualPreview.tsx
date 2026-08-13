@@ -28,7 +28,7 @@ const noop = () => undefined;
 const asyncNoop = async () => undefined;
 const previewEnglish = new URLSearchParams(window.location.search).get("lang") === "en";
 const sample = (ja: string, en: string) => previewEnglish ? en : ja;
-const masterData = { rangeNames: [sample("大井射撃場", "Sample Clay Range"), sample("県立射撃場", "Regional Shooting Range")], ammunitionNames: ["Sample 7.5", "Practice 24g"] };
+const masterData = { rangeNames: [sample("大井射撃場", "Sample Clay Range"), sample("県立射撃場", "Regional Shooting Range")], ammunitionNames: ["Sample 7.5", "Practice 24g"], rangeTrapSettings: [] };
 
 const firearm: Firearm = {
   id: "demo-firearm",
@@ -173,7 +173,7 @@ const signedOutCloud: CloudSyncView = { phase: "signed-out", email: "", message:
 const health: CloudHealthView = { status: "healthy", message: sample("クラウドへ接続できます。", "Cloud connection is available."), lastCheckedAt: "2026-07-20T06:30:00.000Z", lastHealthyAt: "2026-07-20T06:30:00.000Z" };
 
 function AppHeader() {
-  return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.25.3</p></header>;
+  return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.26.0</p></header>;
 }
 
 function RoundScene({ state }: { state: "before" | "after" }) {
@@ -206,7 +206,7 @@ function ManualPreview() {
   else if (scene === "round-after") content = <RoundScene state="after" />;
   else if (scene === "skeet") content = <RoundInput round={createEmptySkeetRound(1)} discipline="skeet" onChange={noop} />;
   else if (scene === "analysis") content = <SessionAnalysis session={session} reviewAdvice={null} aiInitiallyOpen={openAi} onBack={noop} onResume={noop} onEdit={noop} onSaveReview={noop} />;
-  else if (scene === "master") content = <MasterDataManager masterData={masterData} onBack={noop} onAdd={noop} onRename={noop} onDelete={noop} />;
+  else if (scene === "master") content = <MasterDataManager masterData={masterData} onBack={noop} onAdd={noop} onRename={noop} onDelete={noop} onSaveRangeTrapSetting={noop} onDeleteRangeTrapSetting={noop} />;
   else if (scene === "ledger") content = <AmmunitionLedger data={ledger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setLedger} onBack={noop} />;
   else if (scene === "permit") content = <PermitManager data={ledger} onChange={setLedger} onBack={noop} backLabel={sample("アカウント設定へ戻る", "Back to account settings")} />;
   else if (scene === "support") content = <ContactSupport onBack={noop} />;

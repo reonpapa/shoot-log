@@ -30,7 +30,7 @@ async function withCloudSyncLock<T>(operation: () => Promise<T>): Promise<T> {
 function emptyLocalData(): LocalDataSet {
   return {
     sessions: [],
-    masterData: { rangeNames: [], ammunitionNames: [] },
+    masterData: { rangeNames: [], ammunitionNames: [], rangeTrapSettings: [] },
     ammunitionLedger: emptyAmmunitionLedger(),
   };
 }

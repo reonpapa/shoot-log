@@ -4,7 +4,7 @@ import { createLedger, createStoredSession } from "../test/fixtures";
 
 const dataSet = (sessions: ReturnType<typeof createStoredSession>[]) => ({
   sessions,
-  masterData: { rangeNames: ["大井射撃場"], ammunitionNames: ["Fiocchi TT TWO"] },
+  masterData: { rangeNames: ["大井射撃場"], ammunitionNames: ["Fiocchi TT TWO"], rangeTrapSettings: [] },
   ammunitionLedger: createLedger(),
 });
 

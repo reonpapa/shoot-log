@@ -1,4 +1,4 @@
-import type { MasterData } from "./masterData";
+import { normalizeMasterData, type MasterData } from "./masterData";
 import { emptyAmmunitionLedger, type AmmunitionLedgerData } from "../domain/ammunition";
 import { normalizeAmmunitionLedger } from "./ammunitionLedger";
 import { normalizeStoredSession, type StoredSession } from "./storage";
@@ -35,7 +35,7 @@ export function parseBackup(text: string): ShootLogBackup {
   if (!backup.masterData || !Array.isArray(backup.masterData.rangeNames) || !Array.isArray(backup.masterData.ammunitionNames)) throw new Error("マスターデータが不足しています。");
   const sessions = backup.sessions.map(normalizeStoredSession);
   if (sessions.some((session) => session === null)) throw new Error("セッションデータが破損しています。");
-  return { app: "shoot-log", schemaVersion: 2, exportedAt: typeof backup.exportedAt === "string" ? backup.exportedAt : new Date().toISOString(), sessions: sessions as StoredSession[], masterData: backup.masterData, ammunitionLedger: backup.schemaVersion === 2 ? normalizeAmmunitionLedger(backup.ammunitionLedger) : emptyAmmunitionLedger() };
+  return { app: "shoot-log", schemaVersion: 2, exportedAt: typeof backup.exportedAt === "string" ? backup.exportedAt : new Date().toISOString(), sessions: sessions as StoredSession[], masterData: normalizeMasterData(backup.masterData), ammunitionLedger: backup.schemaVersion === 2 ? normalizeAmmunitionLedger(backup.ammunitionLedger) : emptyAmmunitionLedger() };
 }
 
 export function mergeSessions(current: StoredSession[], imported: StoredSession[]): StoredSession[] {
@@ -49,5 +49,6 @@ export function mergeSessions(current: StoredSession[], imported: StoredSession[
 
 export function mergeMasterData(current: MasterData, imported: MasterData): MasterData {
   const unique = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja"));
-  return { rangeNames: unique([...current.rangeNames, ...imported.rangeNames]), ammunitionNames: unique([...current.ammunitionNames, ...imported.ammunitionNames]) };
+  const settings = [...current.rangeTrapSettings, ...imported.rangeTrapSettings].reduce<MasterData["rangeTrapSettings"]>((items, item) => items.some((currentItem) => currentItem.id === item.id) ? items : [...items, item], []);
+  return { rangeNames: unique([...current.rangeNames, ...imported.rangeNames, ...settings.map((item) => item.rangeName)]), ammunitionNames: unique([...current.ammunitionNames, ...imported.ammunitionNames]), rangeTrapSettings: settings };
 }

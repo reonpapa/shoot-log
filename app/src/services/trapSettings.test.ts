@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createEmptyRound } from "../domain/shooting";
-import { getTrapSettingPerformance, trapPresetsForRange } from "./trapSettings";
+import { getTrapSettingPerformance, rangesEquivalent, trapPresetsForRange } from "./trapSettings";
 import { normalizeStoredSession } from "./storage";
 
 describe("trap settings", () => {
@@ -21,5 +21,10 @@ describe("trap settings", () => {
     const round = { ...createEmptyRound(1), trapSetting: { rangeName: "", face: "第2面", setType: "練習セット", distanceMeters: 55 } };
     const normalized = normalizeStoredSession({ id: "session-1", session: { date: "2026-08-01", rangeName: "神奈川県立伊勢原射撃場", discipline: "trap", ammunitionName: "Test" }, rounds: [round], review: {}, status: "completed", createdAt: "2026-08-01T00:00:00Z", updatedAt: "2026-08-01T00:00:00Z" });
     expect(normalized?.rounds[0].trapSetting?.rangeName).toBe("神奈川県立伊勢原射撃場");
+  });
+
+  it("旧名称と正式名称を同じ射撃場として扱う", () => {
+    expect(rangesEquivalent("大井射撃場", "神奈川大井射撃場")).toBe(true);
+    expect(rangesEquivalent("伊勢原射撃場", "神奈川県立伊勢原射撃場")).toBe(true);
   });
 });

@@ -5,9 +5,10 @@ import { applyShotInput, getNextShotIndex, getShotInput, type ShotInput } from "
 import { calculateRoundStats } from "../domain/shootingStats";
 import "./RoundInput.css";
 import { useLanguage } from "../i18n/LanguageContext";
-import { trapPresetsForRange } from "../services/trapSettings";
+import { rangesEquivalent, trapPresetsForRange } from "../services/trapSettings";
+import type { RangeTrapSetting } from "../services/masterData";
 
-interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; rangeName?: string; }
+interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; rangeName?: string; rangeTrapSettings?: RangeTrapSetting[]; }
 const stands: StandNo[] = [1, 2, 3, 4, 5];
 const inputs: { value: ShotInput; label: string; title: string; shortcut: string }[] = [
   { value: "hit-on-first", label: "1", title: "初矢命中", shortcut: "1" },
@@ -22,11 +23,11 @@ const scoreLabels: Record<ShotInput, string> = {
   "miss-center": "↑", "miss-right": "→", skip: "",
 };
 
-export function RoundInput({ round, onChange, discipline = "trap", rangeName = "" }: Props) {
-  return discipline === "skeet" ? <SkeetRoundInput round={round} onChange={onChange} /> : <TrapRoundInput round={round} onChange={onChange} rangeName={rangeName} />;
+export function RoundInput({ round, onChange, discipline = "trap", rangeName = "", rangeTrapSettings }: Props) {
+  return discipline === "skeet" ? <SkeetRoundInput round={round} onChange={onChange} /> : <TrapRoundInput round={round} onChange={onChange} rangeName={rangeName} rangeTrapSettings={rangeTrapSettings} />;
 }
 
-function TrapRoundInput({ round, onChange, rangeName = "" }: Props) {
+function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings }: Props) {
   const { text } = useLanguage();
   const stats = calculateRoundStats(round);
   const [activeIndex, setActiveIndex] = useState(() => {
@@ -36,7 +37,7 @@ function TrapRoundInput({ round, onChange, rangeName = "" }: Props) {
   const activeCellRef = useRef<HTMLButtonElement>(null);
   const activeShot = round.shots[activeIndex] ?? round.shots[0];
   const visibleInputs = round.fireMode === "single" ? inputs.filter((item) => item.value !== "hit-on-second" && item.value !== "hit-on-first-second-fired") : inputs;
-  const trapPresets = trapPresetsForRange(rangeName);
+  const trapPresets = rangeTrapSettings?.filter((item) => rangesEquivalent(item.rangeName, rangeName)) ?? trapPresetsForRange(rangeName);
 
   useEffect(() => { activeCellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); }, [activeIndex]);
 
