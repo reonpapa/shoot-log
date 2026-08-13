@@ -13,3 +13,17 @@
 @media (max-width: 520px) { .analysis-filters { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; }.analysis-filters select { min-height: 44px; }.radial-legend { justify-content: flex-start; } }
 @media (max-width: 700px) { .history-stands:has(> div > :nth-child(8)) > div { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (max-width: 700px) { .discipline-analysis-switch { align-items: stretch; flex-direction: column; }.discipline-analysis-switch > div, .discipline-analysis-switch > button { width: 100%; }.skeet-growth-breakdown > div { grid-template-columns: 1fr 1fr; }.skeet-growth-breakdown article:nth-child(3) { border-top: 1px solid #8884; border-left: 0; }.skeet-growth-breakdown article:nth-child(4) { border-top: 1px solid #8884; } }
+.trap-setting-performance { display: grid; gap: 12px; padding: 18px; border: 1px solid #60798666; border-radius: 14px; background: linear-gradient(135deg, #60798614, #8881); }
+.trap-setting-performance > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.trap-setting-performance > header h3 { margin: 3px 0 0; font-size: 1rem; }
+.trap-setting-performance > header > small { opacity: .58; }
+.trap-setting-performance > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 7px; }
+.trap-setting-performance article { display: grid; gap: 7px; padding: 12px; border: 1px solid #8884; border-radius: 10px; background: #8881; }
+.trap-setting-performance article header, .trap-setting-performance article footer { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+.trap-setting-performance article header strong { font-size: .75rem; }
+.trap-setting-performance article header span { padding: 2px 5px; border-radius: 999px; background: #d39a2b18; color: #a87514; font-size: .52rem; font-weight: 900; }
+.trap-setting-performance article p { margin: 0; }
+.trap-setting-performance article p b { font-size: 1.35rem; }
+.trap-setting-performance article p small, .trap-setting-performance article footer { font-size: .57rem; opacity: .58; }
+.trap-setting-performance > p { margin: 0; font-size: .64rem; line-height: 1.5; opacity: .58; }
+@media (max-width: 700px) { .trap-setting-performance { padding: 15px 12px; }.trap-setting-performance > header { align-items: flex-start; flex-direction: column; }.trap-setting-performance > div { grid-template-columns: minmax(0, 1fr); } }

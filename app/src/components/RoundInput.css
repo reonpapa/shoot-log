@@ -25,3 +25,15 @@
 .skeet-target-detail { display: flex; justify-content: space-between; margin: 14px 0; padding: 13px; border-radius: 9px; background: #8881; }
 .skeet-result-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }.skeet-result-buttons button { display: grid; gap: 3px; place-items: center; min-height: 104px; border: 1px solid #8885; border-radius: 11px; background: transparent; }.skeet-result-buttons button strong { font-size: 2rem; }.skeet-result-buttons button.selected { border-color: var(--accent); background: #f3edff; }.skeet-current-target > p:last-child { margin-bottom: 0; text-align: center; opacity: .65; }
 @media (max-width: 600px) { .skeet-scorecard { grid-template-columns: repeat(5, 64px); }.skeet-round-input .round-header { grid-template-columns: 1fr auto; }.skeet-summary span { padding: 10px 5px; } }
+.trap-setting-panel { display: grid; gap: 11px; margin-bottom: 12px; padding: 15px 16px; border: 1px solid #6d3bd155; border-radius: 12px; background: linear-gradient(135deg, #6d3bd10d, #8881); }
+.trap-setting-panel > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.trap-setting-panel > header div { display: grid; gap: 2px; }
+.trap-setting-panel > header small, .trap-setting-panel > p { margin: 0; font-size: .62rem; opacity: .6; }
+.trap-setting-preset, .trap-setting-fields label { display: grid; min-width: 0; gap: 4px; }
+.trap-setting-preset > span, .trap-setting-fields label > span { font-size: .64rem; font-weight: 800; opacity: .62; }
+.trap-setting-preset select, .trap-setting-fields input { width: 100%; min-height: 40px; padding: 7px 9px; border: 1px solid #8885; border-radius: 8px; background: transparent; }
+.trap-setting-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.trap-setting-fields label > div { display: flex; align-items: center; gap: 6px; }
+.trap-setting-fields label > div small { flex: none; font-size: .65rem; opacity: .62; }
+.trap-setting-fields .trap-setting-note { grid-column: span 2; }
+@media (max-width: 700px) { .trap-setting-panel { padding: 14px 12px; }.trap-setting-panel > header { align-items: flex-start; flex-direction: column; gap: 3px; }.trap-setting-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }.trap-setting-fields .trap-setting-note { grid-column: 1 / -1; } }

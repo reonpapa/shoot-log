@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Discipline, FireMode, ShootingRound, StandNo } from "../domain/shooting";
+import type { Discipline, FireMode, ShootingRound, StandNo, TrapSetting } from "../domain/shooting";
 import { changeRoundStartStand, changeShotStand } from "../domain/shooting";
 import { applyShotInput, getNextShotIndex, getShotInput, type ShotInput } from "../domain/shootingInput";
 import { calculateRoundStats } from "../domain/shootingStats";
 import "./RoundInput.css";
 import { useLanguage } from "../i18n/LanguageContext";
+import { trapPresetsForRange } from "../services/trapSettings";
 
-interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; }
+interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; rangeName?: string; }
 const stands: StandNo[] = [1, 2, 3, 4, 5];
 const inputs: { value: ShotInput; label: string; title: string; shortcut: string }[] = [
   { value: "hit-on-first", label: "1", title: "初矢命中", shortcut: "1" },
@@ -21,11 +22,11 @@ const scoreLabels: Record<ShotInput, string> = {
   "miss-center": "↑", "miss-right": "→", skip: "",
 };
 
-export function RoundInput({ round, onChange, discipline = "trap" }: Props) {
-  return discipline === "skeet" ? <SkeetRoundInput round={round} onChange={onChange} /> : <TrapRoundInput round={round} onChange={onChange} />;
+export function RoundInput({ round, onChange, discipline = "trap", rangeName = "" }: Props) {
+  return discipline === "skeet" ? <SkeetRoundInput round={round} onChange={onChange} /> : <TrapRoundInput round={round} onChange={onChange} rangeName={rangeName} />;
 }
 
-function TrapRoundInput({ round, onChange }: Props) {
+function TrapRoundInput({ round, onChange, rangeName = "" }: Props) {
   const { text } = useLanguage();
   const stats = calculateRoundStats(round);
   const [activeIndex, setActiveIndex] = useState(() => {
@@ -35,6 +36,7 @@ function TrapRoundInput({ round, onChange }: Props) {
   const activeCellRef = useRef<HTMLButtonElement>(null);
   const activeShot = round.shots[activeIndex] ?? round.shots[0];
   const visibleInputs = round.fireMode === "single" ? inputs.filter((item) => item.value !== "hit-on-second" && item.value !== "hit-on-first-second-fired") : inputs;
+  const trapPresets = trapPresetsForRange(rangeName);
 
   useEffect(() => { activeCellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); }, [activeIndex]);
 
@@ -82,6 +84,23 @@ function TrapRoundInput({ round, onChange }: Props) {
     onChange({ ...round, actualCartridgesUsed });
   }
 
+  function updateTrapSetting(changes: Partial<TrapSetting>) {
+    const current = round.trapSetting ?? { face: "", setType: "" };
+    onChange({ ...round, trapSetting: { ...current, ...changes } });
+  }
+
+  function chooseTrapSetting(value: string) {
+    if (!value) { onChange({ ...round, trapSetting: undefined }); return; }
+    const preset = trapPresets.find((item) => item.id === value);
+    if (preset) {
+      const { id: _id, ...setting } = preset;
+      void _id;
+      onChange({ ...round, trapSetting: setting });
+    } else if (value === "custom") updateTrapSetting({ face: round.trapSetting?.face ?? "" });
+  }
+
+  const selectedPreset = trapPresets.find((item) => item.face === round.trapSetting?.face && item.distanceMeters === round.trapSetting?.distanceMeters)?.id ?? (round.trapSetting ? "custom" : "");
+
   if (!activeShot) return null;
   return <section className="round-input">
     <header className="round-header">
@@ -90,6 +109,19 @@ function TrapRoundInput({ round, onChange }: Props) {
       <div className="round-score"><strong>{stats.score}</strong><span>/ 25</span></div>
     </header>
     <div className="round-settings"><span>{text("開始射台", "Starting stand")}</span><div>{stands.map((stand) => <button className={round.startStandNo === stand ? "selected" : ""} key={stand} onClick={() => onChange(changeRoundStartStand(round, stand))}>{stand}</button>)}</div></div>
+    <section className="trap-setting-panel">
+      <header><div><p className="eyebrow">TARGET SETTING</p><strong>{text("射面・クレー設定", "Field and target setting")}</strong></div><small>{text("ラウンドごとに保存", "Saved per round")}</small></header>
+      <label className="trap-setting-preset"><span>{text("設定を選択", "Choose setting")}</span><select value={selectedPreset} onChange={(event) => chooseTrapSetting(event.target.value)}><option value="">{text("設定不明", "Unknown")}</option>{trapPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.face}・{preset.setType}・{preset.distanceMeters}m</option>)}<option value="custom">{text("その他・手動入力", "Other / manual")}</option></select></label>
+      {round.trapSetting && <div className="trap-setting-fields">
+        <label><span>{text("射面", "Field")}</span><input placeholder={text("例：第1面", "e.g. Field 1")} value={round.trapSetting.face} onChange={(event) => updateTrapSetting({ face: event.target.value })} /></label>
+        <label><span>{text("セット", "Set")}</span><input placeholder={text("例：ISSF国際セット", "e.g. ISSF set")} value={round.trapSetting.setType} onChange={(event) => updateTrapSetting({ setType: event.target.value })} /></label>
+        <label><span>{text("飛行距離", "Distance")}</span><div><input inputMode="decimal" type="number" min="0" value={round.trapSetting.distanceMeters ?? ""} onChange={(event) => updateTrapSetting({ distanceMeters: event.target.value ? Number(event.target.value) : undefined })} /><small>m</small></div></label>
+        <label><span>{text("速度目安", "Speed estimate")}</span><div><input inputMode="decimal" type="number" min="0" value={round.trapSetting.speedKmh ?? ""} onChange={(event) => updateTrapSetting({ speedKmh: event.target.value ? Number(event.target.value) : undefined })} /><small>km/h</small></div></label>
+        <label><span>{text("確認日", "Confirmed")}</span><input type="date" value={round.trapSetting.confirmedOn ?? ""} onChange={(event) => updateTrapSetting({ confirmedOn: event.target.value })} /></label>
+        <label className="trap-setting-note"><span>{text("補足", "Note")}</span><input value={round.trapSetting.note ?? ""} onChange={(event) => updateTrapSetting({ note: event.target.value })} /></label>
+      </div>}
+      {rangeName.includes("伊勢原") && <p>{text("登録値は設定目安です。当日の射撃場掲示を優先してください。", "Presets are estimates. Always follow the range notice for the day.")}</p>}
+    </section>
     <div className="round-summary"><span>{text("初矢", "First-shot hits")} {stats.firstShotHits}</span><span>{text("二の矢", "Second-shot hits")} {stats.secondShotHits}</span><span>{text("命中後2発目", "Extra shots after hit")} {stats.secondShotsAfterFirstHit}</span><span>{text("失中", "Misses")} {stats.misses}</span><span>{text("実包", "Shells")} {stats.cartridgesUsed}</span></div>
     <div className="cartridge-adjust"><span>{text("実包消費", "Shells used")}</span><small>{text("自動計算", "Calculated")} {stats.expectedCartridgesUsed}</small><label>{text("実数", "Actual")}<input min="0" inputMode="numeric" placeholder={String(stats.expectedCartridgesUsed)} type="number" value={round.actualCartridgesUsed ?? ""} onChange={(event) => updateActualCartridges(event.target.value)} /></label>{round.actualCartridgesUsed !== undefined && <button onClick={() => updateActualCartridges("")}>{text("自動に戻す", "Use calculated")}</button>}</div>
 

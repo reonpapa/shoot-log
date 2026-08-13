@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { createServer } from "vite";
 
-const VERSION = "2.24.2";
+const VERSION = "2.25.0";
 const pdfOnly = process.argv.includes("--pdf-only");
 const english = process.argv.includes("--english");
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -58,7 +58,7 @@ const manualPages = [
   { kicker: "ACCOUNT / SYNC", title: "アカウント設定と同期", bullets: ["スマートフォンの同期状態と所持許可はアカウント設定にまとめています。", "別端末の更新を確認したい場合は「今すぐ同期」を使います。", "通常は自動同期されます。"], images: ["03-account"] },
   { kicker: "SESSIONS", title: "射撃履歴と練習テーマ", bullets: ["主要操作は射撃履歴のタイトル直下に表示します。", "履歴カードから入力再開または成績分析を開きます。", "継続中のテーマと過去の達成状況を確認できます。"], images: ["04-history", "05-practice-theme"] },
   { kicker: "NEW SESSION", title: "新しいセッションを作る", bullets: ["日付、射撃場、種目、実包、使用銃を選択します。", "天候、気温、風向、風の強さは傾向分析に使用します。", "今日の練習テーマを1つ決めます。"], images: ["07-new-session"] },
-  { kicker: "ROUND INPUT", title: "ラウンドの準備", bullets: ["Round 1〜4を上段で切り替えます。", "Round 3以降は追加・削除操作を下段へ分けます。", "新規ラウンドは2発撃ちが初期選択です。"], images: ["08-round-setup"] },
+  { kicker: "ROUND INPUT", title: "ラウンドの準備", bullets: ["Round 1〜4を上段で切り替えます。", "射面、セット、飛行距離、速度目安をラウンドごとに記録できます。", "伊勢原の3射面は候補から選べますが、当日の掲示を優先してください。"], images: ["08-round-setup"] },
   { kicker: "SCORING", title: "クレーごとの結果を入力", bullets: ["「1」は初矢命中、「2」は二の矢命中を記録します。", "「1＋」は初矢命中後にも二発目を撃った場合に使い、命中は初矢の1点、実包は2発として記録します。", "失中方向はクレーの飛翔方向を記録し、入力後は自動で次へ進みます。"], images: ["09-current-shot"] },
   { kicker: "SESSION COMPLETE", title: "成績分析を見る", bullets: ["総合、ラウンド別、初矢・二の矢、失中方向を確認します。", "数値だけで原因を断定せず、練習の振り返りに利用します。"], images: ["10-analysis-summary"] },
   { kicker: "OPTIONAL AI ANALYSIS", title: "自分のAIで分析する", bullets: ["成績、条件、本人の振り返りを分析用データへ含めます。", "日付、射撃場、銃番号、氏名などは除外します。", "コピー内容を確認し、送信は自分で行います。"], images: ["11-ai-analysis"] },
@@ -79,7 +79,7 @@ const englishManualPages = [
   { kicker: "ACCOUNT / SYNC", title: "Account settings and sync", bullets: ["Display language, sync status, and firearm permits are managed from Account settings.", "Use Sync now to fetch changes made on another device.", "Normal changes sync automatically."], images: ["03-account"] },
   { kicker: "SESSIONS", title: "History and practice focus", bullets: ["Major actions appear directly below the Shooting history heading.", "Open a history card to continue entry or view analysis.", "Review the current focus and previous achievement results."], images: ["04-history", "05-practice-theme"] },
   { kicker: "NEW SESSION", title: "Create a session", bullets: ["Select date, range, discipline, ammunition, and firearm.", "Weather, temperature, and wind are used for trend analysis.", "Choose one concrete practice focus for the day."], images: ["07-new-session"] },
-  { kicker: "ROUND INPUT", title: "Prepare a round", bullets: ["Use the upper tabs to switch between Rounds 1 to 4.", "Add and delete controls for later rounds are separated below.", "New rounds begin in two-shot mode."], images: ["08-round-setup"] },
+  { kicker: "ROUND INPUT", title: "Prepare a round", bullets: ["Use the upper tabs to switch between Rounds 1 to 4.", "Record the field, set, target distance, and estimated speed for each round.", "Three Isehara fields are available as presets; always follow the notice displayed on the day."], images: ["08-round-setup"] },
   { kicker: "SCORING", title: "Enter each target", bullets: ["1 records a first-shot hit and 2 records a second-shot hit.", "1+ records a first-shot hit followed by an extra second shot: one point and two shells.", "Miss direction means the target's flight direction. Entry advances automatically."], images: ["09-current-shot"] },
   { kicker: "SESSION COMPLETE", title: "Review the result", bullets: ["Review totals, rounds, first- and second-shot hits, and miss directions.", "Use the figures for reflection without inferring causes that were not recorded."], images: ["10-analysis-summary"] },
   { kicker: "OPTIONAL AI ANALYSIS", title: "Analyze with your own AI", bullets: ["The export includes scores, conditions, and your written review.", "Dates, range names, firearm identifiers, and personal identity are excluded.", "Review the copied content and send it yourself."], images: ["11-ai-analysis"] },

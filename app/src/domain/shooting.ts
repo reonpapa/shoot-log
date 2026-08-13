@@ -5,6 +5,15 @@ export type ShotResult = "hit" | "miss" | "not-fired";
 export type FinalResult = "hit-on-first" | "hit-on-second" | "miss" | "skip";
 export type MissDirection = "left" | "center" | "right" | "unknown";
 
+export interface TrapSetting {
+  face: string;
+  setType: string;
+  distanceMeters?: number;
+  speedKmh?: number;
+  confirmedOn?: string;
+  note?: string;
+}
+
 export interface SessionDetails {
   date: string;
   rangeName: string;
@@ -77,6 +86,7 @@ export interface ShootingRound {
   startStandNo: StandNo;
   fireMode: FireMode;
   actualCartridgesUsed?: number;
+  trapSetting?: TrapSetting;
   shots: Shot[];
   memo?: string;
 }

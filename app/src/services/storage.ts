@@ -1,4 +1,4 @@
-import type { FinalResult, MissDirection, SessionDetails, SessionReview, ShootingRound, ShotResult, StandNo } from "../domain/shooting";
+import type { FinalResult, MissDirection, SessionDetails, SessionReview, ShootingRound, ShotResult, StandNo, TrapSetting } from "../domain/shooting";
 
 const STORAGE_KEY = "shoot-log.sessions.v1";
 
@@ -31,7 +31,16 @@ function normalizeRound(value: unknown): ShootingRound | null {
   });
   if (shots.some((shot) => shot === null)) return null;
   const actual = typeof value.actualCartridgesUsed === "number" && Number.isFinite(value.actualCartridgesUsed) && value.actualCartridgesUsed >= 0 ? value.actualCartridgesUsed : undefined;
-  return { id: value.id, roundNo: value.roundNo, startStandNo: value.startStandNo, fireMode: value.fireMode === "single" ? "single" : "double", shots: shots as ShootingRound["shots"], ...(actual !== undefined ? { actualCartridgesUsed: actual } : {}), ...(isString(value.memo) ? { memo: value.memo } : {}) };
+  const rawSetting = isRecord(value.trapSetting) ? value.trapSetting : null;
+  const trapSetting: TrapSetting | undefined = rawSetting && isString(rawSetting.face) && rawSetting.face.trim() ? {
+    face: rawSetting.face,
+    setType: isString(rawSetting.setType) ? rawSetting.setType : "",
+    ...(typeof rawSetting.distanceMeters === "number" && Number.isFinite(rawSetting.distanceMeters) ? { distanceMeters: rawSetting.distanceMeters } : {}),
+    ...(typeof rawSetting.speedKmh === "number" && Number.isFinite(rawSetting.speedKmh) ? { speedKmh: rawSetting.speedKmh } : {}),
+    ...(isString(rawSetting.confirmedOn) ? { confirmedOn: rawSetting.confirmedOn } : {}),
+    ...(isString(rawSetting.note) ? { note: rawSetting.note } : {}),
+  } : undefined;
+  return { id: value.id, roundNo: value.roundNo, startStandNo: value.startStandNo, fireMode: value.fireMode === "single" ? "single" : "double", shots: shots as ShootingRound["shots"], ...(actual !== undefined ? { actualCartridgesUsed: actual } : {}), ...(trapSetting ? { trapSetting } : {}), ...(isString(value.memo) ? { memo: value.memo } : {}) };
 }
 
 export function normalizeStoredSession(value: unknown): StoredSession | null {

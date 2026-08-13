@@ -8,6 +8,7 @@ import { formatWindDirection } from "../services/sessionConditions";
 import { StandRadialChart } from "./StandRadialChart";
 import "./HistoryAnalysis.css";
 import { useLanguage } from "../i18n/LanguageContext";
+import { getTrapSettingPerformance } from "../services/trapSettings";
 
 interface Props { sessions: StoredSession[]; }
 type Period = "all" | "5" | "10";
@@ -44,6 +45,7 @@ export function HistoryAnalysis({ sessions }: Props) {
   const stands = calculateStandStats({ id: "history", date: "", rangeName: "", ammunitionName: "", rounds });
   const directionScaleMax = Math.max(1, ...stands.flatMap((stand) => [stand.missDirections.left, stand.missDirections.center, stand.missDirections.right]));
   const ammunitionPerformance = getAmmunitionPerformance(filtered);
+  const trapSettingPerformance = discipline === "trap" ? getTrapSettingPerformance(rounds) : [];
   const conditionPerformance = getConditionPerformance(filtered);
   const hasConditionPerformance = conditionPerformance.weather.length > 0 || conditionPerformance.windDirection.length > 0 || conditionPerformance.windStrength.length > 0;
   const houseStats = rounds.flatMap((round) => round.shots).reduce((result, shot) => {
@@ -89,6 +91,7 @@ export function HistoryAnalysis({ sessions }: Props) {
         return <article key={item.id}><div className="trend-value">{sessionAverage.toFixed(1)}</div><div className="trend-track"><div style={{ height: `${sessionAverage / 25 * 100}%` }} /></div><strong>{item.session.date.slice(5)}</strong><small>{item.rounds.length}R</small></article>;
       })}</div></div></section>
       <section className="history-stands"><header><h3>{text("射台別成績", "Performance by stand")}</h3><div className="radial-legend"><span><i className="legend-hit" />{text("総合命中率", "Hit rate")}</span><span><i className="legend-first" />{text("初矢命中率", "First-shot rate")}</span><span><i className="legend-left" />←{text("失中", "Miss")}</span><span><i className="legend-center" />↑{text("失中", "Miss")}</span><span><i className="legend-right" />→{text("失中", "Miss")}</span></div></header><div>{stands.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
+      {trapSettingPerformance.length > 0 && <section className="trap-setting-performance"><header><div><p className="eyebrow">TARGET SETTING</p><h3>{text("射面・クレー設定別", "By field and target setting")}</h3></div><small>{text("設定済みラウンドのみ", "Rounds with settings only")}</small></header><div>{trapSettingPerformance.map((item) => <article key={item.key}><header><strong>{item.label}</strong>{item.rounds < 3 && <span>{text("参考値", "Indicative")}</span>}</header><p><b>{item.averageScore.toFixed(1)}</b><small> / 25</small></p><footer><span>{[item.distanceMeters ? `${item.distanceMeters}m` : "", item.speedKmh ? `${item.speedKmh}km/h` : ""].filter(Boolean).join("・") || text("数値未設定", "No values")}</span><span>{item.rounds}R</span></footer></article>)}</div><p>{text("射面の設定は変更される場合があります。記録した当日の条件として比較してください。", "Target settings may change. Compare them as conditions recorded for that day.")}</p></section>}
     </>}
   </section>;
 }

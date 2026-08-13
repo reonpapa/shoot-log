@@ -72,7 +72,7 @@ function App() {
       return;
     }
     let active = true;
-    const usageKey = "shoot-log-usage-recorded-2.24.2";
+    const usageKey = "shoot-log-usage-recorded-2.25.0";
     const usage = sessionStorage.getItem(usageKey) ? Promise.resolve() : recordUsage(language).then(() => sessionStorage.setItem(usageKey, "1"));
     void Promise.allSettled([usage, checkAdmin()]).then((results) => {
       if (active && results[1].status === "fulfilled") setIsAdmin(results[1].value);
@@ -100,7 +100,7 @@ function App() {
   function updateRound(round: ShootingRound) { updateActive((session) => ({ ...session, rounds: session.rounds.map((item) => item.id === round.id ? round : item) })); }
   function addRound() {
     if (!activeSession || activeSession.rounds.length >= MAX_ROUNDS) return;
-    const round = activeSession.session.discipline === "skeet" ? createEmptySkeetRound(activeSession.rounds.length + 1) : createEmptyRound(activeSession.rounds.length + 1);
+    const round = activeSession.session.discipline === "skeet" ? createEmptySkeetRound(activeSession.rounds.length + 1) : { ...createEmptyRound(activeSession.rounds.length + 1), trapSetting: activeSession.rounds.at(-1)?.trapSetting };
     updateActive((session) => ({ ...session, rounds: [...session.rounds, round] })); setActiveRoundId(round.id);
   }
   function deleteActiveRound() {
@@ -195,7 +195,7 @@ function App() {
 
   return <main className="app-shell">
     {displayedScreen === "list" && <PermitChangeAlert firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} />}
-    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.24.2</p></header>
+    <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.25.0</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><div className="history-desktop-status"><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} /></div><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
     {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} />}
@@ -216,7 +216,7 @@ function App() {
         <nav className="round-tabs" aria-label={text("ラウンド選択", "Select round")}>{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}</nav>
         <div className="round-actions">{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}{activeSession.rounds.length > 1 && <button className="delete-round-button" onClick={deleteActiveRound}>Round {activeRound.roundNo} 削除</button>}</div>
       </div>
-      <RoundInput key={activeRound.id} round={activeRound} discipline={activeSession.session.discipline} onChange={updateRound} />
+      <RoundInput key={activeRound.id} round={activeRound} rangeName={activeSession.session.rangeName} discipline={activeSession.session.discipline} onChange={updateRound} />
     </>}
     {displayedScreen === "analysis" && activeSession && <SessionAnalysis session={activeSession} reviewAdvice={reviewAdvice} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} onSaveReview={saveReview} />}
   </main>;
