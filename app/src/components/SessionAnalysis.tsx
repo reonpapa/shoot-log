@@ -41,7 +41,7 @@ export function SessionAnalysis({ session, reviewAdvice, aiInitiallyOpen = false
   return <section className="session-analysis">
     <header className="analysis-header">
       <div><p className="eyebrow">SESSION COMPLETE</p><h2>{session.session.date}　{session.session.rangeName}</h2><p>{session.session.discipline.toUpperCase()} ・ {session.session.ammunitionName}</p>{conditions && <p className="analysis-conditions">{text("コンディション：", "Conditions: ")}{conditions}</p>}</div>
-      <div className="analysis-actions"><button onClick={onBack}>{text("履歴へ戻る", "Back to history")}</button><button onClick={onEdit}>{text("基本情報を編集", "Edit details")}</button><button className="primary-button" onClick={onResume}>{text("スコア編集を再開", "Edit scores")}</button></div>
+      <div className="analysis-actions"><button onClick={onEdit}>{text("基本情報を編集", "Edit details")}</button><button onClick={onBack}>{text("履歴へ戻る", "Back to history")}</button><button className="primary-button" onClick={onResume}>{text("スコア編集を再開", "Edit scores")}</button></div>
     </header>
 
     <PracticeThemeBanner compact theme={session.session.practiceTheme ?? ""} achievement={session.review.themeAchievement} />

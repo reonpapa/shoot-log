@@ -5,7 +5,7 @@ interface Props {
   onBack: () => void;
 }
 
-const APP_VERSION = "2.25.1";
+const APP_VERSION = "2.25.2";
 
 function createInquiryHref(language: "ja" | "en"): string {
   const subject = language === "ja" ? "[Shoot Log] お問い合わせ" : "[Shoot Log] Support request";
