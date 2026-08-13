@@ -8,9 +8,15 @@ describe("気温入力", () => {
     expect(validateTemperatureInput("")).toBe("");
   });
 
-  it("全角数字や文字を受け付けない", () => {
-    expect(validateTemperatureInput("１８")).toBeNull();
-    expect(validateTemperatureInput("18℃")).toBeNull();
+  it("全角入力を半角へ変換する", () => {
+    expect(validateTemperatureInput("１８")).toBe("18");
+    expect(validateTemperatureInput("－３．５")).toBe("-3.5");
+    expect(validateTemperatureInput("ー３。５")).toBe("-3.5");
+    expect(validateTemperatureInput("１８℃")).toBe("18");
+  });
+
+  it("温度として不正な文字列は受け付けない", () => {
+    expect(validateTemperatureInput("十八")).toBeNull();
     expect(validateTemperatureInput("1.2.3")).toBeNull();
   });
 });
