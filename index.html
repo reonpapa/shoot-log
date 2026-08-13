@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="google" content="notranslate" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#6d3bd1" />
+    <meta name="description" content="上達のためのクレー射撃分析・実包管理アプリ" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Shoot Log" />
+    <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <title>Shoot Log</title>
+  </head>
+  <body class="notranslate">
+    <div id="root" translate="no"><main style="width:min(100% - 32px,620px);margin:12vh auto;padding:28px;color:inherit;font-family:-apple-system,BlinkMacSystemFont,sans-serif"><p style="font-size:12px;letter-spacing:.14em;opacity:.6">SHOOT LOG</p><h1 style="font-size:28px">起動しています…</h1><p style="line-height:1.6;opacity:.7">表示が変わらない場合は、入力済みデータを残したままアプリ部分だけを復旧できます。</p><button id="pwa-recovery-button" style="min-height:43px;padding:0 16px;border:0;border-radius:9px;background:#6d3bd1;color:#fff;font-weight:800">アプリを安全に復旧</button></main></div>
+    <script>
+      (() => {
+        const recover = async () => {
+          const button = document.getElementById("pwa-recovery-button");
+          if (button) { button.textContent = "復旧しています…"; button.setAttribute("disabled", ""); }
+          const manifest = document.querySelector('link[rel="manifest"]');
+          const scope = manifest ? new URL(".", manifest.href).href : new URL(".", window.location.href).href;
+          if ("serviceWorker" in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.filter((registration) => registration.scope === scope).map((registration) => registration.unregister()));
+          }
+          if ("caches" in window) {
+            const names = await caches.keys();
+            await Promise.all(names.filter((name) => name.startsWith("shoot-log-")).map((name) => caches.delete(name)));
+          }
+          window.location.reload();
+        };
+        document.getElementById("pwa-recovery-button")?.addEventListener("click", () => void recover());
+        window.setTimeout(() => {
+          if (!window.__SHOOT_LOG_READY__ && navigator.onLine && sessionStorage.getItem("shoot-log-auto-recovery-2.23.2") !== "1") {
+            sessionStorage.setItem("shoot-log-auto-recovery-2.23.2", "1");
+            void recover();
+          }
+        }, 12000);
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+.install-guide { overflow: hidden; border: 1px solid #6d3bd155; border-radius: 14px; background: linear-gradient(135deg, #6d3bd112, #8881); }
+.install-guide summary { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 22px; cursor: pointer; list-style: none; }
+.install-guide summary::-webkit-details-marker { display: none; }
+.install-guide summary > div { display: grid; gap: 3px; }
+.install-guide summary span { font-size: .62rem; font-weight: 900; letter-spacing: .14em; opacity: .55; }
+.install-guide summary strong { font-size: 1rem; }
+.install-guide summary small { font-size: .72rem; opacity: .62; }
+.install-guide summary i { flex: none; padding: 6px 10px; border-radius: 999px; background: #6d3bd118; color: var(--accent-text); font-size: .68rem; font-style: normal; font-weight: 800; }
+.install-guide summary i.installed { background: #4a9b6422; color: #3f8a58; }
+.install-guide[open] summary { border-bottom: 1px solid #8883; }
+.install-guide-content { display: grid; gap: 14px; padding: 18px 22px 22px; }
+.install-guide-content > p { margin: 0; font-size: .75rem; opacity: .68; }
+.install-browser-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.install-browser-grid article { display: grid; align-content: start; gap: 13px; min-width: 0; padding: 15px; border: 1px solid #8884; border-radius: 11px; background: #8881; }
+.install-browser-grid article.current { border-color: #6d3bd188; box-shadow: inset 0 0 0 1px #6d3bd122; }
+.install-browser-grid article > header { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+.install-browser-grid article > header strong { font-size: .9rem; }
+.install-browser-grid article > header span { padding: 4px 7px; border-radius: 999px; background: #6d3bd11f; color: var(--accent-text); font-size: .58rem; font-weight: 800; }
+.install-browser-grid article > div { display: grid; gap: 5px; }
+.install-browser-grid b { font-size: .68rem; }
+.install-browser-grid ol { display: grid; gap: 3px; margin: 0; padding-left: 19px; font-size: .68rem; line-height: 1.45; opacity: .75; }
+.install-browser-note { padding: 10px 12px; border-radius: 8px; background: #ad7a2618; color: #8d621d; font-weight: 700; opacity: 1 !important; }
+@media (max-width: 760px) { .install-guide summary { align-items: flex-start; padding: 17px 18px; }.install-guide summary small { max-width: 250px; }.install-guide-content { padding: 16px 18px 19px; }.install-browser-grid { grid-template-columns: 1fr; }.install-browser-grid article { padding: 14px; } }

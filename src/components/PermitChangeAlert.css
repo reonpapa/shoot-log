@@ -1,0 +1,10 @@
+.permit-change-alert { display: none; }
+@media (max-width: 700px) {
+  .permit-change-alert { display: flex; align-items: center; width: 100%; gap: 11px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid #df842e88; border-radius: 11px; background: #df842e20; color: inherit; text-align: left; }
+  .permit-change-alert > span { display: grid; flex: none; width: 27px; height: 27px; place-items: center; border-radius: 50%; background: #df842e; color: #fff; font-weight: 900; }
+  .permit-change-alert > div { display: grid; min-width: 0; gap: 2px; }
+  .permit-change-alert strong { font-size: .83rem; }
+  .permit-change-alert small { overflow-wrap: anywhere; font-size: .7rem; opacity: .75; }
+  .permit-change-alert.deadline-missed, .permit-change-alert.expired { border-color: #d84b4b99; background: #d84b4b20; }
+  .permit-change-alert.deadline-missed > span, .permit-change-alert.expired > span { background: #d84b4b; }
+}
