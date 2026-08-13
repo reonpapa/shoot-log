@@ -1,6 +1,6 @@
 import { supabase } from "./cloudSync";
 
-export const APP_VERSION = "2.24.0";
+export const APP_VERSION = "2.24.1";
 
 export interface UsageBreakdown { label: string; count: number }
 export interface AdminStats {

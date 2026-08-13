@@ -18,4 +18,7 @@
 .account-admin-link { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px; border: 1px solid #bfa6ed; border-radius: 14px; background: #f5f0ff; }
 .account-admin-link div { display: grid; gap: 4px; }
 .account-admin-link p, .account-admin-link small { margin: 0; }
+.account-admin-link .eyebrow { color: var(--accent-text); }
+.account-admin-link small { font-size: .72rem; opacity: .65; }
+.account-admin-link > button { min-height: 42px; padding: 0 15px; border: 0; border-radius: 9px; background: #6d3bd1; color: #fff; font-weight: 800; white-space: nowrap; }
 @media (max-width: 600px) { .account-admin-link { align-items: stretch; flex-direction: column; } }
