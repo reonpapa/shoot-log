@@ -50,6 +50,9 @@ const captures = [
   { name: "17-firearm-permit", scene: "permit", selector: ".permit-profile" },
   { name: "18-backup", scene: "backup", selector: ".data-management" },
   { name: "19-support", scene: "support", selector: ".contact-support" },
+  { name: "20-round-ammunition", scene: "round-before", selector: ".round-ammunition" },
+  { name: "21-ammunition-purchase", scene: "ledger", selector: ".ammo-entry-form" },
+  { name: "22-ammunition-amount", scene: "ledger", selector: ".ammo-summary" },
 ];
 
 const manualPages = [
@@ -57,8 +60,8 @@ const manualPages = [
   { kicker: "INSTALL / LOGIN", title: "インストールとログイン", bullets: ["SafariまたはChromeからホーム画面へ追加します。", "メールアドレスとパスワードでログインします。", "認証情報や再設定リンクは他人へ送らないでください。"], images: ["01-install", "02-login"] },
   { kicker: "ACCOUNT / SYNC", title: "アカウント設定と同期", bullets: ["スマートフォンの同期状態と所持許可はアカウント設定にまとめています。", "別端末の更新を確認したい場合は「今すぐ同期」を使います。", "通常は自動同期されます。"], images: ["03-account"] },
   { kicker: "SESSIONS", title: "射撃履歴と練習テーマ", bullets: ["主要操作は射撃履歴のタイトル直下に表示します。", "履歴カードから入力再開または成績分析を開きます。", "継続中のテーマと過去の達成状況を確認できます。"], images: ["04-history", "05-practice-theme"] },
-  { kicker: "NEW SESSION", title: "新しいセッションを作る", bullets: ["日付、射撃場、種目、実包、使用銃を選択します。", "天候、気温、風向、風の強さは傾向分析に使用します。", "今日の練習テーマを1つ決めます。"], images: ["07-new-session"] },
-  { kicker: "ROUND INPUT", title: "ラウンドの準備", bullets: ["Round 1〜4を上段で切り替えます。", "射面、セット、飛行距離、速度目安をラウンドごとに記録できます。", "伊勢原と大井の射面は候補から選べますが、当日の掲示を優先してください。"], images: ["08-round-setup"] },
+  { kicker: "NEW SESSION", title: "新しいセッションを作る", bullets: ["日付、射撃場、種目、実包、使用銃を選択します。", "実包は複数選べます。複数選ぶと、ラウンドごとに使用実包を切り替えられます。", "天候、気温、風向、風の強さは傾向分析に使用します。", "今日の練習テーマを1つ決めます。"], images: ["07-new-session"] },
+  { kicker: "ROUND INPUT", title: "ラウンドの準備", bullets: ["Round 1〜4を上段で切り替えます。", "射面、セット、飛行距離、速度目安をラウンドごとに記録できます。", "伊勢原と大井の射面は候補から選べますが、当日の掲示を優先してください。", "実包を複数選んだセッションでは、そのラウンドで使った実包を選びます。消費は実包区分ごとに台帳へ転記されます。"], images: ["08-round-setup", "20-round-ammunition"] },
   { kicker: "SCORING", title: "クレーごとの結果を入力", bullets: ["「1」は初矢命中、「2」は二の矢命中を記録します。", "「1＋」は初矢命中後にも二発目を撃った場合に使い、命中は初矢の1点、実包は2発として記録します。", "失中方向はクレーの飛翔方向を記録し、入力後は自動で次へ進みます。"], images: ["09-current-shot"] },
   { kicker: "SESSION COMPLETE", title: "成績分析を見る", bullets: ["総合、ラウンド別、初矢・二の矢、失中方向を確認します。", "数値だけで原因を断定せず、練習の振り返りに利用します。"], images: ["10-analysis-summary"] },
   { kicker: "OPTIONAL AI ANALYSIS", title: "自分のAIで分析する", bullets: ["成績、条件、本人の振り返りを分析用データへ含めます。", "日付、射撃場、銃番号、氏名などは除外します。", "コピー内容を確認し、送信は自分で行います。"], images: ["11-ai-analysis"] },
@@ -67,6 +70,7 @@ const manualPages = [
   { kicker: "HISTORY ANALYSIS", title: "条件別・実包別の傾向", bullets: ["射撃場、実包、発射方式、期間で履歴を絞り込みます。", "条件差と記録数を確認し、少数データは参考値として扱います。"], images: ["06-history-analysis"] },
   { kicker: "MASTER DATA", title: "登録内容を管理する", bullets: ["射撃場名と実包名を追加・修正します。", "名称変更は過去の履歴にも反映されます。"], images: ["15-master-data"] },
   { kicker: "AMMUNITION LEDGER", title: "実包管理帳簿", bullets: ["受・払・残を記録し、射撃セッションの消費を自動転記します。", "出力前に区分、使用銃、期間を確認します。"], images: ["16-ammunition-ledger"] },
+  { kicker: "PURCHASE AMOUNT", title: "購入金額と単価", bullets: ["購入・譲受の行に合計金額を入力すると、数量から1発あたりの単価を自動計算します。", "過去に登録済みの購入行も、台帳の「金額」欄に直接入力できます。", "年間の購入金額と全期間の平均単価を画面上部で確認できます。", "金額は画面表示のみで、神奈川県様式の印刷帳簿には出力されません。"], images: ["21-ammunition-purchase", "22-ammunition-amount"] },
   { kicker: "FIREARM PERMIT", title: "所持許可・更新管理", bullets: ["許可証原本の記載を最優先で入力します。", "更新申請開始日、期限、有効期限を銃ごとに管理します。", "氏名、住所、生年月日は保存しません。"], images: ["17-firearm-permit"] },
   { kicker: "BACKUP", title: "バックアップと復元", bullets: ["端末内の全データをJSONファイルへ保存します。", "復元は現在のデータを残したまま統合します。", "大きな操作の前に最新バックアップを保存してください。"], images: ["18-backup"] },
   { kicker: "SUPPORT", title: "困ったときの確認表", bullets: ["同期されない場合は通信状態とログイン中のアカウントを確認します。", "画面が古い場合は更新通知または復旧操作を使用します。", "問い合わせへパスワードや許可証番号を記載しないでください。"], images: ["19-support"] },
@@ -78,8 +82,8 @@ const englishManualPages = [
   { kicker: "INSTALL / LOGIN", title: "Install and sign in", bullets: ["Add Shoot Log to the Home Screen or Dock from Safari, Chrome, or Edge.", "Sign in with your email address and password.", "Never share authentication or password-reset links."], images: ["01-install", "02-login"] },
   { kicker: "ACCOUNT / SYNC", title: "Account settings and sync", bullets: ["Display language, sync status, and firearm permits are managed from Account settings.", "Use Sync now to fetch changes made on another device.", "Normal changes sync automatically."], images: ["03-account"] },
   { kicker: "SESSIONS", title: "History and practice focus", bullets: ["Major actions appear directly below the Shooting history heading.", "Open a history card to continue entry or view analysis.", "Review the current focus and previous achievement results."], images: ["04-history", "05-practice-theme"] },
-  { kicker: "NEW SESSION", title: "Create a session", bullets: ["Select date, range, discipline, ammunition, and firearm.", "Weather, temperature, and wind are used for trend analysis.", "Choose one concrete practice focus for the day."], images: ["07-new-session"] },
-  { kicker: "ROUND INPUT", title: "Prepare a round", bullets: ["Use the upper tabs to switch between Rounds 1 to 4.", "Record the field, set, target distance, and estimated speed for each round.", "Isehara and Ooi fields are available as presets; always follow the notice displayed on the day."], images: ["08-round-setup"] },
+  { kicker: "NEW SESSION", title: "Create a session", bullets: ["Select date, range, discipline, ammunition, and firearm.", "You can select more than one ammunition; each round can then use a different one.", "Weather, temperature, and wind are used for trend analysis.", "Choose one concrete practice focus for the day."], images: ["07-new-session"] },
+  { kicker: "ROUND INPUT", title: "Prepare a round", bullets: ["Use the upper tabs to switch between Rounds 1 to 4.", "Record the field, set, target distance, and estimated speed for each round.", "Isehara and Ooi fields are available as presets; always follow the notice displayed on the day.", "When a session uses several ammunition products, pick the one used in that round; usage is posted to the ledger per category."], images: ["08-round-setup", "20-round-ammunition"] },
   { kicker: "SCORING", title: "Enter each target", bullets: ["1 records a first-shot hit and 2 records a second-shot hit.", "1+ records a first-shot hit followed by an extra second shot: one point and two shells.", "Miss direction means the target's flight direction. Entry advances automatically."], images: ["09-current-shot"] },
   { kicker: "SESSION COMPLETE", title: "Review the result", bullets: ["Review totals, rounds, first- and second-shot hits, and miss directions.", "Use the figures for reflection without inferring causes that were not recorded."], images: ["10-analysis-summary"] },
   { kicker: "OPTIONAL AI ANALYSIS", title: "Analyze with your own AI", bullets: ["The export includes scores, conditions, and your written review.", "Dates, range names, firearm identifiers, and personal identity are excluded.", "Review the copied content and send it yourself."], images: ["11-ai-analysis"] },
@@ -88,6 +92,7 @@ const englishManualPages = [
   { kicker: "HISTORY ANALYSIS", title: "Condition and ammunition trends", bullets: ["Filter history by range, ammunition, fire mode, and period.", "Check both condition differences and sample size; treat small samples as indicative."], images: ["06-history-analysis"] },
   { kicker: "MASTER DATA", title: "Manage saved items", bullets: ["Add or rename shooting ranges and ammunition products.", "Renaming is reflected in past history."], images: ["15-master-data"] },
   { kicker: "AMMUNITION LEDGER", title: "Manage ammunition", bullets: ["Record ammunition received, used, and remaining; completed sessions are added automatically.", "Confirm category, firearm, and date range before output."], images: ["16-ammunition-ledger"] },
+  { kicker: "PURCHASE AMOUNT", title: "Purchase amount and unit price", bullets: ["Enter the total paid on an acquisition row and the price per shell is calculated from the quantity.", "Rows recorded earlier can be updated directly in the Amount column of the ledger table.", "The yearly purchase total and the all-time average unit price are shown at the top of the screen.", "Amounts are shown on screen only and are not printed on the Kanagawa ledger form."], images: ["21-ammunition-purchase", "22-ammunition-amount"] },
   { kicker: "FIREARM PERMIT", title: "Permit and renewal", bullets: ["Always copy information from the original permit.", "Manage application start, deadline, and expiry for each firearm.", "Name, address, and date of birth are not stored."], images: ["17-firearm-permit"] },
   { kicker: "BACKUP", title: "Backup and restore", bullets: ["Export all device data to a JSON file.", "Restore merges with current data instead of deleting it.", "Save a fresh backup before major data operations."], images: ["18-backup"] },
   { kicker: "SUPPORT", title: "If something goes wrong", bullets: ["If data does not sync, check the connection and signed-in account.", "If the screen is outdated, use the update notice or safe recovery.", "Never include passwords or firearm permit numbers in support email."], images: ["19-support"] },
@@ -186,7 +191,7 @@ try {
         try {
           await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
           await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }]);
-          await page.goto(`${origin}/manual-preview.html?scene=${capture.scene}${english ? "&lang=en" : ""}`, { waitUntil: "networkidle0" });
+          await page.goto(`${origin}/manual-preview.html?scene=${capture.scene}&lang=${english ? "en" : "ja"}`, { waitUntil: "networkidle0" });
           await page.waitForSelector(capture.selector, { visible: true, timeout: 30_000 });
           await page.evaluate(async (selector) => {
             await document.fonts.ready;

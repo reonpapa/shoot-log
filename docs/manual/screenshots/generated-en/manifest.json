@@ -1,5 +1,5 @@
 {
-  "version": "2.26.0",
+  "version": "2.27.0",
   "viewport": {
     "width": 390,
     "height": 844,
@@ -100,6 +100,21 @@
       "name": "19-support",
       "scene": "support",
       "selector": ".contact-support"
+    },
+    {
+      "name": "20-round-ammunition",
+      "scene": "round-before",
+      "selector": ".round-ammunition"
+    },
+    {
+      "name": "21-ammunition-purchase",
+      "scene": "ledger",
+      "selector": ".ammo-entry-form"
+    },
+    {
+      "name": "22-ammunition-amount",
+      "scene": "ledger",
+      "selector": ".ammo-summary"
     }
   ]
 }

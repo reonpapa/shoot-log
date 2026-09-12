@@ -23,6 +23,7 @@ import { createEmptySkeetRound } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import type { CloudHealthView, CloudSyncView } from "./hooks/useCloudSync";
 import type { StoredSession } from "./services/storage";
+import { getSessionAmmunitionNames } from "./domain/shooting";
 import { APP_VERSION } from "./appVersion";
 
 const noop = () => undefined;
@@ -128,6 +129,7 @@ const session: StoredSession = {
     rangeName: sample("大井射撃場", "Sample Clay Range"),
     discipline: "trap",
     ammunitionName: "Sample 7.5",
+    ammunitionNames: ["Sample 7.5", "Practice 24g"],
     firearmId: firearm.id,
     practiceTheme: sample("クレーを見てから動く", "See the target before moving"),
     weather: sample("薄曇り", "Partly cloudy"),
@@ -162,10 +164,10 @@ const initialLedger: AmmunitionLedgerData = {
   permitProfile: { certificateNumber: sample("（説明用）", "DEMO"), originalIssueDate: "2024-04-01", issueDate: "2024-04-01" },
   categories: [{ id: "trap-shell", name: sample("12番・散", "12 gauge / shot"), family: "shot-shell" }],
   firearms: [firearm],
-  productLinks: [{ ammunitionName: "Sample 7.5", categoryId: "trap-shell" }],
+  productLinks: [{ ammunitionName: "Sample 7.5", categoryId: "trap-shell" }, { ammunitionName: "Practice 24g", categoryId: "trap-shell" }],
   entries: [
     { id: "opening", date: "2026-07-01", type: "opening", categoryId: "trap-shell", quantity: 500, application: sample("開始残弾（説明用）", "Opening balance (sample)"), createdAt: "2026-07-01T00:00:00.000Z" },
-    { id: "purchase", date: "2026-07-10", type: "acquisition", categoryId: "trap-shell", quantity: 250, firearmId: firearm.id, application: sample("サンプル銃砲店", "Sample Gun Shop"), createdAt: "2026-07-10T00:00:00.000Z" },
+    { id: "purchase", date: "2026-07-10", type: "acquisition", categoryId: "trap-shell", quantity: 250, totalAmount: 12500, firearmId: firearm.id, application: sample("サンプル銃砲店", "Sample Gun Shop"), createdAt: "2026-07-10T00:00:00.000Z" },
   ],
 };
 
@@ -187,7 +189,7 @@ function RoundScene({ state }: { state: "before" | "after" }) {
     <section className="session-summary"><div><strong>{session.session.date}</strong><span>{session.session.rangeName}</span></div><div><span>{sample("TRAP ・ 4ラウンド", "TRAP · 4 rounds")}</span><strong>{stats.score} / {stats.targets} {sample(`実包 ${stats.cartridgesUsed}発`, `${stats.cartridgesUsed} shells`)}</strong><span>{session.session.ammunitionName}</span></div><div className="session-actions"><button>{sample("基本情報を編集", "Edit details")}</button><button>{sample("履歴へ戻る", "Back to history")}</button><button className="complete-button">{sample("セッション完了", "Complete session")}</button></div></section>
     <PracticeThemeBanner theme={session.session.practiceTheme ?? ""} />
     <div className="round-navigation round-navigation-stacked"><nav className="round-tabs" aria-label={sample("ラウンド選択", "Round selection")}>{sceneRounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRound(round)}>Round {round.roundNo}</button>)}</nav><div className="round-actions"><button className="delete-round-button">{sample(`Round ${activeRound.roundNo} 削除`, `Delete Round ${activeRound.roundNo}`)}</button></div></div>
-    <RoundInput key={activeRound.id} round={activeRound} onChange={setActiveRound} />
+    <RoundInput key={activeRound.id} round={activeRound} ammunitionNames={getSessionAmmunitionNames(session.session)} onChange={setActiveRound} />
   </>;
 }
 
