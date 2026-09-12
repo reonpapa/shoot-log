@@ -15,7 +15,7 @@ import { PermitManager } from "./components/PermitManager";
 import { PwaStatus } from "./components/PwaStatus";
 import { CloudSyncStatus } from "./components/CloudSyncStatus";
 import { PracticeThemeBanner } from "./components/PracticeThemeBanner";
-import { createEmptyRound, createEmptySkeetRound, type ShootingRound } from "./domain/shooting";
+import { createEmptyRound, createEmptySkeetRound, getSessionAmmunitionNames, type ShootingRound } from "./domain/shooting";
 import type { SessionReview } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import { loadSessions, saveSessions, type StoredSession } from "./services/storage";
@@ -101,7 +101,9 @@ function App() {
   function updateRound(round: ShootingRound) { updateActive((session) => ({ ...session, rounds: session.rounds.map((item) => item.id === round.id ? round : item) })); }
   function addRound() {
     if (!activeSession || activeSession.rounds.length >= MAX_ROUNDS) return;
-    const round = activeSession.session.discipline === "skeet" ? createEmptySkeetRound(activeSession.rounds.length + 1) : { ...createEmptyRound(activeSession.rounds.length + 1), trapSetting: activeSession.rounds.at(-1)?.trapSetting };
+    const base = activeSession.session.discipline === "skeet" ? createEmptySkeetRound(activeSession.rounds.length + 1) : { ...createEmptyRound(activeSession.rounds.length + 1), trapSetting: activeSession.rounds.at(-1)?.trapSetting };
+    const previousAmmunition = activeSession.rounds.at(-1)?.ammunitionName;
+    const round = previousAmmunition ? { ...base, ammunitionName: previousAmmunition } : base;
     updateActive((session) => ({ ...session, rounds: [...session.rounds, round] })); setActiveRoundId(round.id);
   }
   function deleteActiveRound() {
@@ -155,7 +157,17 @@ function App() {
     setMasterData((current) => kind === "range"
       ? { ...current, rangeNames: [...new Set(current.rangeNames.map((value) => value === oldValue ? newValue : value))].sort((a, b) => a.localeCompare(b, "ja")), rangeTrapSettings: current.rangeTrapSettings.map((item) => item.rangeName === oldValue ? { ...item, rangeName: newValue } : item) }
       : { ...current, ammunitionNames: [...new Set(current.ammunitionNames.map((value) => value === oldValue ? newValue : value))].sort((a, b) => a.localeCompare(b, "ja")) });
-    setSessions((current) => current.map((item) => ({ ...item, session: { ...item.session, ...(kind === "range" && item.session.rangeName === oldValue ? { rangeName: newValue } : {}), ...(kind === "ammunition" && item.session.ammunitionName === oldValue ? { ammunitionName: newValue } : {}) } })));
+    setSessions((current) => current.map((item) => {
+      if (kind === "range") return item.session.rangeName === oldValue ? { ...item, session: { ...item.session, rangeName: newValue } } : item;
+      const names = getSessionAmmunitionNames(item.session);
+      if (!names.includes(oldValue)) return item;
+      const renamed = [...new Set(names.map((value) => value === oldValue ? newValue : value))];
+      return {
+        ...item,
+        session: { ...item.session, ammunitionName: renamed[0] ?? "", ...(renamed.length > 1 ? { ammunitionNames: renamed } : { ammunitionNames: undefined }) },
+        rounds: item.rounds.map((round) => round.ammunitionName === oldValue ? { ...round, ammunitionName: newValue } : round),
+      };
+    }));
     if (kind === "ammunition") setAmmunitionLedger((current) => ({ ...current, productLinks: current.productLinks.map((item) => item.ammunitionName === oldValue ? { ...item, ammunitionName: newValue } : item) }));
   }
   function deleteMasterValue(kind: MasterKind, value: string) {
@@ -217,13 +229,13 @@ function App() {
     {displayedScreen === "form" && <SessionForm rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} practiceRecommendation={practiceRecommendation} cancelLabel={text("履歴へ戻る", "Back to history")} onCancel={() => setScreen("list")} onStart={startSession} />}
     {displayedScreen === "edit-session" && activeSession && <SessionForm initialValue={activeSession.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={ammunitionLedger.firearms} kicker="EDIT SESSION" title="基本情報を編集" submitLabel="変更を保存" onCancel={() => setScreen(activeSession.status === "completed" ? "analysis" : "round")} onStart={editSessionDetails} />}
     {displayedScreen === "round" && activeSession && activeRound && <>
-      <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length} {text("ラウンド", "rounds")}</span><strong>{activeStats?.score} / {activeStats?.targets}　{text("実包", "shells")} {activeStats?.cartridgesUsed}</strong><span>{activeSession.session.ammunitionName}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>{text("基本情報を編集", "Edit details")}</button><button onClick={returnToList}>{text("履歴へ戻る", "Back to history")}</button><button className="complete-button" onClick={completeSession}>{text("セッション完了", "Complete session")}</button></div></section>
+      <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length} {text("ラウンド", "rounds")}</span><strong>{activeStats?.score} / {activeStats?.targets}　{text("実包", "shells")} {activeStats?.cartridgesUsed}</strong><span>{getSessionAmmunitionNames(activeSession.session).join("・")}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>{text("基本情報を編集", "Edit details")}</button><button onClick={returnToList}>{text("履歴へ戻る", "Back to history")}</button><button className="complete-button" onClick={completeSession}>{text("セッション完了", "Complete session")}</button></div></section>
       <PracticeThemeBanner theme={activeSession.session.practiceTheme ?? ""} />
       <div className={`round-navigation${activeSession.rounds.length >= 3 ? " round-navigation-stacked" : ""}`}>
         <nav className="round-tabs" aria-label={text("ラウンド選択", "Select round")}>{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}</nav>
         <div className="round-actions">{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}{activeSession.rounds.length > 1 && <button className="delete-round-button" onClick={deleteActiveRound}>Round {activeRound.roundNo} 削除</button>}</div>
       </div>
-      <RoundInput key={activeRound.id} round={activeRound} rangeName={activeSession.session.rangeName} rangeTrapSettings={masterData.rangeTrapSettings} discipline={activeSession.session.discipline} onChange={updateRound} />
+      <RoundInput key={activeRound.id} round={activeRound} rangeName={activeSession.session.rangeName} rangeTrapSettings={masterData.rangeTrapSettings} discipline={activeSession.session.discipline} ammunitionNames={getSessionAmmunitionNames(activeSession.session)} onChange={updateRound} />
     </>}
     {displayedScreen === "analysis" && activeSession && <SessionAnalysis session={activeSession} reviewAdvice={reviewAdvice} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} onSaveReview={saveReview} />}
   </main>;

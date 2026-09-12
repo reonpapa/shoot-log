@@ -1,4 +1,5 @@
 import type { SessionDetails } from "../domain/shooting";
+import { getSessionAmmunitionNames } from "../domain/shooting";
 import type { TrapSetting } from "../domain/shooting";
 
 const STORAGE_KEY = "shoot-log.master-data.v1";
@@ -38,7 +39,7 @@ export function saveMasterData(masterData: MasterData): void {
 export function addSessionToMasterData(masterData: MasterData, session: SessionDetails): MasterData {
   return {
     rangeNames: unique([...masterData.rangeNames, session.rangeName]),
-    ammunitionNames: unique([...masterData.ammunitionNames, session.ammunitionName]),
+    ammunitionNames: unique([...masterData.ammunitionNames, ...getSessionAmmunitionNames(session)]),
     rangeTrapSettings: masterData.rangeTrapSettings,
   };
 }

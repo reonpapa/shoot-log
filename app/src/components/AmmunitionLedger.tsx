@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { entryTypeLabels, type AmmunitionFamily, type AmmunitionLedgerData, type LedgerEntryType } from "../domain/ammunition";
-import { buildLedgerRows } from "../services/ammunitionLedger";
+import { calculateUnitPrice, entryTypeLabels, formatUnitPrice, formatYen, isPurchaseType, type AmmunitionFamily, type AmmunitionLedgerData, type LedgerEntryType } from "../domain/ammunition";
+import { getSessionAmmunitionNames } from "../domain/shooting";
+import { buildLedgerRows, summarizePurchases } from "../services/ammunitionLedger";
 import type { StoredSession } from "../services/storage";
 import "./AmmunitionLedger.css";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -25,6 +26,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   const [type, setType] = useState<LedgerEntryType>("acquisition");
   const [categoryId, setCategoryId] = useState(data.categories[0]?.id ?? "");
   const [quantity, setQuantity] = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
   const [firearmId, setFirearmId] = useState("");
   const [application, setApplication] = useState("");
   const [printMode, setPrintMode] = useState<"year" | "custom" | "all">("year");
@@ -39,16 +41,22 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   const carriedRow = printStart ? rows.filter((row) => row.date < printStart).at(-1) : undefined;
   const printPeriod = printMode === "all" ? text("全期間", "All dates") : printMode === "year" ? text(`${printYear}年`, printYear) : `${printFrom} – ${printTo}`;
   const latest = rows.at(-1);
+  const purchaseYear = printMode === "year" ? printYear : currentYear();
+  const purchases = summarizePurchases(data, `${purchaseYear}-01-01`, `${purchaseYear}-12-31`);
+  const allPurchases = summarizePurchases(data);
+  const draftUnitPrice = calculateUnitPrice(totalAmount.trim() === "" ? undefined : Number(totalAmount), Math.floor(Number(quantity)));
   const trackedSessions = sessions.filter((item) => item.status === "completed" && (!data.trackingStartDate || item.session.date >= data.trackingStartDate));
-  const unmapped = [...new Set(trackedSessions.filter((item) => !data.productLinks.some((link) => link.ammunitionName === item.session.ammunitionName)).map((item) => item.session.ammunitionName))];
+  const unmapped = [...new Set(trackedSessions.flatMap((item) => getSessionAmmunitionNames(item.session)).filter((name) => !data.productLinks.some((link) => link.ammunitionName === name)))];
   const noFirearm = trackedSessions.filter((item) => !item.session.firearmId || !data.firearms.some((firearm) => firearm.id === item.session.firearmId)).length;
 
   function addEntry(event: FormEvent) {
     event.preventDefault();
     const amount = Math.floor(Number(quantity));
     if (!categoryId || !Number.isFinite(amount) || amount <= 0 || !application.trim()) return;
-    onChange({ ...data, entries: [...data.entries, { id: crypto.randomUUID(), date, type, categoryId, quantity: amount, ...(firearmId ? { firearmId } : {}), application: application.trim(), createdAt: new Date().toISOString() }] });
-    setQuantity(""); setApplication("");
+    const paid = Number(totalAmount);
+    const recordedAmount = isPurchaseType(type) && totalAmount.trim() !== "" && Number.isFinite(paid) && paid >= 0 ? paid : undefined;
+    onChange({ ...data, entries: [...data.entries, { id: crypto.randomUUID(), date, type, categoryId, quantity: amount, ...(recordedAmount === undefined ? {} : { totalAmount: recordedAmount }), ...(firearmId ? { firearmId } : {}), application: application.trim(), createdAt: new Date().toISOString() }] });
+    setQuantity(""); setApplication(""); setTotalAmount("");
   }
   function deleteEntry(id: string) {
     if (window.confirm(text("この手入力行を削除しますか？\n残弾数も再計算されます。", "Delete this manual entry?\nAmmunition balances will be recalculated."))) onChange({ ...data, entries: data.entries.filter((item) => item.id !== id) });
@@ -56,7 +64,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
 
   return <section className="ammo-ledger">
     <header className="ammo-ledger-header"><div><p className="eyebrow">AMMUNITION LEDGER</p><h2>{text("実包管理帳簿", "Ammunition ledger")}</h2><p>{text("神奈川県様式に合わせて、受・払・残を記録します。", "Records ammunition received, used, and remaining in the Kanagawa format.")}</p></div><div><button onClick={onBack}>{text("履歴へ戻る", "Back to history")}</button><button className="primary-button" onClick={() => window.print()}>{text("帳簿を印刷 / PDF保存", "Print / Save PDF")}</button></div></header>
-    <div className="ammo-summary"><article><span>{text("残弾合計", "Total remaining")}</span><strong className={(latest?.totalAfter ?? 0) < 0 ? "negative" : ""}>{latest?.totalAfter ?? 0}<small> {text("発", "shells")}</small></strong></article>{data.categories.map((category) => <article key={category.id}><span>{category.name}</span><strong className={(latest?.balanceAfter[category.id] ?? 0) < 0 ? "negative" : ""}>{latest?.balanceAfter[category.id] ?? 0}<small> {text("発", "shells")}</small></strong></article>)}</div>
+    <div className="ammo-summary"><article><span>{text("残弾合計", "Total remaining")}</span><strong className={(latest?.totalAfter ?? 0) < 0 ? "negative" : ""}>{latest?.totalAfter ?? 0}<small> {text("発", "shells")}</small></strong></article>{data.categories.map((category) => <article key={category.id}><span>{category.name}</span><strong className={(latest?.balanceAfter[category.id] ?? 0) < 0 ? "negative" : ""}>{latest?.balanceAfter[category.id] ?? 0}<small> {text("発", "shells")}</small></strong></article>)}<article className="purchase-card"><span>{text(`${purchaseYear}年の購入金額`, `Purchases in ${purchaseYear}`)}</span><strong>{formatYen(purchases.totalAmount)}</strong><small>{purchases.unitPrice === undefined ? text("金額の記録なし", "No amounts recorded") : text(`${purchases.quantity}発・平均 ${formatUnitPrice(purchases.unitPrice)}/発`, `${purchases.quantity} shells · avg ${formatUnitPrice(purchases.unitPrice)}/shell`)}</small></article><article className="purchase-card"><span>{text("平均単価（全期間）", "Average unit price (all time)")}</span><strong>{allPurchases.unitPrice === undefined ? "—" : formatUnitPrice(allPurchases.unitPrice)}</strong><small>{allPurchases.unitPrice === undefined ? text("購入金額を入力すると表示されます", "Shown once purchase amounts are entered") : text(`${allPurchases.quantity}発・${formatYen(allPurchases.totalAmount)}`, `${allPurchases.quantity} shells · ${formatYen(allPurchases.totalAmount)}`)}</small></article></div>
     <section className="print-range"><strong>{text("PDF出力範囲", "PDF date range")}</strong><label><input checked={printMode === "year"} name="print-mode" type="radio" onChange={() => setPrintMode("year")} />{text("年指定", "Year")}</label><select disabled={printMode !== "year"} value={printYear} onChange={(event) => setPrintYear(event.target.value)}>{yearOptions.map((year) => <option key={year}>{year}</option>)}</select><label><input checked={printMode === "custom"} name="print-mode" type="radio" onChange={() => setPrintMode("custom")} />{text("期間指定", "Custom")}</label><input disabled={printMode !== "custom"} type="date" value={printFrom} onChange={(event) => setPrintFrom(event.target.value)} /><span>–</span><input disabled={printMode !== "custom"} type="date" value={printTo} onChange={(event) => setPrintTo(event.target.value)} /><label><input checked={printMode === "all"} name="print-mode" type="radio" onChange={() => setPrintMode("all")} />{text("全期間", "All dates")}</label><small>{text(`${printableRows.length}件を出力`, `Export ${printableRows.length} entries`)}</small></section>
     {(unmapped.length > 0 || noFirearm > 0) && <aside className="ammo-warning"><strong>{text("台帳へ反映するための設定があります", "Some settings are required for ledger entries")}</strong>{unmapped.length > 0 && <span>{text("未分類の実包：", "Uncategorized ammunition: ")}{unmapped.join(", ")}</span>}{noFirearm > 0 && <span>{text(`使用銃未設定の完了セッション：${noFirearm}件`, `Completed sessions without a firearm: ${noFirearm}`)}</span>}<button onClick={() => setTab("settings")}>{text("基本設定を開く", "Open settings")}</button></aside>}
     <nav className="ammo-tabs"><button className={tab === "ledger" ? "selected" : ""} onClick={() => setTab("ledger")}>{text("入出庫・台帳", "Entries & ledger")}</button><button className={tab === "settings" ? "selected" : ""} onClick={() => setTab("settings")}>{text("銃・実包区分の設定", "Firearm & category settings")}</button></nav>
@@ -66,6 +74,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
         <label><span>{text("内容", "Entry type")}</span><select value={type} onChange={(event) => setType(event.target.value as LedgerEntryType)}>{Object.entries(entryTypeLabels).map(([value, label]) => <option key={value} value={value}>{text(label, ({ acquisition: "Acquisition", consumption: "Consumption", adjustmentIn: "Positive adjustment", adjustmentOut: "Negative adjustment" } as Record<string, string>)[value] ?? label)}</option>)}</select></label>
         <label><span>{text("実包区分", "Category")}</span><select required value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">{text("選択", "Select")}</option>{data.categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
         <label><span>{text("数量", "Quantity")}</span><input required min="1" inputMode="numeric" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} /></label>
+        {isPurchaseType(type) && <label className="amount-field"><span>{text("合計金額（円・任意）", "Total paid (JPY, optional)")}</span><input min="0" inputMode="numeric" placeholder={text("例：12000", "e.g. 12000")} type="number" value={totalAmount} onChange={(event) => setTotalAmount(event.target.value)} /><small>{draftUnitPrice === undefined ? text("数量と金額から単価を自動計算します。", "The unit price is calculated from quantity and amount.") : text(`単価 ${formatUnitPrice(draftUnitPrice)}/発`, `${formatUnitPrice(draftUnitPrice)} per shell`)}</small></label>}
         <label><span>{text("使用銃（必要時）", "Firearm (if needed)")}</span><select value={firearmId} onChange={(event) => setFirearmId(event.target.value)}><option value="">{text("未指定", "Not specified")}</option>{data.firearms.map((item) => <option key={item.id} value={item.id}>{item.name}・{item.identifier}</option>)}</select></label>
         <label className="application"><span>{text("適用", "Description")}</span><input required placeholder={text("例：〇〇銃砲店・許可譲受", "e.g. Dealer purchase / permit transfer")} value={application} onChange={(event) => setApplication(event.target.value)} /></label>
         <button className="primary-button" disabled={data.categories.length === 0} type="submit">{text("台帳へ追加", "Add to ledger")}</button>
@@ -96,7 +105,7 @@ function LedgerTable({ data, rows, onDelete }: { data: AmmunitionLedgerData; row
   const { text } = useLanguage();
   const firearms = new Map(data.firearms.map((item) => [item.id, item]));
   const categories = new Map(data.categories.map((item) => [item.id, item]));
-  return <div className="ledger-table-wrap"><table className="ledger-table"><thead><tr><th>{text("年月日", "Date")}</th><th>{text("使用銃", "Firearm")}</th><th>{text("適用", "Description")}</th><th>{text("実包区分", "Category")}</th><th>{text("受", "In")}</th><th>{text("払", "Out")}</th><th>{text("残", "Balance")}</th><th>{text("合計", "Total")}</th><th /></tr></thead><tbody>{rows.length === 0 ? <tr><td colSpan={9}>{text("台帳記録がありません。", "No ledger entries.")}</td></tr> : [...rows].reverse().map((row) => { const firearm = row.firearmId ? firearms.get(row.firearmId) : undefined; return <tr key={row.id}><td>{row.date}</td><td>{firearm ? <>{firearm.name}<small>{firearm.identifier}</small></> : "—"}</td><td>{row.application}{row.source === "session" && <small>{text("射撃履歴から自動反映", "Added from shooting history")}</small>}</td><td>{categories.get(row.categoryId)?.name ?? text("不明", "Unknown")}</td><td>{row.signedQuantity > 0 ? row.quantity : ""}</td><td>{row.signedQuantity < 0 ? row.quantity : ""}</td><td>{row.balanceAfter[row.categoryId]}</td><td>{row.totalAfter}</td><td>{row.source === "manual" && <button onClick={() => onDelete(row.id)}>{text("削除", "Delete")}</button>}</td></tr>; })}</tbody></table></div>;
+  return <div className="ledger-table-wrap"><table className="ledger-table"><thead><tr><th>{text("年月日", "Date")}</th><th>{text("使用銃", "Firearm")}</th><th>{text("適用", "Description")}</th><th>{text("実包区分", "Category")}</th><th>{text("受", "In")}</th><th>{text("払", "Out")}</th><th>{text("残", "Balance")}</th><th>{text("合計", "Total")}</th><th>{text("金額", "Amount")}</th><th>{text("単価", "Unit price")}</th><th /></tr></thead><tbody>{rows.length === 0 ? <tr><td colSpan={11}>{text("台帳記録がありません。", "No ledger entries.")}</td></tr> : [...rows].reverse().map((row) => { const firearm = row.firearmId ? firearms.get(row.firearmId) : undefined; return <tr key={row.id}><td>{row.date}</td><td>{firearm ? <>{firearm.name}<small>{firearm.identifier}</small></> : "—"}</td><td>{row.application}{row.source === "session" && <small>{text("射撃履歴から自動反映", "Added from shooting history")}</small>}</td><td>{categories.get(row.categoryId)?.name ?? text("不明", "Unknown")}</td><td>{row.signedQuantity > 0 ? row.quantity : ""}</td><td>{row.signedQuantity < 0 ? row.quantity : ""}</td><td>{row.balanceAfter[row.categoryId]}</td><td>{row.totalAfter}</td><td className="amount-cell">{row.totalAmount === undefined ? "" : formatYen(row.totalAmount)}</td><td className="amount-cell">{row.unitPrice === undefined ? "" : formatUnitPrice(row.unitPrice)}</td><td>{row.source === "manual" && <button onClick={() => onDelete(row.id)}>{text("削除", "Delete")}</button>}</td></tr>; })}</tbody></table></div>;
 }
 
 type PrintItem = { kind: "carry"; date: string; balances: Record<string, number> } | { kind: "entry"; row: Rows[number] };

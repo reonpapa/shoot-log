@@ -41,7 +41,7 @@ function normalizeRound(value: unknown): ShootingRound | null {
     ...(isString(rawSetting.confirmedOn) ? { confirmedOn: rawSetting.confirmedOn } : {}),
     ...(isString(rawSetting.note) ? { note: rawSetting.note } : {}),
   } : undefined;
-  return { id: value.id, roundNo: value.roundNo, startStandNo: value.startStandNo, fireMode: value.fireMode === "single" ? "single" : "double", shots: shots as ShootingRound["shots"], ...(actual !== undefined ? { actualCartridgesUsed: actual } : {}), ...(trapSetting ? { trapSetting } : {}), ...(isString(value.memo) ? { memo: value.memo } : {}) };
+  return { id: value.id, roundNo: value.roundNo, startStandNo: value.startStandNo, fireMode: value.fireMode === "single" ? "single" : "double", shots: shots as ShootingRound["shots"], ...(isString(value.ammunitionName) && value.ammunitionName.trim() ? { ammunitionName: value.ammunitionName.trim() } : {}), ...(actual !== undefined ? { actualCartridgesUsed: actual } : {}), ...(trapSetting ? { trapSetting } : {}), ...(isString(value.memo) ? { memo: value.memo } : {}) };
 }
 
 export function normalizeStoredSession(value: unknown): StoredSession | null {
@@ -51,9 +51,10 @@ export function normalizeStoredSession(value: unknown): StoredSession | null {
   const rounds = value.rounds.map(normalizeRound);
   if (rounds.length === 0 || rounds.some((round) => round === null)) return null;
   const review = isRecord(value.review) ? value.review : {};
+  const ammunitionNames = [...new Set([details.ammunitionName, ...(Array.isArray(details.ammunitionNames) ? details.ammunitionNames.filter(isString) : [])].map((name) => name.trim()).filter(Boolean))];
   return {
     id: value.id,
-    session: { date: details.date, rangeName: details.rangeName, discipline: details.discipline as SessionDetails["discipline"], ammunitionName: details.ammunitionName, ...(isString(details.firearmId) ? { firearmId: details.firearmId } : {}), practiceTheme: isString(details.practiceTheme) ? details.practiceTheme : "", weather: isString(details.weather) ? details.weather : "", temperature: isString(details.temperature) ? details.temperature : "", windDirection: isString(details.windDirection) ? details.windDirection : "", windStrength: isString(details.windStrength) ? details.windStrength : "", memo: isString(details.memo) ? details.memo : "" },
+    session: { date: details.date, rangeName: details.rangeName, discipline: details.discipline as SessionDetails["discipline"], ammunitionName: details.ammunitionName, ...(ammunitionNames.length > 1 ? { ammunitionNames } : {}), ...(isString(details.firearmId) ? { firearmId: details.firearmId } : {}), practiceTheme: isString(details.practiceTheme) ? details.practiceTheme : "", weather: isString(details.weather) ? details.weather : "", temperature: isString(details.temperature) ? details.temperature : "", windDirection: isString(details.windDirection) ? details.windDirection : "", windStrength: isString(details.windStrength) ? details.windStrength : "", memo: isString(details.memo) ? details.memo : "" },
     rounds: (rounds as ShootingRound[]).map((round) => round.trapSetting && !round.trapSetting.rangeName.trim()
       ? { ...round, trapSetting: { ...round.trapSetting, rangeName: details.rangeName as string } }
       : round),

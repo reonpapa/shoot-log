@@ -19,7 +19,10 @@ export interface SessionDetails {
   date: string;
   rangeName: string;
   discipline: Discipline;
+  /** 主に使用した実包。互換性のため単一値を保持する。 */
   ammunitionName: string;
+  /** セッションで使用した実包の一覧（1件目が ammunitionName と一致する）。 */
+  ammunitionNames?: string[];
   firearmId?: string;
   practiceTheme?: string;
   weather: string;
@@ -86,6 +89,8 @@ export interface ShootingRound {
   roundNo: number;
   startStandNo: StandNo;
   fireMode: FireMode;
+  /** このラウンドで使用した実包。未設定ならセッションの主実包を使う。 */
+  ammunitionName?: string;
   actualCartridgesUsed?: number;
   trapSetting?: TrapSetting;
   shots: Shot[];
@@ -100,6 +105,22 @@ export interface ShootingSession {
   weather?: string;
   rounds: ShootingRound[];
   sessionMemo?: string;
+}
+
+/** セッションで使用した実包名の一覧（重複と空文字を除く）。 */
+export function getSessionAmmunitionNames(session: Pick<SessionDetails, "ammunitionName" | "ammunitionNames">): string[] {
+  const names = [session.ammunitionName, ...(session.ammunitionNames ?? [])]
+    .map((value) => (value ?? "").trim())
+    .filter(Boolean);
+  return [...new Set(names)];
+}
+
+/** ラウンドで実際に使用した実包名。未設定や不正値はセッションの主実包へ戻す。 */
+export function getRoundAmmunitionName(session: Pick<SessionDetails, "ammunitionName" | "ammunitionNames">, round: Pick<ShootingRound, "ammunitionName">): string {
+  const names = getSessionAmmunitionNames(session);
+  const selected = (round.ammunitionName ?? "").trim();
+  if (selected && names.includes(selected)) return selected;
+  return names[0] ?? "";
 }
 
 export function calculateStandNo(startStandNo: StandNo, shotIndex: number): StandNo {

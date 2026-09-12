@@ -8,7 +8,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 import { rangesEquivalent, trapPresetsForRange } from "../services/trapSettings";
 import type { RangeTrapSetting } from "../services/masterData";
 
-interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; rangeName?: string; rangeTrapSettings?: RangeTrapSetting[]; }
+interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; rangeName?: string; rangeTrapSettings?: RangeTrapSetting[]; ammunitionNames?: string[]; }
 const stands: StandNo[] = [1, 2, 3, 4, 5];
 const inputs: { value: ShotInput; label: string; title: string; shortcut: string }[] = [
   { value: "hit-on-first", label: "1", title: "初矢命中", shortcut: "1" },
@@ -23,11 +23,21 @@ const scoreLabels: Record<ShotInput, string> = {
   "miss-center": "↑", "miss-right": "→", skip: "",
 };
 
-export function RoundInput({ round, onChange, discipline = "trap", rangeName = "", rangeTrapSettings }: Props) {
-  return discipline === "skeet" ? <SkeetRoundInput round={round} onChange={onChange} /> : <TrapRoundInput round={round} onChange={onChange} rangeName={rangeName} rangeTrapSettings={rangeTrapSettings} />;
+export function RoundInput({ round, onChange, discipline = "trap", rangeName = "", rangeTrapSettings, ammunitionNames = [] }: Props) {
+  return discipline === "skeet"
+    ? <SkeetRoundInput round={round} onChange={onChange} ammunitionNames={ammunitionNames} />
+    : <TrapRoundInput round={round} onChange={onChange} rangeName={rangeName} rangeTrapSettings={rangeTrapSettings} ammunitionNames={ammunitionNames} />;
 }
 
-function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings }: Props) {
+/** 複数実包を使うセッションで、このラウンドの実包を選ぶ。 */
+function RoundAmmunitionPicker({ round, onChange, ammunitionNames }: { round: ShootingRound; onChange: (round: ShootingRound) => void; ammunitionNames: string[] }) {
+  const { text } = useLanguage();
+  if (ammunitionNames.length < 2) return null;
+  const selected = round.ammunitionName && ammunitionNames.includes(round.ammunitionName) ? round.ammunitionName : ammunitionNames[0];
+  return <div className="round-ammunition"><span>{text("使用実包", "Ammunition")}</span><div>{ammunitionNames.map((name) => <button className={selected === name ? "selected" : ""} key={name} onClick={() => onChange({ ...round, ammunitionName: name })}>{name}</button>)}</div></div>;
+}
+
+function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings, ammunitionNames = [] }: Props) {
   const { text } = useLanguage();
   const stats = calculateRoundStats(round);
   const [activeIndex, setActiveIndex] = useState(() => {
@@ -126,6 +136,7 @@ function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings }: 
       </div>}
       {(rangeName.includes("伊勢原") || rangeName.includes("大井")) && <p>{text("登録値は設定目安です。当日の射撃場掲示を優先してください。", "Presets are estimates. Always follow the range notice for the day.")}</p>}
     </section>
+    <RoundAmmunitionPicker round={round} onChange={onChange} ammunitionNames={ammunitionNames} />
     <div className="round-summary"><span>{text("初矢", "First-shot hits")} {stats.firstShotHits}</span><span>{text("二の矢", "Second-shot hits")} {stats.secondShotHits}</span><span>{text("命中後2発目", "Extra shots after hit")} {stats.secondShotsAfterFirstHit}</span><span>{text("失中", "Misses")} {stats.misses}</span><span>{text("実包", "Shells")} {stats.cartridgesUsed}</span></div>
     <div className="cartridge-adjust"><span>{text("実包消費", "Shells used")}</span><small>{text("自動計算", "Calculated")} {stats.expectedCartridgesUsed}</small><label>{text("実数", "Actual")}<input min="0" inputMode="numeric" placeholder={String(stats.expectedCartridgesUsed)} type="number" value={round.actualCartridgesUsed ?? ""} onChange={(event) => updateActualCartridges(event.target.value)} /></label>{round.actualCartridgesUsed !== undefined && <button onClick={() => updateActualCartridges("")}>{text("自動に戻す", "Use calculated")}</button>}</div>
 
@@ -145,7 +156,7 @@ function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings }: 
   </section>;
 }
 
-function SkeetRoundInput({ round, onChange }: Props) {
+function SkeetRoundInput({ round, onChange, ammunitionNames = [] }: Props) {
   const { text } = useLanguage();
   const stats = calculateRoundStats(round);
   const [activeIndex, setActiveIndex] = useState(() => {
@@ -178,6 +189,7 @@ function SkeetRoundInput({ round, onChange }: Props) {
   return <section className="round-input skeet-round-input">
     <header className="round-header"><div><p className="eyebrow">SKEET PREVIEW / ROUND</p><h2>{round.roundNo}</h2></div><div className="round-score"><strong>{stats.score}</strong><span>/ 25</span></div></header>
     <aside className="skeet-preview-note"><strong>{text("スキート試作版", "Skeet preview")}</strong><span>{text("ISSF資格射撃の25枚順を使用。スキート経験者の意見を募集中です。", "Uses the 25-target ISSF qualification sequence. Feedback from skeet shooters is welcome.")}</span></aside>
+    <RoundAmmunitionPicker round={round} onChange={onChange} ammunitionNames={ammunitionNames} />
     <div className="skeet-summary"><span>{text("命中", "Hits")} <b>{stats.score}</b></span><span>{text("失中", "Misses")} <b>{stats.misses}</b></span><span>{text("実包", "Shells")} <b>{stats.cartridgesUsed}</b></span></div>
     <div className="skeet-scorecard" aria-label={text("スキート25枚スコアカード", "25-target skeet scorecard")}>{round.shots.map((shot, index) => <button key={shot.id} className={`${index === activeIndex ? "active " : ""}${shot.finalResult === "hit-on-first" ? "hit" : shot.finalResult === "miss" ? "miss" : ""}`} onClick={() => setActiveIndex(index)}><small>{shot.targetNo}</small><strong>{shot.finalResult === "hit-on-first" ? "○" : shot.finalResult === "miss" ? "×" : "·"}</strong><span>S{shot.standNo} · {shot.skeetHouse === "high" ? "H" : "L"}{shot.skeetPairId ? ` ${shot.skeetPairOrder}/2` : ""}</span></button>)}</div>
     <section className="skeet-current-target"><p className="eyebrow">CURRENT TARGET</p><div className="skeet-target-heading"><div><span>{text("クレー", "Target")}</span><strong>{active.targetNo}</strong></div><div><span>{text("射台", "Station")}</span><strong>{active.standNo}</strong></div></div><div className="skeet-target-detail"><strong>{houseLabel}</strong><span>{pairLabel}</span></div><div className="skeet-result-buttons"><button className={active.finalResult === "hit-on-first" ? "selected hit" : ""} onClick={() => enter("hit")}><strong>○</strong><span>{text("命中", "Hit")}</span><kbd>1 / H</kbd></button><button className={active.finalResult === "miss" ? "selected miss" : ""} onClick={() => enter("miss")}><strong>×</strong><span>{text("失中", "Miss")}</span><kbd>0 / M</kbd></button></div><p>{text("入力すると自動で次のクレーへ進みます。", "Moves to the next target after entry.")}</p></section>

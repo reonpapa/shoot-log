@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { calculateRoundStats, calculateRoundWindowComparison, calculateSessionStats, calculateStandStats } from "../domain/shootingStats";
+import { getSessionAmmunitionNames } from "../domain/shooting";
 import type { Discipline, FireMode } from "../domain/shooting";
 import type { StoredSession } from "../services/storage";
 import { getAmmunitionPerformance } from "../services/ammunitionPerformance";
@@ -24,11 +25,11 @@ export function HistoryAnalysis({ sessions }: Props) {
   const [period, setPeriod] = useState<Period>("all");
   const completed = sessions.filter((item) => item.status === "completed" && item.session.discipline === discipline);
   const rangeOptions = [...new Set(completed.map((item) => item.session.rangeName))].sort((a, b) => a.localeCompare(b, "ja"));
-  const ammunitionOptions = [...new Set(completed.map((item) => item.session.ammunitionName))].sort((a, b) => a.localeCompare(b, "ja"));
+  const ammunitionOptions = [...new Set(completed.flatMap((item) => getSessionAmmunitionNames(item.session)))].sort((a, b) => a.localeCompare(b, "ja"));
 
   const matched = completed
     .filter((item) => rangeName === "all" || item.session.rangeName === rangeName)
-    .filter((item) => ammunitionName === "all" || item.session.ammunitionName === ammunitionName)
+    .filter((item) => ammunitionName === "all" || getSessionAmmunitionNames(item.session).includes(ammunitionName))
     .sort((a, b) => a.session.date.localeCompare(b.session.date) || a.createdAt.localeCompare(b.createdAt))
     .map((item) => ({ ...item, rounds: fireMode === "all" ? item.rounds : item.rounds.filter((round) => round.fireMode === fireMode) }))
     .filter((item) => item.rounds.length > 0);

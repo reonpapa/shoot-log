@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import type { Firearm } from "../domain/ammunition";
-import type { SessionDetails } from "../domain/shooting";
+import { getSessionAmmunitionNames, type SessionDetails } from "../domain/shooting";
 import type { PracticeRecommendation } from "../services/sessionPlanning";
 import { validateTemperatureInput } from "../services/temperatureInput";
 import "./SessionForm.css";
@@ -38,16 +38,31 @@ export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル"
   const displayCancelLabel = cancelLabel === "キャンセル" ? text(cancelLabel, "Cancel") : cancelLabel === "履歴へ戻る" ? text(cancelLabel, "Back to history") : cancelLabel;
   const displaySubmitLabel = submitLabel === "セッション開始" ? text(submitLabel, "Start session") : submitLabel === "変更を保存" ? text(submitLabel, "Save changes") : submitLabel;
   const suggestedPracticeTheme = practiceRecommendation?.theme ?? "";
-  const [form, setForm] = useState<SessionDraft>(initialValue ?? { date: today(), rangeName: "", discipline: "trap", ammunitionName: "", firearmId: firearms[0]?.id ?? "", practiceTheme: suggestedPracticeTheme, weather: "", temperature: "", windDirection: "", windStrength: "", memo: "" });
+  const [form, setForm] = useState<SessionDraft>(initialValue ?? { date: today(), rangeName: "", discipline: "trap", ammunitionName: "", ammunitionNames: [], firearmId: firearms[0]?.id ?? "", practiceTheme: suggestedPracticeTheme, weather: "", temperature: "", windDirection: "", windStrength: "", memo: "" });
+  const selectedAmmunition = getSessionAmmunitionNames(form);
+  const ammunitionOptions = [...new Set([...ammunitionNames, ...selectedAmmunition])];
   const [showRecommendation, setShowRecommendation] = useState(!!practiceRecommendation && !initialValue);
   const [recommendationAccepted, setRecommendationAccepted] = useState(false);
   const [newRange, setNewRange] = useState(rangeNames.length === 0);
-  const [newAmmunition, setNewAmmunition] = useState(ammunitionNames.length === 0);
+  const [newAmmunition, setNewAmmunition] = useState("");
   const practiceThemeRef = useRef<HTMLTextAreaElement>(null);
   const update = <K extends keyof SessionDraft>(key: K, value: SessionDraft[K]) => setForm((current) => ({ ...current, [key]: value }));
+  function setAmmunitionNames(names: string[]) {
+    setForm((current) => ({ ...current, ammunitionName: names[0] ?? "", ammunitionNames: names }));
+  }
+  function toggleAmmunition(name: string) {
+    setAmmunitionNames(selectedAmmunition.includes(name) ? selectedAmmunition.filter((item) => item !== name) : [...selectedAmmunition, name]);
+  }
+  function addAmmunition() {
+    const name = newAmmunition.trim();
+    if (!name) return;
+    if (!selectedAmmunition.includes(name)) setAmmunitionNames([...selectedAmmunition, name]);
+    setNewAmmunition("");
+  }
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const clean = { ...form, rangeName: form.rangeName.trim(), ammunitionName: form.ammunitionName.trim(), practiceTheme: form.practiceTheme?.trim() ?? "", weather: form.weather.trim(), temperature: form.temperature?.trim() ?? "", windDirection: form.windDirection?.trim() ?? "", windStrength: form.windStrength?.trim() ?? "", memo: form.memo.trim() };
+    const names = getSessionAmmunitionNames(form);
+    const clean = { ...form, rangeName: form.rangeName.trim(), ammunitionName: names[0] ?? "", ammunitionNames: names, practiceTheme: form.practiceTheme?.trim() ?? "", weather: form.weather.trim(), temperature: form.temperature?.trim() ?? "", windDirection: form.windDirection?.trim() ?? "", windStrength: form.windStrength?.trim() ?? "", memo: form.memo.trim() };
     if (clean.rangeName && clean.ammunitionName) onStart(clean);
   }
   return <section className="session-form">
@@ -56,7 +71,11 @@ export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル"
       <label><span>{text("日付", "Date")}</span><input type="date" required value={form.date} onChange={(e) => update("date", e.target.value)} /></label>
       <label><span>{text("射撃場", "Shooting range")}</span>{newRange ? <div className="master-new"><input required placeholder={text("例：大井射撃場", "e.g. Oi Shooting Range")} value={form.rangeName} onChange={(e) => update("rangeName", e.target.value)} />{rangeNames.length > 0 && <button type="button" onClick={() => { setNewRange(false); update("rangeName", rangeNames[0] ?? ""); }}>{text("選択に戻る", "Back to list")}</button>}</div> : <select required value={form.rangeName} onChange={(e) => { if (e.target.value === "__new__") { setNewRange(true); update("rangeName", ""); } else update("rangeName", e.target.value); }}><option value="" disabled>{text("選択してください", "Select")}</option>{rangeNames.map((name) => <option key={name}>{name}</option>)}<option value="__new__">{text("＋ 新しい射撃場を登録", "+ Add shooting range")}</option></select>}</label>
       <label><span>{text("種目", "Discipline")}</span><select disabled={!!initialValue} value={form.discipline} onChange={(e) => update("discipline", e.target.value as SessionDraft["discipline"])}><option value="trap">Trap — {text("正式対応", "Supported")}</option><option value="skeet">Skeet — Preview</option>{form.discipline === "sporting" && <option value="sporting">Sporting — {text("既存記録", "Existing record")}</option>}</select><small>{initialValue ? text("作成後に種目は変更できません。", "Discipline cannot be changed after creation.") : form.discipline === "skeet" ? text("ISSF資格射撃の25枚順による試作版です。スキート経験者の意見を募集中です。", "Preview using the 25-target ISSF qualification sequence. Feedback from skeet shooters is welcome.") : text("Trapのスコア入力・分析に正式対応しています。", "Full Trap score entry and analysis is supported.")}</small></label>
-      <label><span>{text("実包", "Ammunition")}</span>{newAmmunition ? <div className="master-new"><input required placeholder="e.g. Fiocchi TT TWO" value={form.ammunitionName} onChange={(e) => update("ammunitionName", e.target.value)} />{ammunitionNames.length > 0 && <button type="button" onClick={() => { setNewAmmunition(false); update("ammunitionName", ammunitionNames[0] ?? ""); }}>{text("選択に戻る", "Back to list")}</button>}</div> : <select required value={form.ammunitionName} onChange={(e) => { if (e.target.value === "__new__") { setNewAmmunition(true); update("ammunitionName", ""); } else update("ammunitionName", e.target.value); }}><option value="" disabled>{text("選択してください", "Select")}</option>{ammunitionNames.map((name) => <option key={name}>{name}</option>)}<option value="__new__">{text("＋ 新しい実包を登録", "+ Add ammunition")}</option></select>}</label>
+      <div className="wide ammunition-field"><span className="field-label">{text("実包（複数選択可）", "Ammunition (multiple allowed)")}</span>
+        <div className="ammunition-options">{ammunitionOptions.map((name) => <label key={name} className={selectedAmmunition.includes(name) ? "selected" : ""}><input type="checkbox" checked={selectedAmmunition.includes(name)} onChange={() => toggleAmmunition(name)} /><span>{name}</span></label>)}</div>
+        <div className="master-new"><input placeholder="e.g. Fiocchi TT TWO" value={newAmmunition} onChange={(e) => setNewAmmunition(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addAmmunition(); } }} /><button type="button" onClick={addAmmunition}>{text("＋ 実包を追加", "+ Add ammunition")}</button></div>
+        <small>{selectedAmmunition.length > 1 ? text(`使用する実包：${selectedAmmunition.join("・")}。ラウンドごとに使用実包を選べます。`, `Selected: ${selectedAmmunition.join(", ")}. You can pick the ammunition used in each round.`) : text("1つ以上選んでください。複数選ぶとラウンドごとに使い分けられます。", "Select at least one. Selecting more than one lets you set the ammunition per round.")}</small>
+      </div>
       <label><span>{text("使用銃", "Firearm")}</span><select value={form.firearmId ?? ""} onChange={(e) => update("firearmId", e.target.value)}><option value="">{text("未設定", "Not set")}</option>{firearms.map((firearm) => <option key={firearm.id} value={firearm.id}>{firearm.name}・{firearm.identifier}</option>)}</select></label>
       <label><span>{text("天候", "Weather")}</span><select value={form.weather} onChange={(e) => update("weather", e.target.value)}><option value="">{text("未選択", "Not selected")}</option>{weatherOptions.map((weather) => <option key={weather.value} value={weather.value}>{language === "ja" ? weather.value : weather.en}</option>)}{form.weather && !weatherOptions.some((item) => item.value === form.weather) && <option>{form.weather}</option>}</select></label>
       <label><span>{text("気温", "Temperature")}</span><div className="temperature-input"><input inputMode="decimal" maxLength={6} placeholder={text("例：18", "e.g. 18")} value={form.temperature ?? ""} onChange={(e) => { const value = validateTemperatureInput(e.target.value); if (value !== null) update("temperature", value); }} /><small>℃</small></div><small>{text("半角数字で入力", "Enter a number")}</small></label>
@@ -70,7 +89,7 @@ export function SessionForm({ onStart, onCancel, cancelLabel = "キャンセル"
       </section>}
       <label className="wide practice-theme-field"><span>{text("今日の練習テーマ", "Practice focus")}</span><textarea ref={practiceThemeRef} rows={4} placeholder={text("例：銃を急いで振らず、クレーを見てから動く", "e.g. See the target clearly before moving the gun")} value={form.practiceTheme ?? ""} onChange={(e) => update("practiceTheme", e.target.value)} />{!initialValue && suggestedPracticeTheme && showRecommendation && <small>{text("提案は自由に編集できます。採用しなくても記録には影響しません。", "You can edit or ignore this suggestion without affecting your records.")}</small>}</label>
       <label className="wide"><span>{text("メモ", "Notes")}</span><textarea rows={3} placeholder={text("任意", "Optional")} value={form.memo} onChange={(e) => update("memo", e.target.value)} /></label>
-      <div className="form-actions wide"><button className="form-cancel-button" type="button" onClick={onCancel}>{displayCancelLabel}</button><button className="primary-button" type="submit">{displaySubmitLabel}</button></div>
+      <div className="form-actions wide"><button className="form-cancel-button" type="button" onClick={onCancel}>{displayCancelLabel}</button><button className="primary-button" type="submit" disabled={selectedAmmunition.length === 0}>{displaySubmitLabel}</button></div>
     </form>
   </section>;
 }

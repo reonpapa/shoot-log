@@ -7,6 +7,7 @@ interface RoundOptions {
   fireMode?: "single" | "double";
   finalResults?: FinalResult[];
   actualCartridgesUsed?: number;
+  ammunitionName?: string;
 }
 
 export function createRound({
@@ -14,6 +15,7 @@ export function createRound({
   fireMode = "single",
   finalResults = ["hit-on-first"],
   actualCartridgesUsed,
+  ammunitionName,
 }: RoundOptions = {}): ShootingRound {
   return {
     id: `round-${roundNo}`,
@@ -21,6 +23,7 @@ export function createRound({
     startStandNo: 1,
     fireMode,
     ...(actualCartridgesUsed === undefined ? {} : { actualCartridgesUsed }),
+    ...(ammunitionName === undefined ? {} : { ammunitionName }),
     shots: finalResults.map((finalResult, index) => {
       let firstShotResult: ShotResult = "not-fired";
       let secondShotResult: ShotResult = "not-fired";
@@ -52,6 +55,7 @@ interface SessionOptions {
   updatedAt?: string;
   date?: string;
   ammunitionName?: string;
+  ammunitionNames?: string[];
   rounds?: ShootingRound[];
 }
 
@@ -61,6 +65,7 @@ export function createStoredSession({
   updatedAt = "2026-07-19T00:00:00.000Z",
   date = "2026-07-19",
   ammunitionName = "Fiocchi TT TWO",
+  ammunitionNames,
   rounds = [createRound()],
 }: SessionOptions = {}): StoredSession {
   return {
@@ -70,6 +75,7 @@ export function createStoredSession({
       rangeName: "大井射撃場",
       discipline: "trap",
       ammunitionName,
+      ...(ammunitionNames === undefined ? {} : { ammunitionNames }),
       weather: "晴れ",
       memo: "",
     },

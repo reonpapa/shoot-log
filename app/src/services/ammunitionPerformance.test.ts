@@ -19,4 +19,22 @@ describe("実包別パフォーマンス", () => {
     const draft = createStoredSession({ status: "draft", ammunitionName: "Ammo A" });
     expect(getAmmunitionPerformance([draft])).toEqual([]);
   });
+
+  it("ラウンドごとに実包を分けたセッションをそれぞれ集計する", () => {
+    const session = createStoredSession({
+      id: "mixed",
+      ammunitionName: "Ammo A",
+      ammunitionNames: ["Ammo A", "Ammo B"],
+      rounds: [
+        createRound({ roundNo: 1, finalResults: Array.from({ length: 25 }, () => "hit-on-first") }),
+        createRound({ roundNo: 2, ammunitionName: "Ammo B", finalResults: Array.from({ length: 25 }, (_, index) => index < 5 ? "miss" as const : "hit-on-first" as const) }),
+      ],
+    });
+
+    const result = getAmmunitionPerformance([session]);
+
+    expect(result).toHaveLength(2);
+    expect(result.find((item) => item.ammunitionName === "Ammo A")).toMatchObject({ roundCount: 1, sessionCount: 1, averageScore: 25 });
+    expect(result.find((item) => item.ammunitionName === "Ammo B")).toMatchObject({ roundCount: 1, sessionCount: 1, averageScore: 20 });
+  });
 });

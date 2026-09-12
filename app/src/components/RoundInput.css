@@ -38,3 +38,9 @@
 .trap-setting-fields .trap-setting-note { grid-column: span 2; }
 .trap-setting-fields .trap-setting-range { grid-column: span 2; }
 @media (max-width: 700px) { .trap-setting-panel { padding: 14px 12px; }.trap-setting-panel > header { align-items: flex-start; flex-direction: column; gap: 3px; }.trap-setting-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }.trap-setting-fields .trap-setting-note, .trap-setting-fields .trap-setting-range { grid-column: 1 / -1; } }
+
+.round-ammunition { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding: 10px 12px; border: 1px solid #8885; border-radius: 11px; background: #8881; }
+.round-ammunition > span { font-size: .72rem; font-weight: 800; opacity: .7; }
+.round-ammunition > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.round-ammunition button { min-height: 36px; padding: 0 12px; border: 1px solid #8886; border-radius: 999px; background: transparent; font-size: .74rem; font-weight: 700; }
+.round-ammunition button.selected { border-color: #6d3bd1; background: #6d3bd11f; color: var(--accent-text); }

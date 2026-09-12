@@ -42,6 +42,8 @@ export interface ManualLedgerEntry {
   type: LedgerEntryType;
   categoryId: string;
   quantity: number;
+  /** 購入・譲受時に支払った合計金額（円）。単価は合計÷数量で求める。 */
+  totalAmount?: number;
   firearmId?: string;
   application: string;
   createdAt: string;
@@ -73,3 +75,14 @@ export const entryTypeLabels: Record<LedgerEntryType, string> = {
 };
 
 export const isReceiptType = (type: LedgerEntryType): boolean => ["opening", "acquisition", "adjustment-in"].includes(type);
+
+/** 金額を記録できる区分（購入・譲受のみ）。 */
+export const isPurchaseType = (type: LedgerEntryType): boolean => type === "acquisition";
+
+/** 合計金額と数量から1発あたりの単価を求める。 */
+export const calculateUnitPrice = (totalAmount: number | undefined, quantity: number): number | undefined =>
+  totalAmount === undefined || !Number.isFinite(totalAmount) || quantity <= 0 ? undefined : totalAmount / quantity;
+
+export const formatYen = (value: number): string => `\u00a5${Math.round(value).toLocaleString("ja-JP")}`;
+
+export const formatUnitPrice = (value: number): string => `\u00a5${value.toFixed(1)}`;
