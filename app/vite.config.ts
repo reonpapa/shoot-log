@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 const base = process.env.VITE_BASE_PATH ?? "/";
+const { version } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
 
 function offlineServiceWorker(baseUrl: string): Plugin {
   const withBase = (path: string) => `${baseUrl}${path}`;
@@ -21,8 +24,10 @@ function offlineServiceWorker(baseUrl: string): Plugin {
         ...Object.keys(bundle).map(withBase),
       ];
       const precache = [...new Set(files)];
+      // ビルドごとに変わるキャッシュ名にして、activate で古いキャッシュを確実に削除する。
+      const buildId = createHash("sha256").update(precache.join("\n")).digest("hex").slice(0, 8);
       const source = `
-const CACHE_NAME = "shoot-log-v2.23.2-manual1";
+const CACHE_NAME = ${JSON.stringify(`shoot-log-v${version}-${buildId}`)};
 const BASE_URL = ${JSON.stringify(baseUrl)};
 const PRECACHE = ${JSON.stringify(precache)};
 
@@ -52,7 +57,8 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).then((response) => {
+      // HTMLはHTTPキャッシュを使わずに取得する（古いindex.htmlが残ると新しいアセットを読み込めない）。
+      fetch(request.url, { cache: "no-store", credentials: "same-origin" }).then((response) => {
         if (response.ok) {
           const copy = response.clone();
           void caches.open(CACHE_NAME).then((cache) => cache.put(BASE_URL + "index.html", copy));
@@ -80,5 +86,6 @@ self.addEventListener("fetch", (event) => {
 
 export default defineConfig({
   base,
+  define: { __APP_VERSION__: JSON.stringify(version) },
   plugins: [react(), offlineServiceWorker(base)],
 });

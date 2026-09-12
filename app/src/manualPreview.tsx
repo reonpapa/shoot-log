@@ -23,6 +23,7 @@ import { createEmptySkeetRound } from "./domain/shooting";
 import { calculateSessionStats } from "./domain/shootingStats";
 import type { CloudHealthView, CloudSyncView } from "./hooks/useCloudSync";
 import type { StoredSession } from "./services/storage";
+import { APP_VERSION } from "./appVersion";
 
 const noop = () => undefined;
 const asyncNoop = async () => undefined;
@@ -173,7 +174,7 @@ const signedOutCloud: CloudSyncView = { phase: "signed-out", email: "", message:
 const health: CloudHealthView = { status: "healthy", message: sample("クラウドへ接続できます。", "Cloud connection is available."), lastCheckedAt: "2026-07-20T06:30:00.000Z", lastHealthyAt: "2026-07-20T06:30:00.000Z" };
 
 function AppHeader() {
-  return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version 2.26.1</p></header>;
+  return <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version {APP_VERSION}</p></header>;
 }
 
 function RoundScene({ state }: { state: "before" | "after" }) {

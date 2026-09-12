@@ -13,6 +13,8 @@ interface IosNavigator extends Navigator {
   standalone?: boolean;
 }
 
+const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
+
 type Notice = "offline-ready" | "update" | null;
 type UpdateState = "idle" | "updating" | "failed";
 
@@ -79,11 +81,13 @@ export function PwaStatus() {
       setInstallPrompt(event as BeforeInstallPromptEvent);
     };
     const clearInstallPrompt = () => setInstallPrompt(null);
-    const goOnline = () => setIsOnline(true);
-    const goOffline = () => setIsOnline(false);
     const checkForUpdate = () => {
       if (document.visibilityState === "visible") void registrationRef.current?.update();
     };
+    const goOnline = () => { setIsOnline(true); checkForUpdate(); };
+    const goOffline = () => setIsOnline(false);
+    // 起動しっぱなしでも新しいバージョンに気づけるように定期的に確認する。
+    const updateTimer = window.setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
 
     window.addEventListener("beforeinstallprompt", captureInstallPrompt);
     window.addEventListener("appinstalled", clearInstallPrompt);
@@ -93,6 +97,7 @@ export function PwaStatus() {
     document.addEventListener("visibilitychange", checkForUpdate);
     return () => {
       disposed = true;
+      window.clearInterval(updateTimer);
       if (import.meta.env.PROD && "serviceWorker" in navigator) navigator.serviceWorker.removeEventListener("controllerchange", reloadAfterUpdate);
       if (reloadTimerRef.current !== null) window.clearTimeout(reloadTimerRef.current);
       window.removeEventListener("beforeinstallprompt", captureInstallPrompt);

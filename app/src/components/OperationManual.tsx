@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { shouldUseManualShareSheet } from "./manualSharing";
 import "./OperationManual.css";
 import { useLanguage } from "../i18n/LanguageContext";
+import { APP_VERSION } from "../appVersion";
 
-const APP_VERSION = "2.26.1";
 const MANUAL_REVISION = "8";
 
 type ManualState = "loading" | "ready" | "saving" | "saved" | "error";
