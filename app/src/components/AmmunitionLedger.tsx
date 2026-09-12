@@ -58,6 +58,11 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
     onChange({ ...data, entries: [...data.entries, { id: crypto.randomUUID(), date, type, categoryId, quantity: amount, ...(recordedAmount === undefined ? {} : { totalAmount: recordedAmount }), ...(firearmId ? { firearmId } : {}), application: application.trim(), createdAt: new Date().toISOString() }] });
     setQuantity(""); setApplication(""); setTotalAmount("");
   }
+  function updateEntryAmount(id: string, value: string) {
+    const amount = Number(value);
+    const totalAmount = value.trim() === "" || !Number.isFinite(amount) || amount < 0 ? undefined : amount;
+    onChange({ ...data, entries: data.entries.map((item) => item.id === id ? { ...item, totalAmount } : item) });
+  }
   function deleteEntry(id: string) {
     if (window.confirm(text("この手入力行を削除しますか？\n残弾数も再計算されます。", "Delete this manual entry?\nAmmunition balances will be recalculated."))) onChange({ ...data, entries: data.entries.filter((item) => item.id !== id) });
   }
@@ -79,7 +84,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
         <label className="application"><span>{text("適用", "Description")}</span><input required placeholder={text("例：〇〇銃砲店・許可譲受", "e.g. Dealer purchase / permit transfer")} value={application} onChange={(event) => setApplication(event.target.value)} /></label>
         <button className="primary-button" disabled={data.categories.length === 0} type="submit">{text("台帳へ追加", "Add to ledger")}</button>
       </form>
-      <LedgerTable data={data} rows={rows} onDelete={deleteEntry} />
+      <LedgerTable data={data} rows={rows} onAmountChange={updateEntryAmount} onDelete={deleteEntry} />
     </> : <LedgerSettings data={data} ammunitionNames={ammunitionNames} onChange={onChange} />}
     <PrintLedger carryDate={printStart} carryBalances={carriedRow?.balanceAfter} data={data} period={printPeriod} rows={printableRows} />
   </section>;
@@ -101,11 +106,14 @@ function LedgerSettings({ data, ammunitionNames, onChange }: { data: AmmunitionL
 }
 
 type Rows = ReturnType<typeof buildLedgerRows>;
-function LedgerTable({ data, rows, onDelete }: { data: AmmunitionLedgerData; rows: Rows; onDelete: (id: string) => void }) {
+function LedgerTable({ data, rows, onAmountChange, onDelete }: { data: AmmunitionLedgerData; rows: Rows; onAmountChange: (id: string, value: string) => void; onDelete: (id: string) => void }) {
   const { text } = useLanguage();
   const firearms = new Map(data.firearms.map((item) => [item.id, item]));
   const categories = new Map(data.categories.map((item) => [item.id, item]));
-  return <div className="ledger-table-wrap"><table className="ledger-table"><thead><tr><th>{text("年月日", "Date")}</th><th>{text("使用銃", "Firearm")}</th><th>{text("適用", "Description")}</th><th>{text("実包区分", "Category")}</th><th>{text("受", "In")}</th><th>{text("払", "Out")}</th><th>{text("残", "Balance")}</th><th>{text("合計", "Total")}</th><th>{text("金額", "Amount")}</th><th>{text("単価", "Unit price")}</th><th /></tr></thead><tbody>{rows.length === 0 ? <tr><td colSpan={11}>{text("台帳記録がありません。", "No ledger entries.")}</td></tr> : [...rows].reverse().map((row) => { const firearm = row.firearmId ? firearms.get(row.firearmId) : undefined; return <tr key={row.id}><td>{row.date}</td><td>{firearm ? <>{firearm.name}<small>{firearm.identifier}</small></> : "—"}</td><td>{row.application}{row.source === "session" && <small>{text("射撃履歴から自動反映", "Added from shooting history")}</small>}</td><td>{categories.get(row.categoryId)?.name ?? text("不明", "Unknown")}</td><td>{row.signedQuantity > 0 ? row.quantity : ""}</td><td>{row.signedQuantity < 0 ? row.quantity : ""}</td><td>{row.balanceAfter[row.categoryId]}</td><td>{row.totalAfter}</td><td className="amount-cell">{row.totalAmount === undefined ? "" : formatYen(row.totalAmount)}</td><td className="amount-cell">{row.unitPrice === undefined ? "" : formatUnitPrice(row.unitPrice)}</td><td>{row.source === "manual" && <button onClick={() => onDelete(row.id)}>{text("削除", "Delete")}</button>}</td></tr>; })}</tbody></table></div>;
+  const entries = new Map(data.entries.map((item) => [item.id, item]));
+  return <div className="ledger-table-wrap"><table className="ledger-table"><thead><tr><th>{text("年月日", "Date")}</th><th>{text("使用銃", "Firearm")}</th><th>{text("適用", "Description")}</th><th>{text("実包区分", "Category")}</th><th>{text("受", "In")}</th><th>{text("払", "Out")}</th><th>{text("残", "Balance")}</th><th>{text("合計", "Total")}</th><th>{text("金額", "Amount")}</th><th>{text("単価", "Unit price")}</th><th /></tr></thead><tbody>{rows.length === 0 ? <tr><td colSpan={11}>{text("台帳記録がありません。", "No ledger entries.")}</td></tr> : [...rows].reverse().map((row) => { const firearm = row.firearmId ? firearms.get(row.firearmId) : undefined; const entry = entries.get(row.id); const editableAmount = row.source === "manual" && !!entry && isPurchaseType(entry.type); return <tr key={row.id}><td>{row.date}</td><td>{firearm ? <>{firearm.name}<small>{firearm.identifier}</small></> : "—"}</td><td>{row.application}{row.source === "session" && <small>{text("射撃履歴から自動反映", "Added from shooting history")}</small>}</td><td>{categories.get(row.categoryId)?.name ?? text("不明", "Unknown")}</td><td>{row.signedQuantity > 0 ? row.quantity : ""}</td><td>{row.signedQuantity < 0 ? row.quantity : ""}</td><td>{row.balanceAfter[row.categoryId]}</td><td>{row.totalAfter}</td><td className="amount-cell">{editableAmount
+              ? <input className="amount-input" type="number" min="0" inputMode="numeric" placeholder={text("未入力", "None")} value={entry?.totalAmount ?? ""} onChange={(event) => onAmountChange(row.id, event.target.value)} />
+              : row.totalAmount === undefined ? "" : formatYen(row.totalAmount)}</td><td className="amount-cell">{row.unitPrice === undefined ? "" : formatUnitPrice(row.unitPrice)}</td><td>{row.source === "manual" && <button onClick={() => onDelete(row.id)}>{text("削除", "Delete")}</button>}</td></tr>; })}</tbody></table></div>;
 }
 
 type PrintItem = { kind: "carry"; date: string; balances: Record<string, number> } | { kind: "entry"; row: Rows[number] };
