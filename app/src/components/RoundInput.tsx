@@ -5,10 +5,10 @@ import { applyShotInput, getNextShotIndex, getShotInput, type ShotInput } from "
 import { calculateRoundStats } from "../domain/shootingStats";
 import "./RoundInput.css";
 import { useLanguage } from "../i18n/LanguageContext";
-import { rangesEquivalent, trapPresetsForRange } from "../services/trapSettings";
-import type { RangeTrapSetting } from "../services/masterData";
+import { facesForRange, trapSetOptions } from "../services/trapSettings";
+import type { RangeFace, TrapSet } from "../services/masterData";
 
-interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; rangeName?: string; rangeTrapSettings?: RangeTrapSetting[]; ammunitionNames?: string[]; }
+interface Props { round: ShootingRound; onChange: (round: ShootingRound) => void; discipline?: Discipline; rangeName?: string; rangeFaces?: RangeFace[]; trapSets?: TrapSet[]; ammunitionNames?: string[]; }
 const stands: StandNo[] = [1, 2, 3, 4, 5];
 const inputs: { value: ShotInput; label: string; title: string; shortcut: string }[] = [
   { value: "hit-on-first", label: "1", title: "初矢命中", shortcut: "1" },
@@ -23,10 +23,10 @@ const scoreLabels: Record<ShotInput, string> = {
   "miss-center": "↑", "miss-right": "→", skip: "",
 };
 
-export function RoundInput({ round, onChange, discipline = "trap", rangeName = "", rangeTrapSettings, ammunitionNames = [] }: Props) {
+export function RoundInput({ round, onChange, discipline = "trap", rangeName = "", rangeFaces, trapSets, ammunitionNames = [] }: Props) {
   return discipline === "skeet"
     ? <SkeetRoundInput round={round} onChange={onChange} ammunitionNames={ammunitionNames} />
-    : <TrapRoundInput round={round} onChange={onChange} rangeName={rangeName} rangeTrapSettings={rangeTrapSettings} ammunitionNames={ammunitionNames} />;
+    : <TrapRoundInput round={round} onChange={onChange} rangeName={rangeName} rangeFaces={rangeFaces} trapSets={trapSets} ammunitionNames={ammunitionNames} />;
 }
 
 /** 複数実包を使うセッションで、このラウンドの実包を選ぶ。 */
@@ -37,7 +37,7 @@ function RoundAmmunitionPicker({ round, onChange, ammunitionNames }: { round: Sh
   return <div className="round-ammunition"><span>{text("使用実包", "Ammunition")}</span><div>{ammunitionNames.map((name) => <button className={selected === name ? "selected" : ""} key={name} onClick={() => onChange({ ...round, ammunitionName: name })}>{name}</button>)}</div></div>;
 }
 
-function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings, ammunitionNames = [] }: Props) {
+function TrapRoundInput({ round, onChange, rangeName = "", rangeFaces, trapSets, ammunitionNames = [] }: Props) {
   const { text } = useLanguage();
   const stats = calculateRoundStats(round);
   const [activeIndex, setActiveIndex] = useState(() => {
@@ -47,7 +47,8 @@ function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings, am
   const activeCellRef = useRef<HTMLButtonElement>(null);
   const activeShot = round.shots[activeIndex] ?? round.shots[0];
   const visibleInputs = round.fireMode === "single" ? inputs.filter((item) => item.value !== "hit-on-second" && item.value !== "hit-on-first-second-fired") : inputs;
-  const trapPresets = rangeTrapSettings?.filter((item) => rangesEquivalent(item.rangeName, rangeName)) ?? trapPresetsForRange(rangeName);
+  const faceOptions = facesForRange(rangeName, rangeFaces);
+  const setOptions = trapSetOptions(trapSets);
 
   useEffect(() => { activeCellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); }, [activeIndex]);
 
@@ -102,17 +103,30 @@ function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings, am
     onChange({ ...round, trapSetting: { ...current, ...changes } });
   }
 
-  function chooseTrapSetting(value: string) {
-    if (!value) { onChange({ ...round, trapSetting: undefined }); return; }
-    const preset = trapPresets.find((item) => item.id === value);
-    if (preset) {
-      const { id: _id, ...setting } = preset;
-      void _id;
-      onChange({ ...round, trapSetting: setting });
-    } else if (value === "custom") updateTrapSetting({ rangeName: round.trapSetting?.rangeName || rangeName, face: round.trapSetting?.face ?? "" });
+  /** 射面を選ぶ。セットとは独立に決まる。 */
+  function chooseFace(value: string) {
+    if (!value && !round.trapSetting?.setType) { onChange({ ...round, trapSetting: undefined }); return; }
+    updateTrapSetting({ face: value });
   }
 
-  const selectedPreset = trapPresets.find((item) => item.face === round.trapSetting?.face && item.distanceMeters === round.trapSetting?.distanceMeters)?.id ?? (round.trapSetting ? "custom" : "");
+  /** セットを選ぶ。登録済みのセットなら距離・速度も入れ替える。 */
+  function chooseSet(value: string) {
+    if (!value) { updateTrapSetting({ setType: "" }); return; }
+    const preset = setOptions.find((item) => item.name === value);
+    if (!preset) { updateTrapSetting({ setType: value }); return; }
+    updateTrapSetting({
+      setType: preset.name,
+      distanceMeters: preset.distanceMeters,
+      speedKmh: preset.speedKmh,
+      ...(preset.confirmedOn ? { confirmedOn: preset.confirmedOn } : {}),
+      ...(preset.note ? { note: preset.note } : {}),
+    });
+  }
+
+  function clearTrapSetting() {
+    onChange({ ...round, trapSetting: undefined });
+  }
+
 
   if (!activeShot) return null;
   return <section className="round-input">
@@ -124,15 +138,28 @@ function TrapRoundInput({ round, onChange, rangeName = "", rangeTrapSettings, am
     <div className="round-settings"><span>{text("開始射台", "Starting stand")}</span><div>{stands.map((stand) => <button className={round.startStandNo === stand ? "selected" : ""} key={stand} onClick={() => onChange(changeRoundStartStand(round, stand))}>{stand}</button>)}</div></div>
     <section className="trap-setting-panel">
       <header><div><p className="eyebrow">TARGET SETTING</p><strong>{text("射面・クレー設定", "Field and target setting")}</strong></div><small>{text("ラウンドごとに保存", "Saved per round")}</small></header>
-      <label className="trap-setting-preset"><span>{text("設定を選択", "Choose setting")}</span><select value={selectedPreset} onChange={(event) => chooseTrapSetting(event.target.value)}><option value="">{text("設定不明", "Unknown")}</option>{trapPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.face}・{preset.setType}・{preset.distanceMeters}m</option>)}<option value="custom">{text("その他・手動入力", "Other / manual")}</option></select></label>
+      <div className="trap-setting-selects">
+        <label><span>{text("射面", "Field")}</span><select value={round.trapSetting?.face ?? ""} onChange={(event) => chooseFace(event.target.value)}>
+          <option value="">{text("未設定", "Not set")}</option>
+          {faceOptions.map((item) => <option key={item.id} value={item.face}>{item.face}</option>)}
+          {round.trapSetting?.face && !faceOptions.some((item) => item.face === round.trapSetting?.face) && <option value={round.trapSetting.face}>{round.trapSetting.face}</option>}
+        </select></label>
+        <label><span>{text("セット", "Set")}</span><select value={round.trapSetting?.setType ?? ""} onChange={(event) => chooseSet(event.target.value)}>
+          <option value="">{text("未設定", "Not set")}</option>
+          {setOptions.map((item) => <option key={item.id} value={item.name}>{item.name}{item.distanceMeters ? `・${item.distanceMeters}m` : ""}{item.speedKmh ? `・${item.speedKmh}km/h` : ""}</option>)}
+          {round.trapSetting?.setType && !setOptions.some((item) => item.name === round.trapSetting?.setType) && <option value={round.trapSetting.setType}>{round.trapSetting.setType}</option>}
+        </select></label>
+      </div>
+      <small className="trap-setting-hint">{text("射面とセットは別々に選べます。当日の掲示に合わせて選んでください。", "Field and set are chosen separately. Match them to the notice displayed on the day.")}</small>
       {round.trapSetting && <div className="trap-setting-fields">
         <label className="trap-setting-range"><span>{text("射撃場", "Shooting range")}</span><input placeholder={text("例：大井射撃場", "e.g. Ooi Shooting Range")} value={round.trapSetting.rangeName || rangeName} onChange={(event) => updateTrapSetting({ rangeName: event.target.value })} /></label>
-        <label><span>{text("射面", "Field")}</span><input placeholder={text("例：第1面", "e.g. Field 1")} value={round.trapSetting.face} onChange={(event) => updateTrapSetting({ face: event.target.value })} /></label>
-        <label><span>{text("セット", "Set")}</span><input placeholder={text("例：ISSF国際セット", "e.g. ISSF set")} value={round.trapSetting.setType} onChange={(event) => updateTrapSetting({ setType: event.target.value })} /></label>
+        <label><span>{text("射面（手入力）", "Field (manual)")}</span><input placeholder={text("例：第1面", "e.g. Field 1")} value={round.trapSetting.face} onChange={(event) => updateTrapSetting({ face: event.target.value })} /></label>
+        <label><span>{text("セット（手入力）", "Set (manual)")}</span><input placeholder={text("例：ISSF国際セット", "e.g. ISSF set")} value={round.trapSetting.setType} onChange={(event) => updateTrapSetting({ setType: event.target.value })} /></label>
         <label><span>{text("飛行距離", "Distance")}</span><div><input inputMode="decimal" type="number" min="0" value={round.trapSetting.distanceMeters ?? ""} onChange={(event) => updateTrapSetting({ distanceMeters: event.target.value ? Number(event.target.value) : undefined })} /><small>m</small></div></label>
         <label><span>{text("速度目安", "Speed estimate")}</span><div><input inputMode="decimal" type="number" min="0" value={round.trapSetting.speedKmh ?? ""} onChange={(event) => updateTrapSetting({ speedKmh: event.target.value ? Number(event.target.value) : undefined })} /><small>km/h</small></div></label>
         <label><span>{text("確認日", "Confirmed")}</span><input type="date" value={round.trapSetting.confirmedOn ?? ""} onChange={(event) => updateTrapSetting({ confirmedOn: event.target.value })} /></label>
         <label className="trap-setting-note"><span>{text("補足", "Note")}</span><input value={round.trapSetting.note ?? ""} onChange={(event) => updateTrapSetting({ note: event.target.value })} /></label>
+        <button className="trap-setting-clear" type="button" onClick={clearTrapSetting}>{text("設定を消す", "Clear setting")}</button>
       </div>}
       {(rangeName.includes("伊勢原") || rangeName.includes("大井")) && <p>{text("登録値は設定目安です。当日の射撃場掲示を優先してください。", "Presets are estimates. Always follow the range notice for the day.")}</p>}
     </section>

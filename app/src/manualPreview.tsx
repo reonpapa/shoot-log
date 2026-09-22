@@ -30,7 +30,18 @@ const noop = () => undefined;
 const asyncNoop = async () => undefined;
 const previewEnglish = new URLSearchParams(window.location.search).get("lang") === "en";
 const sample = (ja: string, en: string) => previewEnglish ? en : ja;
-const masterData = { rangeNames: [sample("大井射撃場", "Sample Clay Range"), sample("県立射撃場", "Regional Shooting Range")], ammunitionNames: ["Sample 7.5", "Practice 24g"], rangeTrapSettings: [] };
+const masterData = {
+  rangeNames: [sample("大井射撃場", "Sample Clay Range"), sample("県立射撃場", "Regional Shooting Range")],
+  ammunitionNames: ["Sample 7.5", "Practice 24g"],
+  rangeFaces: [
+    { id: "preview-f1", rangeName: sample("大井射撃場", "Sample Clay Range"), face: sample("第1面", "Field 1") },
+    { id: "preview-f2", rangeName: sample("大井射撃場", "Sample Clay Range"), face: sample("第2面", "Field 2") },
+  ],
+  trapSets: [
+    { id: "preview-s1", name: sample("ISSF国際セット", "ISSF set"), distanceMeters: 76, speedKmh: 98 },
+    { id: "preview-s2", name: sample("練習セット", "Practice set"), distanceMeters: 55, speedKmh: 78 },
+  ],
+};
 
 const firearm: Firearm = {
   id: "demo-firearm",
@@ -189,7 +200,7 @@ function RoundScene({ state }: { state: "before" | "after" }) {
     <section className="session-summary"><div><strong>{session.session.date}</strong><span>{session.session.rangeName}</span></div><div><span>{sample("TRAP ・ 4ラウンド", "TRAP · 4 rounds")}</span><strong>{stats.score} / {stats.targets} {sample(`実包 ${stats.cartridgesUsed}発`, `${stats.cartridgesUsed} shells`)}</strong><span>{session.session.ammunitionName}</span></div><div className="session-actions"><button>{sample("基本情報を編集", "Edit details")}</button><button>{sample("履歴へ戻る", "Back to history")}</button><button className="complete-button">{sample("セッション完了", "Complete session")}</button></div></section>
     <PracticeThemeBanner theme={session.session.practiceTheme ?? ""} />
     <div className="round-navigation round-navigation-stacked"><nav className="round-tabs" aria-label={sample("ラウンド選択", "Round selection")}>{sceneRounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRound(round)}>Round {round.roundNo}</button>)}</nav><div className="round-actions"><button className="delete-round-button">{sample(`Round ${activeRound.roundNo} 削除`, `Delete Round ${activeRound.roundNo}`)}</button></div></div>
-    <RoundInput key={activeRound.id} round={activeRound} ammunitionNames={getSessionAmmunitionNames(session.session)} onChange={setActiveRound} />
+    <RoundInput key={activeRound.id} round={activeRound} rangeName={session.session.rangeName} rangeFaces={masterData.rangeFaces} trapSets={masterData.trapSets} ammunitionNames={getSessionAmmunitionNames(session.session)} onChange={setActiveRound} />
   </>;
 }
 
@@ -209,7 +220,7 @@ function ManualPreview() {
   else if (scene === "round-after") content = <RoundScene state="after" />;
   else if (scene === "skeet") content = <RoundInput round={createEmptySkeetRound(1)} discipline="skeet" onChange={noop} />;
   else if (scene === "analysis") content = <SessionAnalysis session={session} reviewAdvice={null} aiInitiallyOpen={openAi} onBack={noop} onResume={noop} onEdit={noop} onSaveReview={noop} />;
-  else if (scene === "master") content = <MasterDataManager masterData={masterData} onBack={noop} onAdd={noop} onRename={noop} onDelete={noop} onSaveRangeTrapSetting={noop} onDeleteRangeTrapSetting={noop} />;
+  else if (scene === "master") content = <MasterDataManager masterData={masterData} onBack={noop} onAdd={noop} onRename={noop} onDelete={noop} onSaveRangeFace={noop} onDeleteRangeFace={noop} onSaveTrapSet={noop} onDeleteTrapSet={noop} />;
   else if (scene === "ledger") content = <AmmunitionLedger data={ledger} sessions={sessions} ammunitionNames={masterData.ammunitionNames} onChange={setLedger} onBack={noop} />;
   else if (scene === "permit") content = <PermitManager data={ledger} onChange={setLedger} onBack={noop} backLabel={sample("アカウント設定へ戻る", "Back to account settings")} />;
   else if (scene === "support") content = <ContactSupport onBack={noop} />;

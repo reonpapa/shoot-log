@@ -1,14 +1,35 @@
 import { describe, expect, it } from "vitest";
 import { createEmptyRound } from "../domain/shooting";
-import { getTrapSettingPerformance, rangesEquivalent, trapPresetsForRange } from "./trapSettings";
+import { facesForRange, getTrapSettingPerformance, rangesEquivalent, trapSetOptions } from "./trapSettings";
+import { DEFAULT_TRAP_SETS, splitLegacyTrapSettings } from "./masterData";
 import { normalizeStoredSession } from "./storage";
 
 describe("trap settings", () => {
   it("伊勢原の3射面を候補にする", () => {
-    expect(trapPresetsForRange("神奈川県立伊勢原射撃場")).toHaveLength(3);
-    expect(trapPresetsForRange("大井射撃場")).toHaveLength(2);
-    expect(trapPresetsForRange("大井射撃場")[0]).toEqual(expect.objectContaining({ rangeName: "神奈川大井射撃場", face: "国際射面", distanceMeters: 76 }));
-    expect(trapPresetsForRange("大井射撃場")[0]).not.toHaveProperty("speedKmh");
+    expect(facesForRange("神奈川県立伊勢原射撃場")).toHaveLength(3);
+    expect(facesForRange("大井射撃場")).toHaveLength(2);
+    expect(facesForRange("大井射撃場")[0]).toEqual(expect.objectContaining({ rangeName: "神奈川大井射撃場", face: "国際射面" }));
+  });
+
+  it("セットは射撃場に関係なく共通の候補を返す", () => {
+    expect(trapSetOptions()).toBe(DEFAULT_TRAP_SETS);
+    expect(trapSetOptions([]).map((item) => item.name)).toContain("ISSF国際セット");
+    const custom = [{ id: "own", name: "自分のセット", distanceMeters: 70 }];
+    expect(trapSetOptions(custom)).toBe(custom);
+  });
+
+  it("射面とセットが固定されていた旧データを分割する", () => {
+    const legacy = [
+      { id: "t1", rangeName: "伊勢原", face: "第1面", setType: "ISSF国際セット", distanceMeters: 76, speedKmh: 98 },
+      { id: "t2", rangeName: "伊勢原", face: "第2面", setType: "練習セット", distanceMeters: 55, speedKmh: 78 },
+      { id: "t3", rangeName: "伊勢原", face: "第3面", setType: "ISSF国際セット", distanceMeters: 76, speedKmh: 98 },
+    ];
+
+    const { rangeFaces, trapSets } = splitLegacyTrapSettings(legacy);
+
+    expect(rangeFaces.map((item) => item.face)).toEqual(["第1面", "第2面", "第3面"]);
+    expect(trapSets.map((item) => item.name)).toEqual(["ISSF国際セット", "練習セット"]);
+    expect(trapSets[0]).toEqual(expect.objectContaining({ distanceMeters: 76, speedKmh: 98 }));
   });
 
   it("設定不明を推測せず集計から除外する", () => {

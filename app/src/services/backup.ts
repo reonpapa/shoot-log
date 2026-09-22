@@ -49,6 +49,14 @@ export function mergeSessions(current: StoredSession[], imported: StoredSession[
 
 export function mergeMasterData(current: MasterData, imported: MasterData): MasterData {
   const unique = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja"));
-  const settings = [...current.rangeTrapSettings, ...imported.rangeTrapSettings].reduce<MasterData["rangeTrapSettings"]>((items, item) => items.some((currentItem) => currentItem.id === item.id) ? items : [...items, item], []);
-  return { rangeNames: unique([...current.rangeNames, ...imported.rangeNames, ...settings.map((item) => item.rangeName)]), ammunitionNames: unique([...current.ammunitionNames, ...imported.ammunitionNames]), rangeTrapSettings: settings };
+  const mergeById = <T extends { id: string }>(left: T[], right: T[]): T[] =>
+    [...left, ...right].reduce<T[]>((items, item) => items.some((existing) => existing.id === item.id) ? items : [...items, item], []);
+  const rangeFaces = mergeById(current.rangeFaces, imported.rangeFaces);
+  const trapSets = mergeById(current.trapSets, imported.trapSets);
+  return {
+    rangeNames: unique([...current.rangeNames, ...imported.rangeNames, ...rangeFaces.map((item) => item.rangeName)]),
+    ammunitionNames: unique([...current.ammunitionNames, ...imported.ammunitionNames]),
+    rangeFaces,
+    trapSets,
+  };
 }

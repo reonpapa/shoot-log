@@ -29,9 +29,12 @@
 .trap-setting-panel > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .trap-setting-panel > header div { display: grid; gap: 2px; }
 .trap-setting-panel > header small, .trap-setting-panel > p { margin: 0; font-size: .62rem; opacity: .6; }
-.trap-setting-preset, .trap-setting-fields label { display: grid; min-width: 0; gap: 4px; }
-.trap-setting-preset > span, .trap-setting-fields label > span { font-size: .64rem; font-weight: 800; opacity: .62; }
-.trap-setting-preset select, .trap-setting-fields input { width: 100%; min-height: 40px; padding: 7px 9px; border: 1px solid #8885; border-radius: 8px; background: transparent; }
+.trap-setting-selects { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.trap-setting-hint { font-size: .62rem; line-height: 1.5; opacity: .6; }
+.trap-setting-clear { align-self: end; min-height: 40px; padding: 0 12px; border: 1px solid #8885; border-radius: 8px; background: transparent; font-size: .68rem; }
+.trap-setting-preset, .trap-setting-selects label, .trap-setting-fields label { display: grid; min-width: 0; gap: 4px; }
+.trap-setting-preset > span, .trap-setting-selects label > span, .trap-setting-fields label > span { font-size: .64rem; font-weight: 800; opacity: .62; }
+.trap-setting-preset select, .trap-setting-selects select, .trap-setting-fields input { width: 100%; min-height: 40px; padding: 7px 9px; border: 1px solid #8885; border-radius: 8px; background: transparent; }
 .trap-setting-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .trap-setting-fields label > div { display: flex; align-items: center; gap: 6px; }
 .trap-setting-fields label > div small { flex: none; font-size: .65rem; opacity: .62; }
@@ -44,3 +47,4 @@
 .round-ammunition > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .round-ammunition button { min-height: 36px; padding: 0 12px; border: 1px solid #8886; border-radius: 999px; background: transparent; font-size: .74rem; font-weight: 700; }
 .round-ammunition button.selected { border-color: #6d3bd1; background: #6d3bd11f; color: var(--accent-text); }
+@media (max-width: 520px) { .trap-setting-selects { grid-template-columns: minmax(0, 1fr); } }

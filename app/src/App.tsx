@@ -28,7 +28,7 @@ import type { LocalDataSet } from "./services/cloudSync";
 import { getPracticeRecommendation, getScoreBasedPracticeRecommendation } from "./services/sessionPlanning";
 import { useLanguage } from "./i18n/LanguageContext";
 import { APP_VERSION } from "./appVersion";
-import type { RangeTrapSetting } from "./services/masterData";
+import type { RangeFace, TrapSet } from "./services/masterData";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { checkAdmin, recordUsage } from "./services/adminAnalytics";
 
@@ -156,7 +156,7 @@ function App() {
   function renameMasterValue(kind: MasterKind, oldValue: string, newValue: string) {
     if (oldValue === newValue) return;
     setMasterData((current) => kind === "range"
-      ? { ...current, rangeNames: [...new Set(current.rangeNames.map((value) => value === oldValue ? newValue : value))].sort((a, b) => a.localeCompare(b, "ja")), rangeTrapSettings: current.rangeTrapSettings.map((item) => item.rangeName === oldValue ? { ...item, rangeName: newValue } : item) }
+      ? { ...current, rangeNames: [...new Set(current.rangeNames.map((value) => value === oldValue ? newValue : value))].sort((a, b) => a.localeCompare(b, "ja")), rangeFaces: current.rangeFaces.map((item) => item.rangeName === oldValue ? { ...item, rangeName: newValue } : item) }
       : { ...current, ammunitionNames: [...new Set(current.ammunitionNames.map((value) => value === oldValue ? newValue : value))].sort((a, b) => a.localeCompare(b, "ja")) });
     setSessions((current) => current.map((item) => {
       if (kind === "range") return item.session.rangeName === oldValue ? { ...item, session: { ...item.session, rangeName: newValue } } : item;
@@ -174,14 +174,20 @@ function App() {
   function deleteMasterValue(kind: MasterKind, value: string) {
     if (!window.confirm(text(`${value}を今後の選択肢から削除しますか？\n過去の履歴は変更されません。`, `Remove ${value} from future selections?\nPast records will not be changed.`))) return;
     setMasterData((current) => kind === "range"
-      ? { ...current, rangeNames: current.rangeNames.filter((item) => item !== value), rangeTrapSettings: current.rangeTrapSettings.filter((item) => item.rangeName !== value) }
+      ? { ...current, rangeNames: current.rangeNames.filter((item) => item !== value), rangeFaces: current.rangeFaces.filter((item) => item.rangeName !== value) }
       : { ...current, ammunitionNames: current.ammunitionNames.filter((item) => item !== value) });
   }
-  function saveRangeTrapSetting(setting: RangeTrapSetting) {
-    setMasterData((current) => ({ ...current, rangeNames: [...new Set([...current.rangeNames, setting.rangeName])].sort((a, b) => a.localeCompare(b, "ja")), rangeTrapSettings: [...current.rangeTrapSettings.filter((item) => item.id !== setting.id), setting] }));
+  function saveRangeFace(face: RangeFace) {
+    setMasterData((current) => ({ ...current, rangeNames: [...new Set([...current.rangeNames, face.rangeName])].sort((a, b) => a.localeCompare(b, "ja")), rangeFaces: [...current.rangeFaces.filter((item) => item.id !== face.id), face] }));
   }
-  function deleteRangeTrapSetting(id: string) {
-    setMasterData((current) => ({ ...current, rangeTrapSettings: current.rangeTrapSettings.filter((item) => item.id !== id) }));
+  function deleteRangeFace(id: string) {
+    setMasterData((current) => ({ ...current, rangeFaces: current.rangeFaces.filter((item) => item.id !== id) }));
+  }
+  function saveTrapSet(set: TrapSet) {
+    setMasterData((current) => ({ ...current, trapSets: [...current.trapSets.filter((item) => item.id !== set.id), set] }));
+  }
+  function deleteTrapSet(id: string) {
+    setMasterData((current) => ({ ...current, trapSets: current.trapSets.filter((item) => item.id !== id) }));
   }
   function importBackup(backup: ShootLogBackup) {
     setSessions((current) => mergeSessions(current, backup.sessions));
@@ -218,7 +224,7 @@ function App() {
     <header className="app-header"><div><p className="eyebrow">CLAY SHOOTING ANALYSIS</p><h1><img aria-hidden="true" alt="" src={`${import.meta.env.BASE_URL}favicon.svg`} />Shoot Log</h1></div><p className="version">Version {APP_VERSION}</p></header>
     <PwaStatus />
     {displayedScreen === "list" && <><div className="history-desktop-status"><CloudSyncStatus view={cloudSync.view} onSync={cloudSync.syncNow} /><PermitCountdown firearms={ammunitionLedger.firearms} onOpen={() => openPermit("list")} /></div><HistoryAnalysis sessions={sessions} /><SessionList sessions={sessions} firearms={ammunitionLedger.firearms} suggestedPracticeTheme={suggestedPracticeTheme} onCreate={() => setScreen("form")} onManage={() => setScreen("master")} onData={() => setScreen("data")} onAccount={() => setScreen("account")} onAmmunition={() => setScreen("ammunition")} onOpen={openSession} onDelete={deleteSession} /></>}
-    {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} onSaveRangeTrapSetting={saveRangeTrapSetting} onDeleteRangeTrapSetting={deleteRangeTrapSetting} />}
+    {displayedScreen === "master" && <MasterDataManager masterData={masterData} onBack={() => setScreen("list")} onAdd={addMasterValue} onRename={renameMasterValue} onDelete={deleteMasterValue} onSaveRangeFace={saveRangeFace} onDeleteRangeFace={deleteRangeFace} onSaveTrapSet={saveTrapSet} onDeleteTrapSet={deleteTrapSet} />}
     {displayedScreen === "data" && <DataManagement sessions={sessions} masterData={masterData} ammunitionLedger={ammunitionLedger} onBack={() => setScreen("list")} onImport={importBackup} />}
     {displayedScreen === "account" && <AccountSettings cloud={cloudSync.view} health={cloudSync.health} passwordRecovery={cloudSync.passwordRecovery} firearms={ammunitionLedger.firearms} isAdmin={isAdmin} onAdmin={() => setScreen("admin")} onBack={() => setScreen("list")} onPrivacy={() => setScreen("privacy")} onTerms={() => setScreen("terms")} onContact={() => setScreen("contact")} onSignIn={signIn} onSignUp={cloudSync.signUp} onSignOut={signOut} onSendPasswordReset={cloudSync.sendPasswordReset} onChangePassword={cloudSync.changePassword} onCompletePasswordRecovery={cloudSync.completePasswordRecovery} onSync={cloudSync.syncNow} onCheckHealth={cloudSync.checkHealth} onDeleteAccount={cloudSync.deleteAccount} onPermit={() => openPermit("account")} />}
     {displayedScreen === "admin" && isAdmin && <AdminDashboard onBack={() => setScreen("account")} />}
@@ -236,7 +242,7 @@ function App() {
         <nav className="round-tabs" aria-label={text("ラウンド選択", "Select round")}>{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}</nav>
         <div className="round-actions">{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}{activeSession.rounds.length > 1 && <button className="delete-round-button" onClick={deleteActiveRound}>Round {activeRound.roundNo} 削除</button>}</div>
       </div>
-      <RoundInput key={activeRound.id} round={activeRound} rangeName={activeSession.session.rangeName} rangeTrapSettings={masterData.rangeTrapSettings} discipline={activeSession.session.discipline} ammunitionNames={getSessionAmmunitionNames(activeSession.session)} onChange={updateRound} />
+      <RoundInput key={activeRound.id} round={activeRound} rangeName={activeSession.session.rangeName} rangeFaces={masterData.rangeFaces} trapSets={masterData.trapSets} discipline={activeSession.session.discipline} ammunitionNames={getSessionAmmunitionNames(activeSession.session)} onChange={updateRound} />
     </>}
     {displayedScreen === "analysis" && activeSession && <SessionAnalysis session={activeSession} reviewAdvice={reviewAdvice} onBack={returnToList} onEdit={() => setScreen("edit-session")} onResume={resumeSession} onSaveReview={saveReview} />}
   </main>;

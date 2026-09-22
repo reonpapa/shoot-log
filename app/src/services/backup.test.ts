@@ -5,7 +5,8 @@ import { createLedger, createRound, createStoredSession } from "../test/fixtures
 const masterData = {
   rangeNames: ["大井射撃場"],
   ammunitionNames: ["Fiocchi TT TWO"],
-  rangeTrapSettings: [],
+  rangeFaces: [],
+  trapSets: [],
 };
 
 describe("バックアップと復元", () => {
