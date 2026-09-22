@@ -65,6 +65,42 @@ export interface CalculatedLedgerRow {
   totalAfter: number;
 }
 
+interface SessionAmmunitionUsage {
+  sessionId: string;
+  date: string;
+  rangeName: string;
+  firearmId?: string;
+  ammunitionName: string;
+  cartridges: number;
+  sortKey: string;
+  /** 同じセッションで複数の実包を使った場合に true。 */
+  split: boolean;
+}
+
+/** 完了セッションの実包消費を、ラウンドごとの使用実包でまとめる。 */
+function collectSessionUsage(data: AmmunitionLedgerData, sessions: StoredSession[]): SessionAmmunitionUsage[] {
+  return sessions.flatMap((item) => {
+    if (item.status !== "completed" || (data.trackingStartDate && item.session.date < data.trackingStartDate)) return [];
+    const groups = new Map<string, ShootingRound[]>();
+    for (const round of item.rounds) {
+      const name = getRoundAmmunitionName(item.session, round);
+      if (!name) continue;
+      groups.set(name, [...(groups.get(name) ?? []), round]);
+    }
+    const split = groups.size > 1;
+    return [...groups.entries()].flatMap((entry): SessionAmmunitionUsage[] => {
+      const [ammunitionName, rounds] = entry;
+      const stats = calculateSessionStats({ id: item.id, date: item.session.date, rangeName: item.session.rangeName, ammunitionName, weather: item.session.weather, rounds, sessionMemo: item.session.memo });
+      if (stats.cartridgesUsed <= 0) return [];
+      return [{
+        sessionId: item.id, date: item.session.date, rangeName: item.session.rangeName,
+        ...(item.session.firearmId ? { firearmId: item.session.firearmId } : {}),
+        ammunitionName, cartridges: stats.cartridgesUsed, sortKey: item.createdAt, split,
+      }];
+    });
+  });
+}
+
 export function buildLedgerRows(data: AmmunitionLedgerData, sessions: StoredSession[]): CalculatedLedgerRow[] {
   const manual = data.entries.map((entry) => ({
     id: entry.id, date: entry.date, categoryId: entry.categoryId, quantity: entry.quantity,
@@ -74,29 +110,17 @@ export function buildLedgerRows(data: AmmunitionLedgerData, sessions: StoredSess
     source: "manual" as const, sortKey: entry.createdAt,
   }));
   const linkMap = new Map(data.productLinks.map((item) => [item.ammunitionName, item.categoryId]));
-  const automatic = sessions.flatMap((item) => {
-    if (item.status !== "completed" || (data.trackingStartDate && item.session.date < data.trackingStartDate)) return [];
-    const groups = new Map<string, ShootingRound[]>();
-    for (const round of item.rounds) {
-      const name = getRoundAmmunitionName(item.session, round);
-      if (!name) continue;
-      groups.set(name, [...(groups.get(name) ?? []), round]);
-    }
-    const split = groups.size > 1;
-    return [...groups.entries()].flatMap(([ammunitionName, rounds]) => {
-      const categoryId = linkMap.get(ammunitionName);
-      if (!categoryId) return [];
-      const stats = calculateSessionStats({ id: item.id, date: item.session.date, rangeName: item.session.rangeName, ammunitionName, weather: item.session.weather, rounds, sessionMemo: item.session.memo });
-      if (stats.cartridgesUsed <= 0) return [];
-      return [{
-        id: split ? `session:${item.id}:${ammunitionName}` : `session:${item.id}`,
-        date: item.session.date, categoryId, quantity: stats.cartridgesUsed, signedQuantity: -stats.cartridgesUsed,
-        ...(item.session.firearmId ? { firearmId: item.session.firearmId } : {}),
-        application: `${item.session.rangeName}・標的射撃${split ? `（${ammunitionName}）` : ""}`,
-        ammunitionName,
-        source: "session" as const, sourceSessionId: item.id, sortKey: item.createdAt,
-      }];
-    });
+  const automatic = collectSessionUsage(data, sessions).flatMap((usage) => {
+    const categoryId = linkMap.get(usage.ammunitionName);
+    if (!categoryId) return [];
+    return [{
+      id: usage.split ? `session:${usage.sessionId}:${usage.ammunitionName}` : `session:${usage.sessionId}`,
+      date: usage.date, categoryId, quantity: usage.cartridges, signedQuantity: -usage.cartridges,
+      ...(usage.firearmId ? { firearmId: usage.firearmId } : {}),
+      application: `${usage.rangeName}・標的射撃${usage.split ? `（${usage.ammunitionName}）` : ""}`,
+      ammunitionName: usage.ammunitionName,
+      source: "session" as const, sourceSessionId: usage.sessionId, sortKey: usage.sortKey,
+    }];
   });
   const balances: Record<string, number> = Object.fromEntries(data.categories.map((item) => [item.id, 0]));
   return [...manual, ...automatic].sort((a, b) => a.date.localeCompare(b.date) || a.sortKey.localeCompare(b.sortKey) || a.id.localeCompare(b.id)).map((row) => {
@@ -106,6 +130,29 @@ export function buildLedgerRows(data: AmmunitionLedgerData, sessions: StoredSess
     const unitPrice = calculateUnitPrice(totalAmount, row.quantity);
     return { id: row.id, date: row.date, categoryId: row.categoryId, quantity: row.quantity, signedQuantity: row.signedQuantity, ...(row.firearmId ? { firearmId: row.firearmId } : {}), application: row.application, ...(totalAmount === undefined ? {} : { totalAmount }), ...(unitPrice === undefined ? {} : { unitPrice }), ...("ammunitionName" in row ? { ammunitionName: row.ammunitionName } : {}), source: row.source, ...("sourceSessionId" in row ? { sourceSessionId: row.sourceSessionId } : {}), balanceAfter, totalAfter: Object.values(balanceAfter).reduce((sum, value) => sum + value, 0) };
   });
+}
+
+export interface UnpostedConsumption {
+  ammunitionName: string;
+  /** 帳簿区分が未設定のため台帳へ転記されていない消費数。 */
+  quantity: number;
+  sessionCount: number;
+}
+
+/** 帳簿区分に紐づいていない実包の消費を集計する。台帳の払いから漏れている分。 */
+export function getUnpostedConsumption(data: AmmunitionLedgerData, sessions: StoredSession[]): UnpostedConsumption[] {
+  const linked = new Set(data.productLinks.map((item) => item.ammunitionName));
+  const totals = new Map<string, { quantity: number; sessions: Set<string> }>();
+  for (const usage of collectSessionUsage(data, sessions)) {
+    if (linked.has(usage.ammunitionName)) continue;
+    const current = totals.get(usage.ammunitionName) ?? { quantity: 0, sessions: new Set<string>() };
+    current.quantity += usage.cartridges;
+    current.sessions.add(usage.sessionId);
+    totals.set(usage.ammunitionName, current);
+  }
+  return [...totals.entries()]
+    .map(([ammunitionName, value]) => ({ ammunitionName, quantity: value.quantity, sessionCount: value.sessions.size }))
+    .sort((a, b) => b.quantity - a.quantity || a.ammunitionName.localeCompare(b.ammunitionName, "ja"));
 }
 
 export interface PurchaseSummary {

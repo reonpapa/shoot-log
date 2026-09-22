@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLedgerRows, summarizePurchases } from "./ammunitionLedger";
+import { buildLedgerRows, getUnpostedConsumption, summarizePurchases } from "./ammunitionLedger";
 import { createLedger, createRound, createStoredSession } from "../test/fixtures";
 
 describe("実包台帳の自動反映", () => {
@@ -104,5 +104,29 @@ describe("購入金額", () => {
     ledger.entries = [...ledger.entries, { id: "buy-1", date: "2026-07-05", type: "acquisition", categoryId: "trap-shell", quantity: 250, application: "金額未入力", createdAt: "2026-07-05T00:00:00.000Z" }];
 
     expect(summarizePurchases(ledger)).toMatchObject({ entryCount: 0, totalAmount: 0, unitPrice: undefined });
+  });
+});
+
+describe("帳簿区分が未設定の消費", () => {
+  it("転記されなかった消費数を実包ごとに集計する", () => {
+    const ledger = createLedger();
+    const session = createStoredSession({
+      ammunitionName: "Fiocchi TT TWO",
+      ammunitionNames: ["Fiocchi TT TWO", "未登録実包"],
+      rounds: [
+        createRound({ roundNo: 1, finalResults: ["hit-on-first", "miss"] }),
+        createRound({ roundNo: 2, ammunitionName: "未登録実包", finalResults: ["hit-on-first", "miss", "miss"] }),
+      ],
+    });
+
+    const rows = buildLedgerRows(ledger, [session]);
+    const unposted = getUnpostedConsumption(ledger, [session]);
+
+    expect(rows.filter((row) => row.source === "session")).toHaveLength(1);
+    expect(unposted).toEqual([{ ammunitionName: "未登録実包", quantity: 3, sessionCount: 1 }]);
+  });
+
+  it("すべて対応済みなら未転記はない", () => {
+    expect(getUnpostedConsumption(createLedger(), [createStoredSession({})])).toEqual([]);
   });
 });
