@@ -191,8 +191,9 @@ function AppHeader() {
 }
 
 function RoundScene({ state }: { state: "before" | "after" }) {
+  const demoTrapSetting = { rangeName: session.session.rangeName, face: sample("第1面", "Field 1"), setType: sample("ISSF国際セット", "ISSF set"), distanceMeters: 76, speedKmh: 98 };
   const sceneRounds = state === "before"
-    ? [1, 2, 3, 4].map(createEmptyRound)
+    ? [1, 2, 3, 4].map(createEmptyRound).map((round, index) => index === 0 ? { ...round, trapSetting: demoTrapSetting } : round)
     : [createPartiallyEnteredRound(1), createEmptyRound(2), createEmptyRound(3), createEmptyRound(4)];
   const [activeRound, setActiveRound] = useState(sceneRounds[0]);
   const stats = calculateSessionStats({ id: session.id, date: session.session.date, rangeName: session.session.rangeName, ammunitionName: session.session.ammunitionName, weather: session.session.weather, rounds: sceneRounds, sessionMemo: session.session.memo });

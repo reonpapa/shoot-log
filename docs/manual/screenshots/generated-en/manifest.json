@@ -1,5 +1,5 @@
 {
-  "version": "2.27.0",
+  "version": "2.28.0",
   "viewport": {
     "width": 390,
     "height": 844,
@@ -115,6 +115,11 @@
       "name": "22-ammunition-amount",
       "scene": "ledger",
       "selector": ".ammo-summary"
+    },
+    {
+      "name": "23-trap-setting",
+      "scene": "round-before",
+      "selector": ".trap-setting-panel"
     }
   ]
 }
