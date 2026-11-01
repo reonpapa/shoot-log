@@ -1,7 +1,8 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { calculateUnitPrice, entryTypeLabels, formatUnitPrice, formatYen, isPurchaseType, type AmmunitionFamily, type AmmunitionLedgerData, type LedgerEntryType } from "../domain/ammunition";
 import { getSessionAmmunitionNames } from "../domain/shooting";
 import { buildLedgerRows, getUnpostedConsumption, summarizePurchases } from "../services/ammunitionLedger";
+import { canUseBrowserPrint, exportLedgerPdf } from "../services/ledgerPdf";
 import type { StoredSession } from "../services/storage";
 import "./AmmunitionLedger.css";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -27,6 +28,9 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   const [categoryId, setCategoryId] = useState(data.categories[0]?.id ?? "");
   const [quantity, setQuantity] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
+  const [pdfState, setPdfState] = useState<"idle" | "working" | "failed">("idle");
+  const printRef = useRef<HTMLDivElement>(null);
+  const printable = canUseBrowserPrint(window, navigator);
   const [firearmId, setFirearmId] = useState("");
   const [application, setApplication] = useState("");
   const [printMode, setPrintMode] = useState<"year" | "custom" | "all">("year");
@@ -40,6 +44,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   const printEnd = printMode === "year" ? `${printYear}-12-31` : printMode === "custom" ? printTo : "";
   const printableRows = rows.filter((row) => (!printStart || row.date >= printStart) && (!printEnd || row.date <= printEnd));
   const carriedRow = printStart ? rows.filter((row) => row.date < printStart).at(-1) : undefined;
+  const printPeriodFileName = printMode === "all" ? "all" : printMode === "year" ? printYear : `${printFrom}_${printTo}`;
   const printPeriod = printMode === "all" ? text("全期間", "All dates") : printMode === "year" ? text(`${printYear}年`, printYear) : `${printFrom} – ${printTo}`;
   const latest = rows.at(-1);
   const purchaseYear = printMode === "year" ? printYear : currentYear();
@@ -50,6 +55,20 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   const unpostedTotal = unposted.reduce((sum, item) => sum + item.quantity, 0);
   const unmapped = [...new Set(trackedSessions.flatMap((item) => getSessionAmmunitionNames(item.session)).filter((name) => !data.productLinks.some((link) => link.ammunitionName === name)))];
   const noFirearm = trackedSessions.filter((item) => !item.session.firearmId || !data.firearms.some((firearm) => firearm.id === item.session.firearmId)).length;
+
+  async function savePdf() {
+    const root = printRef.current;
+    if (!root || pdfState === "working") return;
+    setPdfState("working");
+    try {
+      await exportLedgerPdf(root, `shoot-log-ammunition-ledger-${printPeriodFileName}.pdf`);
+      setPdfState("idle");
+    } catch (error) {
+      if ((error as Error)?.name === "AbortError") { setPdfState("idle"); return; }
+      console.error("帳簿PDFの作成に失敗しました。", error);
+      setPdfState("failed");
+    }
+  }
 
   function addEntry(event: FormEvent) {
     event.preventDefault();
@@ -70,7 +89,8 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   }
 
   return <section className="ammo-ledger">
-    <header className="ammo-ledger-header"><div><p className="eyebrow">AMMUNITION LEDGER</p><h2>{text("実包管理帳簿", "Ammunition ledger")}</h2><p>{text("神奈川県様式に合わせて、受・払・残を記録します。", "Records ammunition received, used, and remaining in the Kanagawa format.")}</p></div><div><button onClick={onBack}>{text("履歴へ戻る", "Back to history")}</button><button className="primary-button" onClick={() => window.print()}>{text("帳簿を印刷 / PDF保存", "Print / Save PDF")}</button></div></header>
+    <header className="ammo-ledger-header"><div><p className="eyebrow">AMMUNITION LEDGER</p><h2>{text("実包管理帳簿", "Ammunition ledger")}</h2><p>{text("神奈川県様式に合わせて、受・払・残を記録します。", "Records ammunition received, used, and remaining in the Kanagawa format.")}</p></div><div><button onClick={onBack}>{text("履歴へ戻る", "Back to history")}</button>{printable && <button onClick={() => window.print()}>{text("印刷", "Print")}</button>}<button className="primary-button" disabled={pdfState === "working"} onClick={() => void savePdf()}>{pdfState === "working" ? text("PDFを作成中…", "Creating PDF…") : text("PDFを保存 / 共有", "Save / share PDF")}</button></div></header>
+    {pdfState === "failed" && <aside className="ammo-warning"><strong>{text("PDFを作成できませんでした", "Could not create the PDF")}</strong><span>{text("通信が不要な処理です。画面を再読み込みしてからもう一度お試しください。", "No connection is needed. Reload the page and try again.")}</span></aside>}
     <div className="ammo-summary"><article><span>{text("残弾合計", "Total remaining")}</span><strong className={(latest?.totalAfter ?? 0) < 0 ? "negative" : ""}>{latest?.totalAfter ?? 0}<small> {text("発", "shells")}</small></strong></article>{data.categories.map((category) => <article key={category.id}><span>{category.name}</span><strong className={(latest?.balanceAfter[category.id] ?? 0) < 0 ? "negative" : ""}>{latest?.balanceAfter[category.id] ?? 0}<small> {text("発", "shells")}</small></strong></article>)}{unpostedTotal > 0 && <article className="unposted-card"><span>{text("未転記の消費", "Usage not posted")}</span><strong>{unpostedTotal}<small> {text("発", "shells")}</small></strong><small>{text("帳簿区分が未設定の実包", "Ammunition without a category")}</small></article>}<article className="purchase-card"><span>{text(`${purchaseYear}年の購入金額`, `Purchases in ${purchaseYear}`)}</span><strong>{formatYen(purchases.totalAmount)}</strong><small>{purchases.unitPrice === undefined ? text("金額の記録なし", "No amounts recorded") : text(`${purchases.quantity}発・平均 ${formatUnitPrice(purchases.unitPrice)}/発`, `${purchases.quantity} shells · avg ${formatUnitPrice(purchases.unitPrice)}/shell`)}</small></article><article className="purchase-card"><span>{text("平均単価（全期間）", "Average unit price (all time)")}</span><strong>{allPurchases.unitPrice === undefined ? "—" : formatUnitPrice(allPurchases.unitPrice)}</strong><small>{allPurchases.unitPrice === undefined ? text("購入金額を入力すると表示されます", "Shown once purchase amounts are entered") : text(`${allPurchases.quantity}発・${formatYen(allPurchases.totalAmount)}`, `${allPurchases.quantity} shells · ${formatYen(allPurchases.totalAmount)}`)}</small></article></div>
     <section className="print-range"><strong>{text("PDF出力範囲", "PDF date range")}</strong><label><input checked={printMode === "year"} name="print-mode" type="radio" onChange={() => setPrintMode("year")} />{text("年指定", "Year")}</label><select disabled={printMode !== "year"} value={printYear} onChange={(event) => setPrintYear(event.target.value)}>{yearOptions.map((year) => <option key={year}>{year}</option>)}</select><label><input checked={printMode === "custom"} name="print-mode" type="radio" onChange={() => setPrintMode("custom")} />{text("期間指定", "Custom")}</label><input disabled={printMode !== "custom"} type="date" value={printFrom} onChange={(event) => setPrintFrom(event.target.value)} /><span>–</span><input disabled={printMode !== "custom"} type="date" value={printTo} onChange={(event) => setPrintTo(event.target.value)} /><label><input checked={printMode === "all"} name="print-mode" type="radio" onChange={() => setPrintMode("all")} />{text("全期間", "All dates")}</label><small>{text(`${printableRows.length}件を出力`, `Export ${printableRows.length} entries`)}</small></section>
     {(unmapped.length > 0 || unpostedTotal > 0 || noFirearm > 0) && <aside className="ammo-warning"><strong>{text("台帳へ反映するための設定があります", "Some settings are required for ledger entries")}</strong>{unmapped.length > 0 && <span>{text("未分類の実包：", "Uncategorized ammunition: ")}{unmapped.map((name) => { const found = unposted.find((item) => item.ammunitionName === name); return found ? text(`${name}（未転記 ${found.quantity}発）`, `${name} (${found.quantity} shells not posted)`) : name; }).join("、")}</span>}
@@ -89,7 +109,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
       </form>
       <LedgerTable data={data} rows={rows} onAmountChange={updateEntryAmount} onDelete={deleteEntry} />
     </> : <LedgerSettings data={data} ammunitionNames={ammunitionNames} onChange={onChange} />}
-    <PrintLedger carryDate={printStart} carryBalances={carriedRow?.balanceAfter} data={data} period={printPeriod} rows={printableRows} />
+    <PrintLedger printRef={printRef} carryDate={printStart} carryBalances={carriedRow?.balanceAfter} data={data} period={printPeriod} rows={printableRows} />
   </section>;
 }
 
@@ -121,12 +141,12 @@ function LedgerTable({ data, rows, onAmountChange, onDelete }: { data: Ammunitio
 
 type PrintItem = { kind: "carry"; date: string; balances: Record<string, number> } | { kind: "entry"; row: Rows[number] };
 
-function PrintLedger({ data, rows, carryDate, carryBalances, period }: { data: AmmunitionLedgerData; rows: Rows; carryDate: string; carryBalances?: Record<string, number>; period: string }) {
+function PrintLedger({ data, rows, carryDate, carryBalances, period, printRef }: { data: AmmunitionLedgerData; rows: Rows; carryDate: string; carryBalances?: Record<string, number>; period: string; printRef: React.RefObject<HTMLDivElement | null> }) {
   const categoryChunks = Array.from({ length: Math.ceil(data.categories.length / 3) }, (_, index) => data.categories.slice(index * 3, index * 3 + 3));
   const firearms = new Map(data.firearms.map((item) => [item.id, item]));
   const items: PrintItem[] = [...(carryDate && carryBalances ? [{ kind: "carry" as const, date: carryDate, balances: carryBalances }] : []), ...rows.map((row) => ({ kind: "entry" as const, row }))];
   const rowPages = Array.from({ length: Math.max(1, Math.ceil(items.length / 12)) }, (_, index) => items.slice(index * 12, index * 12 + 12));
-  return <div className="print-ledger">{categoryChunks.flatMap((categories, categoryPage) => rowPages.map((pageItems, rowPage) => <section className="print-page" key={`${categoryPage}-${rowPage}`}><div className="print-title"><h1>実包管理帳簿</h1><span>{period}</span></div><table><thead><tr><th rowSpan={3}>年</th><th rowSpan={3}>月</th><th rowSpan={3}>日</th><th rowSpan={3}>使用銃<br />（銃番号等）</th><th rowSpan={3}>適用</th>{categories.map((item) => <th colSpan={3} key={item.id}>{categoryTitle(item.family)}<br />適合実包（{item.name}）</th>)}<th rowSpan={3}>残弾合計<br />（個）</th></tr><tr>{categories.map((item) => <th colSpan={3} key={item.id}>受　　払　　残</th>)}</tr><tr>{categories.flatMap((item) => [<th key={`${item.id}-in`}>受</th>, <th key={`${item.id}-out`}>払</th>, <th key={`${item.id}-balance`}>残</th>])}</tr></thead><tbody>{pageItems.map((item) => {
+  return <div className="print-ledger" ref={printRef}>{categoryChunks.flatMap((categories, categoryPage) => rowPages.map((pageItems, rowPage) => <section className="print-page" key={`${categoryPage}-${rowPage}`}><div className="print-title"><h1>実包管理帳簿</h1><span>{period}</span></div><table><thead><tr><th rowSpan={3}>年</th><th rowSpan={3}>月</th><th rowSpan={3}>日</th><th rowSpan={3}>使用銃<br />（銃番号等）</th><th rowSpan={3}>適用</th>{categories.map((item) => <th colSpan={3} key={item.id}>{categoryTitle(item.family)}<br />適合実包（{item.name}）</th>)}<th rowSpan={3}>残弾合計<br />（個）</th></tr><tr>{categories.map((item) => <th colSpan={3} key={item.id}>受　　払　　残</th>)}</tr><tr>{categories.flatMap((item) => [<th key={`${item.id}-in`}>受</th>, <th key={`${item.id}-out`}>払</th>, <th key={`${item.id}-balance`}>残</th>])}</tr></thead><tbody>{pageItems.map((item) => {
     if (item.kind === "carry") {
       const [year, month, day] = item.date.split("-");
       const total = Object.values(item.balances).reduce((sum, value) => sum + value, 0);

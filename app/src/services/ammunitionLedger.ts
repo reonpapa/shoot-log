@@ -58,7 +58,6 @@ export interface CalculatedLedgerRow {
   application: string;
   totalAmount?: number;
   unitPrice?: number;
-  ammunitionName?: string;
   source: "manual" | "session";
   sourceSessionId?: string;
   balanceAfter: Record<string, number>;
@@ -110,17 +109,27 @@ export function buildLedgerRows(data: AmmunitionLedgerData, sessions: StoredSess
     source: "manual" as const, sortKey: entry.createdAt,
   }));
   const linkMap = new Map(data.productLinks.map((item) => [item.ammunitionName, item.categoryId]));
-  const automatic = collectSessionUsage(data, sessions).flatMap((usage) => {
+  // 帳簿は実包区分ごとの受払なので、同じ区分の銘柄はひとつの消費行にまとめる。
+  const posted = new Map<string, { usage: SessionAmmunitionUsage; categoryId: string; quantity: number }>();
+  for (const usage of collectSessionUsage(data, sessions)) {
     const categoryId = linkMap.get(usage.ammunitionName);
-    if (!categoryId) return [];
-    return [{
-      id: usage.split ? `session:${usage.sessionId}:${usage.ammunitionName}` : `session:${usage.sessionId}`,
-      date: usage.date, categoryId, quantity: usage.cartridges, signedQuantity: -usage.cartridges,
+    if (!categoryId) continue;
+    const key = `${usage.sessionId}|${categoryId}`;
+    const current = posted.get(key);
+    if (current) current.quantity += usage.cartridges;
+    else posted.set(key, { usage, categoryId, quantity: usage.cartridges });
+  }
+  const categoriesPerSession = new Map<string, number>();
+  for (const item of posted.values()) categoriesPerSession.set(item.usage.sessionId, (categoriesPerSession.get(item.usage.sessionId) ?? 0) + 1);
+  const automatic = [...posted.values()].map(({ usage, categoryId, quantity }) => {
+    const split = (categoriesPerSession.get(usage.sessionId) ?? 1) > 1;
+    return {
+      id: split ? `session:${usage.sessionId}:${categoryId}` : `session:${usage.sessionId}`,
+      date: usage.date, categoryId, quantity, signedQuantity: -quantity,
       ...(usage.firearmId ? { firearmId: usage.firearmId } : {}),
-      application: `${usage.rangeName}・標的射撃${usage.split ? `（${usage.ammunitionName}）` : ""}`,
-      ammunitionName: usage.ammunitionName,
+      application: `${usage.rangeName}・標的射撃`,
       source: "session" as const, sourceSessionId: usage.sessionId, sortKey: usage.sortKey,
-    }];
+    };
   });
   const balances: Record<string, number> = Object.fromEntries(data.categories.map((item) => [item.id, 0]));
   return [...manual, ...automatic].sort((a, b) => a.date.localeCompare(b.date) || a.sortKey.localeCompare(b.sortKey) || a.id.localeCompare(b.id)).map((row) => {
@@ -128,7 +137,7 @@ export function buildLedgerRows(data: AmmunitionLedgerData, sessions: StoredSess
     const balanceAfter = { ...balances };
     const totalAmount = "totalAmount" in row ? row.totalAmount : undefined;
     const unitPrice = calculateUnitPrice(totalAmount, row.quantity);
-    return { id: row.id, date: row.date, categoryId: row.categoryId, quantity: row.quantity, signedQuantity: row.signedQuantity, ...(row.firearmId ? { firearmId: row.firearmId } : {}), application: row.application, ...(totalAmount === undefined ? {} : { totalAmount }), ...(unitPrice === undefined ? {} : { unitPrice }), ...("ammunitionName" in row ? { ammunitionName: row.ammunitionName } : {}), source: row.source, ...("sourceSessionId" in row ? { sourceSessionId: row.sourceSessionId } : {}), balanceAfter, totalAfter: Object.values(balanceAfter).reduce((sum, value) => sum + value, 0) };
+    return { id: row.id, date: row.date, categoryId: row.categoryId, quantity: row.quantity, signedQuantity: row.signedQuantity, ...(row.firearmId ? { firearmId: row.firearmId } : {}), application: row.application, ...(totalAmount === undefined ? {} : { totalAmount }), ...(unitPrice === undefined ? {} : { unitPrice }), source: row.source, ...("sourceSessionId" in row ? { sourceSessionId: row.sourceSessionId } : {}), balanceAfter, totalAfter: Object.values(balanceAfter).reduce((sum, value) => sum + value, 0) };
   });
 }
 

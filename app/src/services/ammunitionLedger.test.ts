@@ -72,6 +72,25 @@ describe("複数実包セッションの転記", () => {
     expect(sessionRows.find((row) => row.categoryId === "skeet-shell")).toMatchObject({ quantity: 3, signedQuantity: -3 });
     expect(rows.at(-1)?.totalAfter).toBe(145);
   });
+
+  it("同じ実包区分の銘柄はひとつの消費行にまとめる", () => {
+    const ledger = createLedger();
+    ledger.productLinks = [...ledger.productLinks, { ammunitionName: "Ammo B", categoryId: "trap-shell" }];
+    const session = createStoredSession({
+      ammunitionName: "Fiocchi TT TWO",
+      ammunitionNames: ["Fiocchi TT TWO", "Ammo B"],
+      rounds: [
+        createRound({ roundNo: 1, finalResults: ["hit-on-first", "miss"] }),
+        createRound({ roundNo: 2, ammunitionName: "Ammo B", finalResults: ["hit-on-first", "miss", "miss"] }),
+      ],
+    });
+
+    const sessionRows = buildLedgerRows(ledger, [session]).filter((row) => row.source === "session");
+
+    expect(sessionRows).toHaveLength(1);
+    expect(sessionRows[0]).toMatchObject({ id: "session:session-1", categoryId: "trap-shell", quantity: 5, signedQuantity: -5 });
+    expect(sessionRows[0].application).not.toContain("Ammo B");
+  });
 });
 
 describe("購入金額", () => {
