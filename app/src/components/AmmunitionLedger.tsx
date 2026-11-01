@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type FormEvent } from "react";
 import { calculateUnitPrice, entryTypeLabels, formatUnitPrice, formatYen, isPurchaseType, type AmmunitionFamily, type AmmunitionLedgerData, type LedgerEntryType } from "../domain/ammunition";
 import { getSessionAmmunitionNames } from "../domain/shooting";
 import { buildLedgerRows, getUnpostedConsumption, summarizePurchases } from "../services/ammunitionLedger";
-import { canUseBrowserPrint, exportLedgerPdf } from "../services/ledgerPdf";
+import { buildLedgerPdfFile, canUseBrowserPrint, downloadLedgerPdf, isAbortError, isGestureError, shareLedgerPdf, shouldUseShareSheet } from "../services/ledgerPdf";
 import type { StoredSession } from "../services/storage";
 import "./AmmunitionLedger.css";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -28,7 +28,9 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   const [categoryId, setCategoryId] = useState(data.categories[0]?.id ?? "");
   const [quantity, setQuantity] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
-  const [pdfState, setPdfState] = useState<"idle" | "working" | "failed">("idle");
+  const [pdfState, setPdfState] = useState<"idle" | "working" | "sharing" | "ready" | "failed">("idle");
+  const [pdfError, setPdfError] = useState("");
+  const pdfFileRef = useRef<File | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const printable = canUseBrowserPrint(window, navigator);
   const [firearmId, setFirearmId] = useState("");
@@ -44,7 +46,7 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   const printEnd = printMode === "year" ? `${printYear}-12-31` : printMode === "custom" ? printTo : "";
   const printableRows = rows.filter((row) => (!printStart || row.date >= printStart) && (!printEnd || row.date <= printEnd));
   const carriedRow = printStart ? rows.filter((row) => row.date < printStart).at(-1) : undefined;
-  const printPeriodFileName = printMode === "all" ? "all" : printMode === "year" ? printYear : `${printFrom}_${printTo}`;
+  const pdfFileName = text(`実包管理帳簿_${today().replaceAll("-", "")}.pdf`, `ammunition-ledger_${today().replaceAll("-", "")}.pdf`);
   const printPeriod = printMode === "all" ? text("全期間", "All dates") : printMode === "year" ? text(`${printYear}年`, printYear) : `${printFrom} – ${printTo}`;
   const latest = rows.at(-1);
   const purchaseYear = printMode === "year" ? printYear : currentYear();
@@ -58,15 +60,32 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
 
   async function savePdf() {
     const root = printRef.current;
-    if (!root || pdfState === "working") return;
+    if (!root || pdfState === "working" || pdfState === "sharing") return;
+    if (pdfState === "ready" && pdfFileRef.current) { await deliverPdf(pdfFileRef.current); return; }
     setPdfState("working");
+    setPdfError("");
     try {
-      await exportLedgerPdf(root, `shoot-log-ammunition-ledger-${printPeriodFileName}.pdf`);
+      const file = await buildLedgerPdfFile(root, pdfFileName);
+      pdfFileRef.current = file;
+      await deliverPdf(file);
+    } catch (error) {
+      console.error("帳簿PDFの作成に失敗しました。", error);
+      setPdfError((error as Error)?.message ?? "");
+      setPdfState("failed");
+    }
+  }
+
+  /** iOSは共有シート、デスクトップはダウンロード。共有がタップから離れて拒否されたら再タップを促す。 */
+  async function deliverPdf(file: File) {
+    if (!shouldUseShareSheet(navigator, file)) { downloadLedgerPdf(file); setPdfState("idle"); return; }
+    setPdfState("sharing");
+    try {
+      await shareLedgerPdf(file);
       setPdfState("idle");
     } catch (error) {
-      if ((error as Error)?.name === "AbortError") { setPdfState("idle"); return; }
-      console.error("帳簿PDFの作成に失敗しました。", error);
-      setPdfState("failed");
+      if (isAbortError(error)) { setPdfState("ready"); return; }
+      if (isGestureError(error)) { setPdfState("ready"); return; }
+      throw error;
     }
   }
 
@@ -89,8 +108,9 @@ export function AmmunitionLedger({ data, sessions, ammunitionNames, onChange, on
   }
 
   return <section className="ammo-ledger">
-    <header className="ammo-ledger-header"><div><p className="eyebrow">AMMUNITION LEDGER</p><h2>{text("実包管理帳簿", "Ammunition ledger")}</h2><p>{text("神奈川県様式に合わせて、受・払・残を記録します。", "Records ammunition received, used, and remaining in the Kanagawa format.")}</p></div><div><button onClick={onBack}>{text("履歴へ戻る", "Back to history")}</button>{printable && <button onClick={() => window.print()}>{text("印刷", "Print")}</button>}<button className="primary-button" disabled={pdfState === "working"} onClick={() => void savePdf()}>{pdfState === "working" ? text("PDFを作成中…", "Creating PDF…") : text("PDFを保存 / 共有", "Save / share PDF")}</button></div></header>
-    {pdfState === "failed" && <aside className="ammo-warning"><strong>{text("PDFを作成できませんでした", "Could not create the PDF")}</strong><span>{text("通信が不要な処理です。画面を再読み込みしてからもう一度お試しください。", "No connection is needed. Reload the page and try again.")}</span></aside>}
+    <header className="ammo-ledger-header"><div><p className="eyebrow">AMMUNITION LEDGER</p><h2>{text("実包管理帳簿", "Ammunition ledger")}</h2><p>{text("神奈川県様式に合わせて、受・払・残を記録します。", "Records ammunition received, used, and remaining in the Kanagawa format.")}</p></div><div><button onClick={onBack}>{text("履歴へ戻る", "Back to history")}</button>{printable && <button onClick={() => window.print()}>{text("印刷", "Print")}</button>}<button className="primary-button" disabled={pdfState === "working" || pdfState === "sharing"} onClick={() => void savePdf()}>{pdfState === "working" ? text("PDFを作成中…", "Creating PDF…") : pdfState === "sharing" ? text("共有中…", "Sharing…") : pdfState === "ready" ? text("PDFを共有", "Share PDF") : text("PDFを保存", "Save PDF")}</button></div></header>
+    {pdfState === "ready" && <aside className="ammo-warning"><strong>{text("PDFの準備ができました", "The PDF is ready")}</strong><span>{text("「PDFを共有」をもう一度押すと共有メニューが開きます。", "Press Share PDF again to open the share menu.")}</span></aside>}
+    {pdfState === "failed" && <aside className="ammo-warning"><strong>{text("PDFを作成できませんでした", "Could not create the PDF")}</strong><span>{text("画面を再読み込みしてからもう一度お試しください。", "Reload the page and try again.")}</span>{pdfError && <span className="ammo-warning-detail">{pdfError}</span>}</aside>}
     <div className="ammo-summary"><article><span>{text("残弾合計", "Total remaining")}</span><strong className={(latest?.totalAfter ?? 0) < 0 ? "negative" : ""}>{latest?.totalAfter ?? 0}<small> {text("発", "shells")}</small></strong></article>{data.categories.map((category) => <article key={category.id}><span>{category.name}</span><strong className={(latest?.balanceAfter[category.id] ?? 0) < 0 ? "negative" : ""}>{latest?.balanceAfter[category.id] ?? 0}<small> {text("発", "shells")}</small></strong></article>)}{unpostedTotal > 0 && <article className="unposted-card"><span>{text("未転記の消費", "Usage not posted")}</span><strong>{unpostedTotal}<small> {text("発", "shells")}</small></strong><small>{text("帳簿区分が未設定の実包", "Ammunition without a category")}</small></article>}<article className="purchase-card"><span>{text(`${purchaseYear}年の購入金額`, `Purchases in ${purchaseYear}`)}</span><strong>{formatYen(purchases.totalAmount)}</strong><small>{purchases.unitPrice === undefined ? text("金額の記録なし", "No amounts recorded") : text(`${purchases.quantity}発・平均 ${formatUnitPrice(purchases.unitPrice)}/発`, `${purchases.quantity} shells · avg ${formatUnitPrice(purchases.unitPrice)}/shell`)}</small></article><article className="purchase-card"><span>{text("平均単価（全期間）", "Average unit price (all time)")}</span><strong>{allPurchases.unitPrice === undefined ? "—" : formatUnitPrice(allPurchases.unitPrice)}</strong><small>{allPurchases.unitPrice === undefined ? text("購入金額を入力すると表示されます", "Shown once purchase amounts are entered") : text(`${allPurchases.quantity}発・${formatYen(allPurchases.totalAmount)}`, `${allPurchases.quantity} shells · ${formatYen(allPurchases.totalAmount)}`)}</small></article></div>
     <section className="print-range"><strong>{text("PDF出力範囲", "PDF date range")}</strong><label><input checked={printMode === "year"} name="print-mode" type="radio" onChange={() => setPrintMode("year")} />{text("年指定", "Year")}</label><select disabled={printMode !== "year"} value={printYear} onChange={(event) => setPrintYear(event.target.value)}>{yearOptions.map((year) => <option key={year}>{year}</option>)}</select><label><input checked={printMode === "custom"} name="print-mode" type="radio" onChange={() => setPrintMode("custom")} />{text("期間指定", "Custom")}</label><input disabled={printMode !== "custom"} type="date" value={printFrom} onChange={(event) => setPrintFrom(event.target.value)} /><span>–</span><input disabled={printMode !== "custom"} type="date" value={printTo} onChange={(event) => setPrintTo(event.target.value)} /><label><input checked={printMode === "all"} name="print-mode" type="radio" onChange={() => setPrintMode("all")} />{text("全期間", "All dates")}</label><small>{text(`${printableRows.length}件を出力`, `Export ${printableRows.length} entries`)}</small></section>
     {(unmapped.length > 0 || unpostedTotal > 0 || noFirearm > 0) && <aside className="ammo-warning"><strong>{text("台帳へ反映するための設定があります", "Some settings are required for ledger entries")}</strong>{unmapped.length > 0 && <span>{text("未分類の実包：", "Uncategorized ammunition: ")}{unmapped.map((name) => { const found = unposted.find((item) => item.ammunitionName === name); return found ? text(`${name}（未転記 ${found.quantity}発）`, `${name} (${found.quantity} shells not posted)`) : name; }).join("、")}</span>}

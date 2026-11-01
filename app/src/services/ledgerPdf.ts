@@ -22,21 +22,32 @@ export function canUseBrowserPrint(view: { matchMedia: Window["matchMedia"] }, d
   return !(isIos(device) && isStandaloneDisplay(view, device));
 }
 
-/** 生成したPDFを共有シートへ渡せるか。iOSはダウンロードより共有が確実。 */
-export function canShareFile(device: Navigator, file: File): boolean {
+/**
+ * 共有シートへ渡すべきか。
+ * iOS/iPadOSはダウンロードが扱いづらいので共有シートを使う。
+ * macOSの共有シートには「ファイルに保存」が無く保存できないため、デスクトップはダウンロードにする。
+ */
+export function shouldUseShareSheet(device: Navigator & { standalone?: boolean }, file: File): boolean {
+  if (!isIos(device)) return false;
   return typeof device.canShare === "function" && device.canShare({ files: [file] }) && typeof device.share === "function";
 }
 
-export interface LedgerPdfResult {
-  pages: number;
-  delivery: "shared" | "downloaded";
+/** 共有がユーザー操作から離れて拒否されたか。iOSはタップ直後でないと共有シートを開けない。 */
+export function isGestureError(error: unknown): boolean {
+  const name = (error as { name?: string } | null)?.name;
+  return name === "NotAllowedError" || name === "SecurityError" || name === "InvalidStateError";
+}
+
+/** 共有を利用者が閉じただけか。 */
+export function isAbortError(error: unknown): boolean {
+  return (error as { name?: string } | null)?.name === "AbortError";
 }
 
 /**
  * 印刷用のページ要素をそのままPDFの各ページへ描画する。
  * 文字はブラウザが描画した見た目をそのまま使うので、日本語フォントの埋め込みは不要。
  */
-export async function exportLedgerPdf(root: HTMLElement, fileName: string): Promise<LedgerPdfResult> {
+export async function buildLedgerPdfFile(root: HTMLElement, fileName: string): Promise<File> {
   const pages = [...root.querySelectorAll<HTMLElement>(".print-page")];
   if (pages.length === 0) throw new Error("出力できる帳簿ページがありません。");
 
@@ -54,19 +65,24 @@ export async function exportLedgerPdf(root: HTMLElement, fileName: string): Prom
     root.classList.remove("exporting");
   }
 
-  const blob = document_.output("blob");
-  const file = new File([blob], fileName, { type: "application/pdf" });
+  return new File([document_.output("blob")], fileName, { type: "application/pdf" });
+}
 
-  if (canShareFile(navigator, file)) {
-    await navigator.share({ files: [file], title: fileName });
-    return { pages: pages.length, delivery: "shared" };
-  }
+/** 共有シートへ渡す。拒否された場合は呼び出し側で再タップを促す。 */
+export async function shareLedgerPdf(file: File): Promise<void> {
+  await navigator.share({ files: [file], title: file.name });
+}
 
-  const url = URL.createObjectURL(blob);
+/** 端末へ保存する。共有シートを使わない環境向け。 */
+export function downloadLedgerPdf(file: File): void {
+  const url = URL.createObjectURL(file);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = fileName;
+  anchor.download = file.name;
+  anchor.rel = "noopener";
+  // 一部のブラウザは、DOMに無いリンクや早すぎるrevokeでダウンロードを取りこぼす。
+  document.body.append(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
-  return { pages: pages.length, delivery: "downloaded" };
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }

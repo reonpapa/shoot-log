@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canShareFile, canUseBrowserPrint, isStandaloneDisplay } from "./ledgerPdf";
+import { canUseBrowserPrint, isStandaloneDisplay, shouldUseShareSheet } from "./ledgerPdf";
 
 const view = (standalone: boolean) => ({ matchMedia: ((query: string) => ({ matches: standalone && query.includes("standalone") })) as Window["matchMedia"] });
 const device = (userAgent: string, options: { standalone?: boolean; platform?: string; maxTouchPoints?: number } = {}) => ({
@@ -31,12 +31,20 @@ describe("帳簿PDFの出力手段", () => {
     expect(isStandaloneDisplay(view(false), device(iphone, { standalone: false }))).toBe(false);
   });
 
-  it("共有シートに対応していない環境ではダウンロードへ回す", () => {
+  it("iPhoneとiPadは共有シートへ渡す", () => {
     const file = new File(["%PDF-1.4"], "ledger.pdf", { type: "application/pdf" });
     const sharing = { canShare: () => true, share: async () => undefined } as unknown as Navigator;
-    const noSharing = { canShare: () => false } as unknown as Navigator;
-    expect(canShareFile(sharing, file)).toBe(true);
-    expect(canShareFile(noSharing, file)).toBe(false);
-    expect(canShareFile({} as Navigator, file)).toBe(false);
+    expect(shouldUseShareSheet({ ...device(iphone), ...sharing } as Navigator, file)).toBe(true);
+  });
+
+  it("Macは共有シートに「ファイルに保存」が無いのでダウンロードへ回す", () => {
+    const file = new File(["%PDF-1.4"], "ledger.pdf", { type: "application/pdf" });
+    const macDevice = { ...device(mac, { platform: "MacIntel", maxTouchPoints: 0 }), canShare: () => true, share: async () => undefined } as unknown as Navigator;
+    expect(shouldUseShareSheet(macDevice, file)).toBe(false);
+  });
+
+  it("共有APIが無い環境もダウンロードへ回す", () => {
+    const file = new File(["%PDF-1.4"], "ledger.pdf", { type: "application/pdf" });
+    expect(shouldUseShareSheet(device(iphone) as Navigator, file)).toBe(false);
   });
 });
