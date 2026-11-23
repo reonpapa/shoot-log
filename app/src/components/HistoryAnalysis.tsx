@@ -7,15 +7,18 @@ import { getAmmunitionPerformance } from "../services/ammunitionPerformance";
 import { getConditionPerformance, type ConditionPerformance } from "../services/conditionPerformance";
 import { formatWindDirection } from "../services/sessionConditions";
 import { StandRadialChart } from "./StandRadialChart";
+import { ComparisonBarChart, TrendLineChart, type BarDatum } from "./Charts";
+import { getMonthlyAmmunition, getSessionTrend, movingAverage } from "../services/trends";
+import { formatYen, type AmmunitionLedgerData } from "../domain/ammunition";
 import "./HistoryAnalysis.css";
 import { useLanguage } from "../i18n/LanguageContext";
 import { getTrapSettingPerformance } from "../services/trapSettings";
 
-interface Props { sessions: StoredSession[]; }
+interface Props { sessions: StoredSession[]; ammunitionLedger: AmmunitionLedgerData; }
 type Period = "all" | "5" | "10";
 const DEFAULT_DISCIPLINE_KEY = "shoot-log-analysis-default-discipline";
 
-export function HistoryAnalysis({ sessions }: Props) {
+export function HistoryAnalysis({ sessions, ammunitionLedger }: Props) {
   const { language, text } = useLanguage();
   const [discipline, setDiscipline] = useState<Extract<Discipline, "trap" | "skeet">>(() => localStorage.getItem(DEFAULT_DISCIPLINE_KEY) === "skeet" ? "skeet" : "trap");
   const [defaultDiscipline, setDefaultDiscipline] = useState<Extract<Discipline, "trap" | "skeet">>(() => localStorage.getItem(DEFAULT_DISCIPLINE_KEY) === "skeet" ? "skeet" : "trap");
@@ -23,6 +26,7 @@ export function HistoryAnalysis({ sessions }: Props) {
   const [ammunitionName, setAmmunitionName] = useState("all");
   const [fireMode, setFireMode] = useState<"all" | FireMode>("all");
   const [period, setPeriod] = useState<Period>("all");
+  const [comparisonAxis, setComparisonAxis] = useState<"weather" | "windDirection" | "windStrength" | "ammunition" | "setting">("weather");
   const completed = sessions.filter((item) => item.status === "completed" && item.session.discipline === discipline);
   const rangeOptions = [...new Set(completed.map((item) => item.session.rangeName))].sort((a, b) => a.localeCompare(b, "ja"));
   const ammunitionOptions = [...new Set(completed.flatMap((item) => getSessionAmmunitionNames(item.session)))].sort((a, b) => a.localeCompare(b, "ja"));
@@ -64,6 +68,23 @@ export function HistoryAnalysis({ sessions }: Props) {
     }
     return result;
   }, { single: { hits: 0, targets: 0 }, double: { hits: 0, targets: 0 } });
+  const trend = getSessionTrend(filtered);
+  const trendLabels = trend.map((item) => item.date.slice(5).replace("-", "/"));
+  const trendAverages = trend.map((item) => item.averageScore);
+  const MOVING_WINDOW = 5;
+  const trendMovingAverage = movingAverage(trendAverages, MOVING_WINDOW);
+  const hasMovingAverage = trendMovingAverage.some((value) => value !== null);
+  const monthly = getMonthlyAmmunition(filtered, ammunitionLedger);
+  const monthlyLabel = (month: string) => `${Number(month.slice(5))}${text("月", "")}`;
+  const comparisonSources: { key: typeof comparisonAxis; label: string; data: BarDatum[] }[] = [
+    { key: "weather" as const, label: text("天候", "Weather"), data: conditionPerformance.weather.map((item) => ({ label: item.condition, value: item.averageScore, note: `${item.roundCount}R` })) },
+    { key: "windDirection" as const, label: text("風向", "Wind direction"), data: conditionPerformance.windDirection.map((item) => ({ label: formatWindDirection(item.condition, language), value: item.averageScore, note: `${item.roundCount}R` })) },
+    { key: "windStrength" as const, label: text("風の強さ", "Wind strength"), data: conditionPerformance.windStrength.map((item) => ({ label: item.condition, value: item.averageScore, note: `${item.roundCount}R` })) },
+    { key: "ammunition" as const, label: text("実包", "Ammunition"), data: ammunitionPerformance.map((item) => ({ label: item.ammunitionName, value: item.averageScore, note: `${item.roundCount}R` })) },
+    ...(discipline === "trap" ? [{ key: "setting" as const, label: text("射面・セット", "Field / set"), data: trapSettingPerformance.map((item) => ({ label: item.label.split("・").slice(1).join("・") || item.label, value: item.averageScore, note: `${item.rounds}R` })) }] : []),
+  ].filter((item) => item.data.length > 0);
+  const activeComparison = comparisonSources.find((item) => item.key === comparisonAxis) ?? comparisonSources[0];
+
   function chooseDiscipline(value: "trap" | "skeet") {
     setDiscipline(value); setRangeName("all"); setAmmunitionName("all"); setFireMode("all"); setPeriod("all");
   }
@@ -86,11 +107,64 @@ export function HistoryAnalysis({ sessions }: Props) {
           <article><span>{text("現在の課題射台", "Current weakest stand")}</span><strong>{comparison.weakestStand.standNo}<small>{text("番射台", " stand")}</small></strong><p>{text("命中率", "Hit rate")} {comparison.weakestStand.hitRate.toFixed(1)}%</p><small className={deltaClass(comparison.weakestStand.delta)}>{text("前5R比", "vs previous 5R")} {formatDelta(comparison.weakestStand.delta, "pt")}</small></article>
         </div> : <div className="comparison-pending"><strong>{text(`比較まであと ${Math.max(0, 10 - comparisonRounds.length)}R`, `${Math.max(0, 10 - comparisonRounds.length)}R until comparison`)}</strong><p>{text("同じ条件の記録が10ラウンドになると、直近5Rの変化を表示します。", "After 10 rounds with the same filters, changes in the latest 5 rounds will appear.")}</p></div>}
       </section>
-      <section className="score-trend"><h3>{text("セッション推移", "Session trend")}</h3><div className="trend-scroll"><div className="trend-bars">{filtered.map((item) => {
-        const score = item.rounds.reduce((sum, round) => sum + calculateRoundStats(round).score, 0);
-        const sessionAverage = score / item.rounds.length;
-        return <article key={item.id}><div className="trend-value">{sessionAverage.toFixed(1)}</div><div className="trend-track"><div style={{ height: `${sessionAverage / 25 * 100}%` }} /></div><strong>{item.session.date.slice(5)}</strong><small>{item.rounds.length}R</small></article>;
-      })}</div></div></section>
+      <section className="score-trend">
+        <header><div><p className="eyebrow">SCORE TREND</p><h3>{text("スコアの推移", "Score trend")}</h3></div><small>{hasMovingAverage ? text(`1回の平均スコアと${MOVING_WINDOW}回移動平均`, `Average per session and ${MOVING_WINDOW}-session moving average`) : text(`${MOVING_WINDOW}回たまると移動平均も表示します`, `The moving average appears after ${MOVING_WINDOW} sessions`)}</small></header>
+        <TrendLineChart
+          labels={trendLabels}
+          max={25}
+          min={0}
+          series={[
+            { name: text("平均スコア", "Average score"), values: trendAverages },
+            ...(hasMovingAverage ? [{ name: text(`${MOVING_WINDOW}回移動平均`, `${MOVING_WINDOW}-session average`), values: trendMovingAverage }] : []),
+          ]}
+          formatValue={(value) => value.toFixed(1)}
+          tableLabel={text("日付", "Date")}
+          description={text("セッションごとの平均スコアの推移。左右キーで各回の数値を読み上げます。", "Average score per session. Use the arrow keys to read each session.")}
+        />
+      </section>
+      <section className="score-trend">
+        <header><div><p className="eyebrow">HIT RATE TREND</p><h3>{text("命中率の推移", "Hit rate trend")}</h3></div><small>{text("スコアに表れにくい変化を見ます", "Shows changes that the score alone hides")}</small></header>
+        <TrendLineChart
+          labels={trendLabels}
+          max={100}
+          min={0}
+          series={[
+            { name: text("総合命中率", "Hit rate"), values: trend.map((item) => item.hitRate) },
+            { name: text("初矢命中率", "First-shot hit rate"), values: trend.map((item) => item.firstShotHitRate) },
+          ]}
+          formatValue={(value) => `${value.toFixed(0)}%`}
+          tableLabel={text("日付", "Date")}
+          description={text("セッションごとの総合命中率と初矢命中率の推移。", "Hit rate and first-shot hit rate per session.")}
+        />
+      </section>
+      {activeComparison && <section className="comparison-chart">
+        <header><div><p className="eyebrow">CONDITION COMPARISON</p><h3>{text("条件別の平均スコア", "Average score by condition")}</h3></div><small>{text("同じ絞り込み条件で比較", "Compared with the same filters")}</small></header>
+        <nav className="comparison-axis" aria-label={text("比較する条件", "Condition to compare")}>{comparisonSources.map((item) => <button className={item.key === activeComparison.key ? "selected" : ""} key={item.key} onClick={() => setComparisonAxis(item.key)}>{item.label}</button>)}</nav>
+        <ComparisonBarChart
+          data={[...activeComparison.data].sort((a, b) => b.value - a.value)}
+          formatValue={(value) => value.toFixed(1)}
+          tableLabel={activeComparison.label}
+          description={text(`${activeComparison.label}別の平均スコア`, `Average score by ${activeComparison.label}`)}
+        />
+        <p>{text("ラウンド数が少ない条件は参考値です。射撃場や体調の差も含めて判断してください。", "Conditions with few rounds are indicative. Consider differences in range and condition too.")}</p>
+      </section>}
+      {monthly.length > 0 && <section className="monthly-ammunition">
+        <header><div><p className="eyebrow">MONTHLY</p><h3>{text("月別の実包と費用", "Ammunition and cost by month")}</h3></div><small>{text("絞り込み条件の消費と、台帳の購入金額", "Usage from these filters and purchases from the ledger")}</small></header>
+        <div className="monthly-grid">
+          <div><h4>{text("消費発数", "Shells used")}</h4><ComparisonBarChart
+            data={monthly.map((item) => ({ label: monthlyLabel(item.month), value: item.cartridges, note: item.sessions ? `${item.sessions}${text("回", "x")}` : undefined }))}
+            formatValue={(value) => `${Math.round(value)}`}
+            tableLabel={text("月", "Month")}
+            description={text("月別の消費発数", "Shells used by month")}
+          /></div>
+          <div><h4>{text("購入金額", "Purchases")}</h4>{monthly.some((item) => item.purchaseAmount > 0) ? <ComparisonBarChart
+            data={monthly.map((item) => ({ label: monthlyLabel(item.month), value: item.purchaseAmount, note: item.purchaseQuantity ? `${item.purchaseQuantity}${text("発", "sh")}` : undefined }))}
+            formatValue={(value) => formatYen(value)}
+            tableLabel={text("月", "Month")}
+            description={text("月別の購入金額", "Purchase amount by month")}
+          /> : <p className="monthly-empty">{text("実包管理帳簿の購入・譲受に金額を入力すると表示されます。", "Shown once purchase amounts are entered in the ammunition ledger.")}</p>}</div>
+        </div>
+      </section>}
       <section className="history-stands"><header><h3>{text("射台別成績", "Performance by stand")}</h3><div className="radial-legend"><span><i className="legend-hit" />{text("総合命中率", "Hit rate")}</span><span><i className="legend-first" />{text("初矢命中率", "First-shot rate")}</span><span><i className="legend-left" />←{text("失中", "Miss")}</span><span><i className="legend-center" />↑{text("失中", "Miss")}</span><span><i className="legend-right" />→{text("失中", "Miss")}</span></div></header><div>{stands.map((stand) => <StandRadialChart directionScaleMax={directionScaleMax} key={stand.standNo} stats={stand} />)}</div></section>
       {trapSettingPerformance.length > 0 && <section className="trap-setting-performance"><header><div><p className="eyebrow">TARGET SETTING</p><h3>{text("射面・クレー設定別", "By field and target setting")}</h3></div><small>{text("設定済みラウンドのみ", "Rounds with settings only")}</small></header><div>{trapSettingPerformance.map((item) => <article key={item.key}><header><strong>{item.label}</strong>{item.rounds < 3 && <span>{text("参考値", "Indicative")}</span>}</header><p><b>{item.averageScore.toFixed(1)}</b><small> / 25</small></p><footer><span>{[item.distanceMeters ? `${item.distanceMeters}m` : "", item.speedKmh ? `${item.speedKmh}km/h` : ""].filter(Boolean).join("・") || text("数値未設定", "No values")}</span><span>{item.rounds}R</span></footer></article>)}</div><p>{text("射面の設定は変更される場合があります。記録した当日の条件として比較してください。", "Target settings may change. Compare them as conditions recorded for that day.")}</p></section>}
     </>}

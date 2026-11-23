@@ -1,5 +1,5 @@
 {
-  "version": "2.29.1",
+  "version": "2.30.0",
   "viewport": {
     "width": 390,
     "height": 844,
@@ -120,6 +120,21 @@
       "name": "23-trap-setting",
       "scene": "round-before",
       "selector": ".trap-setting-panel"
+    },
+    {
+      "name": "24-score-trend",
+      "scene": "history-analysis",
+      "selector": ".score-trend"
+    },
+    {
+      "name": "25-condition-comparison",
+      "scene": "history-analysis",
+      "selector": ".comparison-chart"
+    },
+    {
+      "name": "26-monthly-ammunition",
+      "scene": "history-analysis",
+      "selector": ".monthly-ammunition"
     }
   ]
 }

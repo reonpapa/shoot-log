@@ -161,12 +161,21 @@ const session: StoredSession = {
   updatedAt: "2026-07-20T06:30:00.000Z",
 };
 
-const earlierSessions: StoredSession[] = [0, 1, 2].map((index) => ({
+const earlierDates = ["2026-05-10", "2026-05-24", "2026-06-07", "2026-06-21", "2026-07-06", "2026-07-13"];
+const earlierSessions: StoredSession[] = earlierDates.map((date, index) => ({
   ...session,
   id: `demo-session-${index}`,
-  session: { ...session.session, date: `2026-07-${String(6 + index * 7).padStart(2, "0")}` },
-  review: { ...session.review, themeAchievement: index === 2 ? "achieved" : "partial" },
-  rounds: rounds.slice(0, 2).map((round, roundIndex) => ({ ...round, id: `${round.id}-${index}`, roundNo: roundIndex + 1 })),
+  session: { ...session.session, date },
+  review: { ...session.review, themeAchievement: index % 3 === 2 ? "achieved" : "partial" },
+  rounds: rounds.slice(0, 2).map((round, roundIndex) => ({
+    ...round,
+    id: `${round.id}-${index}`,
+    roundNo: roundIndex + 1,
+    // 回ごとに少しずつ結果を変えて、推移が分かるようにする。
+    shots: round.shots.map((shot, shotIndex) => (shotIndex + index) % 5 === 0
+      ? { ...shot, firstShotResult: "miss" as const, secondShotResult: "not-fired" as const, finalResult: "miss" as const, missDirection: "left" as const }
+      : shot),
+  })),
 }));
 const sessions = [session, ...earlierSessions];
 
@@ -215,7 +224,7 @@ function ManualPreview() {
   if (scene === "login") content = <AccountSettings cloud={signedOutCloud} health={health} passwordRecovery={false} firearms={[]} isAdmin={false} onAdmin={noop} onBack={noop} onPrivacy={noop} onTerms={noop} onContact={noop} onSignIn={asyncNoop} onSignUp={async () => ""} onSignOut={asyncNoop} onSendPasswordReset={asyncNoop} onChangePassword={asyncNoop} onCompletePasswordRecovery={asyncNoop} onSync={asyncNoop} onCheckHealth={asyncNoop} onDeleteAccount={asyncNoop} onPermit={noop} />;
   else if (scene === "account") content = <AccountSettings cloud={cloud} health={health} passwordRecovery={false} firearms={[firearm]} isAdmin={false} onAdmin={noop} onBack={noop} onPrivacy={noop} onTerms={noop} onContact={noop} onSignIn={asyncNoop} onSignUp={async () => ""} onSignOut={asyncNoop} onSendPasswordReset={asyncNoop} onChangePassword={asyncNoop} onCompletePasswordRecovery={asyncNoop} onSync={asyncNoop} onCheckHealth={asyncNoop} onDeleteAccount={asyncNoop} onPermit={noop} />;
   else if (scene === "history") content = <SessionList sessions={sessions} firearms={[firearm]} suggestedPracticeTheme={sample("クレーを見てから動く", "See the target before moving")} onCreate={noop} onManage={noop} onData={noop} onAccount={noop} onAmmunition={noop} onOpen={noop} onDelete={noop} />;
-  else if (scene === "history-analysis") content = <HistoryAnalysis sessions={sessions} />;
+  else if (scene === "history-analysis") content = <HistoryAnalysis sessions={sessions} ammunitionLedger={ledger} />;
   else if (scene === "form") content = <SessionForm initialValue={session.session} rangeNames={masterData.rangeNames} ammunitionNames={masterData.ammunitionNames} firearms={[firearm]} onCancel={noop} onStart={noop} />;
   else if (scene === "round-before") content = <RoundScene state="before" />;
   else if (scene === "round-after") content = <RoundScene state="after" />;
