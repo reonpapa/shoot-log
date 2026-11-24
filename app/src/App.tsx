@@ -33,7 +33,7 @@ import { AdminDashboard } from "./components/AdminDashboard";
 import { checkAdmin, recordUsage } from "./services/adminAnalytics";
 
 type Screen = "list" | "form" | "round" | "analysis" | "edit-session" | "master" | "data" | "account" | "admin" | "privacy" | "terms" | "contact" | "ammunition" | "permit";
-const MAX_ROUNDS = 4;
+const MAX_ROUNDS = 6;
 const PrivacyPolicy = lazy(() => import("./components/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./components/TermsOfService"));
 const ContactSupport = lazy(() => import("./components/ContactSupport"));
@@ -239,7 +239,7 @@ function App() {
       <section className="session-summary"><div><strong>{activeSession.session.date}</strong><span>{activeSession.session.rangeName}</span></div><div><span>{activeSession.session.discipline.toUpperCase()} ・ {activeSession.rounds.length} {text("ラウンド", "rounds")}</span><strong>{activeStats?.score} / {activeStats?.targets}　{text("実包", "shells")} {activeStats?.cartridgesUsed}</strong><span>{getSessionAmmunitionNames(activeSession.session).join("・")}</span></div><div className="session-actions"><button onClick={() => setScreen("edit-session")}>{text("基本情報を編集", "Edit details")}</button><button onClick={returnToList}>{text("履歴へ戻る", "Back to history")}</button><button className="complete-button" onClick={completeSession}>{text("セッション完了", "Complete session")}</button></div></section>
       <PracticeThemeBanner theme={activeSession.session.practiceTheme ?? ""} />
       <div className={`round-navigation${activeSession.rounds.length >= 3 ? " round-navigation-stacked" : ""}`}>
-        <nav className="round-tabs" aria-label={text("ラウンド選択", "Select round")}>{activeSession.rounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>Round {round.roundNo}</button>)}</nav>
+        <nav className="round-tabs" aria-label={text("ラウンド選択", "Select round")}>{activeSession.rounds.map((round) => <button aria-label={`Round ${round.roundNo}`} className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRoundId(round.id)}>{activeSession.rounds.length >= 5 ? `R${round.roundNo}` : `Round ${round.roundNo}`}</button>)}</nav>
         <div className="round-actions">{activeSession.rounds.length < MAX_ROUNDS && <button className="add-round-button" onClick={addRound}>＋ Round</button>}{activeSession.rounds.length > 1 && <button className="delete-round-button" onClick={deleteActiveRound}>Round {activeRound.roundNo} 削除</button>}</div>
       </div>
       <RoundInput key={activeRound.id} round={activeRound} rangeName={activeSession.session.rangeName} rangeFaces={masterData.rangeFaces} trapSets={masterData.trapSets} discipline={activeSession.session.discipline} ammunitionNames={getSessionAmmunitionNames(activeSession.session)} onChange={updateRound} />

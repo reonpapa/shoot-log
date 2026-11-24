@@ -202,14 +202,14 @@ function AppHeader() {
 function RoundScene({ state }: { state: "before" | "after" }) {
   const demoTrapSetting = { rangeName: session.session.rangeName, face: sample("第1面", "Field 1"), setType: sample("ISSF国際セット", "ISSF set"), distanceMeters: 76, speedKmh: 98 };
   const sceneRounds = state === "before"
-    ? [1, 2, 3, 4].map(createEmptyRound).map((round, index) => index === 0 ? { ...round, trapSetting: demoTrapSetting } : round)
-    : [createPartiallyEnteredRound(1), createEmptyRound(2), createEmptyRound(3), createEmptyRound(4)];
+    ? [1, 2, 3, 4, 5, 6].map(createEmptyRound).map((round, index) => index === 0 ? { ...round, trapSetting: demoTrapSetting } : round)
+    : [createPartiallyEnteredRound(1), createEmptyRound(2), createEmptyRound(3), createEmptyRound(4), createEmptyRound(5), createEmptyRound(6)];
   const [activeRound, setActiveRound] = useState(sceneRounds[0]);
   const stats = calculateSessionStats({ id: session.id, date: session.session.date, rangeName: session.session.rangeName, ammunitionName: session.session.ammunitionName, weather: session.session.weather, rounds: sceneRounds, sessionMemo: session.session.memo });
   return <>
     <section className="session-summary"><div><strong>{session.session.date}</strong><span>{session.session.rangeName}</span></div><div><span>{sample("TRAP ・ 4ラウンド", "TRAP · 4 rounds")}</span><strong>{stats.score} / {stats.targets} {sample(`実包 ${stats.cartridgesUsed}発`, `${stats.cartridgesUsed} shells`)}</strong><span>{session.session.ammunitionName}</span></div><div className="session-actions"><button>{sample("基本情報を編集", "Edit details")}</button><button>{sample("履歴へ戻る", "Back to history")}</button><button className="complete-button">{sample("セッション完了", "Complete session")}</button></div></section>
     <PracticeThemeBanner theme={session.session.practiceTheme ?? ""} />
-    <div className="round-navigation round-navigation-stacked"><nav className="round-tabs" aria-label={sample("ラウンド選択", "Round selection")}>{sceneRounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRound(round)}>Round {round.roundNo}</button>)}</nav><div className="round-actions"><button className="delete-round-button">{sample(`Round ${activeRound.roundNo} 削除`, `Delete Round ${activeRound.roundNo}`)}</button></div></div>
+    <div className="round-navigation round-navigation-stacked"><nav className="round-tabs" aria-label={sample("ラウンド選択", "Round selection")}>{sceneRounds.map((round) => <button className={round.id === activeRound.id ? "selected" : ""} key={round.id} onClick={() => setActiveRound(round)}>{sceneRounds.length >= 5 ? `R${round.roundNo}` : `Round ${round.roundNo}`}</button>)}</nav><div className="round-actions"><button className="delete-round-button">{sample(`Round ${activeRound.roundNo} 削除`, `Delete Round ${activeRound.roundNo}`)}</button></div></div>
     <RoundInput key={activeRound.id} round={activeRound} rangeName={session.session.rangeName} rangeFaces={masterData.rangeFaces} trapSets={masterData.trapSets} ammunitionNames={getSessionAmmunitionNames(session.session)} onChange={setActiveRound} />
   </>;
 }
