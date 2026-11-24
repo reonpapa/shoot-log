@@ -15,10 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # ビルドとデプロイを分ける。1つのジョブにまとめると、デプロイだけ失敗して
+  # 再実行したときに成果物が二重に作られ、「Multiple artifacts named github-pages」で
+  # 必ず失敗してしまうため。
+  build:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,6 +56,13 @@ jobs:
         with:
           path: app/dist
 
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
